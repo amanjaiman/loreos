@@ -3,6 +3,7 @@
   <PropertyGroup>
     <!-- Matches the agent's TFM so the project reference resolves. -->
     <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
     <RootNamespace>Lore.Agent.Tests</RootNamespace>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
