@@ -73,7 +73,9 @@ Branch protection requires all four. CI completes in <10 min (skeletons are tiny
 
 - **C#:** `Directory.Build.props` sets `<Nullable>enable</Nullable>`,
   `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>`,
-  `<EnableNETAnalyzers>true</EnableNETAnalyzers>`, `<AnalysisMode>All</AnalysisMode>`.
+  `<EnableNETAnalyzers>true</EnableNETAnalyzers>`, `<AnalysisLevel>8.0</AnalysisLevel>`,
+  `<AnalysisMode>All</AnalysisMode>`, `<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>`
+  (pinned to 8.0 so the analyzer ruleset is deterministic across SDK patch versions).
   `.editorconfig` carries the agreed severities (the one place to tune noise).
 - **Python:** `ruff` (lint + format) and `mypy --strict` configured in
   `pyproject.toml`; `pytest` with `-q`.

@@ -88,7 +88,7 @@ pipeline owns the fix.
 | Component | Build | Test |
 |---|---|---|
 | `agent` | `dotnet build agent` | `dotnet test agent.tests` |
-| `cli` | `dotnet build cli` | `dotnet test cli.tests` |
+| `cli` | `dotnet build cli` | *(no test project yet; arrives with spec 007)* |
 | `memoryd` | `pip install -e memoryd` | `pytest memoryd` |
 | `app` | `npm --prefix app install && npm --prefix app run build` | `npm --prefix app test` |
 

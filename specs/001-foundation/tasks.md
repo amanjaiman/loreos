@@ -12,7 +12,8 @@ Legend: `[deps: …]` lists prerequisite task IDs.
 
 ### T001 — Solution skeleton + shared C# build props  `[deps: —]`
 Create `Lore.sln`, `global.json` (pin .NET 8.0.x), and `Directory.Build.props`
-(nullable enable, `TreatWarningsAsErrors`, NET analyzers, `AnalysisMode=All`). Add
+(nullable enable, `TreatWarningsAsErrors`, NET analyzers, `AnalysisLevel=8.0`,
+`AnalysisMode=All`, `EnforceCodeStyleInBuild=true`). Add
 empty `agent` (`net8.0-windows`, `UseWPF=true`), `cli` (`net8.0`), and
 `agent.tests` (xUnit) projects with `Program.cs`/test stubs.
 **Done when:** `dotnet build` is warning-clean and `dotnet test` passes the
