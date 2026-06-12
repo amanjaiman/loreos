@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- Windows-only: the capture pipeline (spec 003) uses UI Automation, which
+         needs WPF assemblies. Set here once so the csproj baseline is stable. -->
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>Lore.Agent</RootNamespace>
+    <AssemblyName>LoreAgent</AssemblyName>
+  </PropertyGroup>
+
+</Project>

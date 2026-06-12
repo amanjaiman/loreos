@@ -1,0 +1,9 @@
+# .NET build artifacts (Python/Node/Electron entries arrive with their components)
+bin/
+obj/
+*.user
+.vs/
+
+# Local working documents — PLAN.html references the legacy project URL,
+# which constitution §4.1 bans from the repo.
+PLAN.html
