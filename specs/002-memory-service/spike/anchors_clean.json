@@ -1,0 +1,408 @@
+{
+  "summary": {
+    "stack": {
+      "llm": "qwen2.5:7b-instruct",
+      "embedder": "nomic-embed-text",
+      "embed_dims": 768,
+      "vector_store": "qdrant-on-disk"
+    },
+    "observations_in": 20,
+    "memories_out": 25,
+    "event_counts": {
+      "ADD": 25,
+      "UPDATE": 0,
+      "DELETE": 0,
+      "NONE": 0
+    },
+    "add_total_s": 91.5,
+    "add_latency_s": {
+      "n": 20,
+      "min": 1.763,
+      "p50": 2.995,
+      "p95": 19.716,
+      "max": 19.716,
+      "mean": 4.575
+    },
+    "search_latency_s": {
+      "n": 10,
+      "min": 0.048,
+      "p50": 0.049,
+      "p95": 0.05,
+      "max": 0.05,
+      "mean": 0.049
+    },
+    "search_hit_rate": "10/10"
+  },
+  "add_records": [
+    {
+      "obs_id": "a1",
+      "latency_s": 7.24,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user's main code editor is Visual Studio Code."
+      ]
+    },
+    {
+      "obs_id": "a2",
+      "latency_s": 4.203,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "User spends most of their coding time inside VS Code."
+      ]
+    },
+    {
+      "obs_id": "a3",
+      "latency_s": 1.763,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "a4",
+      "latency_s": 3.052,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user has switched their primary editor from VS Code to Neovim."
+      ]
+    },
+    {
+      "obs_id": "b1",
+      "latency_s": 2.445,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user lives in Seattle."
+      ]
+    },
+    {
+      "obs_id": "b2",
+      "latency_s": 3.137,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user lives in Seattle, Washington."
+      ]
+    },
+    {
+      "obs_id": "b3",
+      "latency_s": 2.699,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user is relocating to Austin, Texas next month."
+      ]
+    },
+    {
+      "obs_id": "c1",
+      "latency_s": 3.447,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The Memory Service spec (002) is due for review by June 20, 2026."
+      ]
+    },
+    {
+      "obs_id": "c2",
+      "latency_s": 1.771,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "d1",
+      "latency_s": 2.704,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user is vegetarian."
+      ]
+    },
+    {
+      "obs_id": "d2",
+      "latency_s": 2.894,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "User selected the vegetarian option when ordering lunch."
+      ]
+    },
+    {
+      "obs_id": "d3",
+      "latency_s": 2.894,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user has started eating fish again and now describes themselves as pescatarian."
+      ]
+    },
+    {
+      "obs_id": "s1",
+      "latency_s": 2.861,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user booked a flight to Tokyo departing March 14 on United Airlines."
+      ]
+    },
+    {
+      "obs_id": "s2",
+      "latency_s": 2.573,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user is allergic to penicillin."
+      ]
+    },
+    {
+      "obs_id": "s3",
+      "latency_s": 14.175,
+      "events": [
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The Memory Service spec (002) is due for review by June 20.",
+        "The user's manager is named Priya Natarajan."
+      ]
+    },
+    {
+      "obs_id": "s4",
+      "latency_s": 3.119,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user is learning to play the cello, practicing about 30 minutes a day."
+      ]
+    },
+    {
+      "obs_id": "s5",
+      "latency_s": 19.716,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The Memory Service spec (002) is due for review by June 20.",
+        "User noted the 002 memory-service review deadline is June 20.",
+        "The user selected the vegetarian option when ordering lunch.",
+        "The user booked a flight to Tokyo departing March 14 on United Airlines.",
+        "The user is learning to play the cello, practicing about 30 minutes a day.",
+        "The user prefers dark mode in every application."
+      ]
+    },
+    {
+      "obs_id": "s6",
+      "latency_s": 4.963,
+      "events": [
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user's car is a 2019 Subaru Outback.",
+        "The user needs an oil change for their car at 60k miles."
+      ]
+    },
+    {
+      "obs_id": "s7",
+      "latency_s": 2.842,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user is reading 'The Three-Body Problem' by Liu Cixin."
+      ]
+    },
+    {
+      "obs_id": "s8",
+      "latency_s": 2.995,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user pays for a Spotify Family plan shared with three relatives."
+      ]
+    }
+  ],
+  "search_records": [
+    {
+      "query": "What editor does the user use?",
+      "latency_s": 0.049,
+      "hit": true,
+      "expect_keywords": [
+        "neovim"
+      ],
+      "top": [
+        "The user's main code editor is Visual Studio Code.",
+        "The user has switched their primary editor from VS Code to Neovim.",
+        "The user is reading 'The Three-Body Problem' by Liu Cixin."
+      ]
+    },
+    {
+      "query": "Where does the user live?",
+      "latency_s": 0.05,
+      "hit": true,
+      "expect_keywords": [
+        "austin"
+      ],
+      "top": [
+        "The user lives in Seattle.",
+        "The user lives in Seattle, Washington.",
+        "The user is reading 'The Three-Body Problem' by Liu Cixin."
+      ]
+    },
+    {
+      "query": "Does the user have any allergies?",
+      "latency_s": 0.049,
+      "hit": true,
+      "expect_keywords": [
+        "penicillin"
+      ],
+      "top": [
+        "The user is allergic to penicillin.",
+        "The user is vegetarian.",
+        "The user is reading 'The Three-Body Problem' by Liu Cixin."
+      ]
+    },
+    {
+      "query": "What are the user's dietary restrictions?",
+      "latency_s": 0.05,
+      "hit": true,
+      "expect_keywords": [
+        "pescatarian",
+        "fish"
+      ],
+      "top": [
+        "The user is vegetarian.",
+        "The user selected the vegetarian option when ordering lunch.",
+        "The user has started eating fish again and now describes themselves as pescatarian."
+      ]
+    },
+    {
+      "query": "Who is the user's manager?",
+      "latency_s": 0.049,
+      "hit": true,
+      "expect_keywords": [
+        "priya"
+      ],
+      "top": [
+        "The user's manager is named Priya Natarajan.",
+        "The user is reading 'The Three-Body Problem' by Liu Cixin.",
+        "The user's main code editor is Visual Studio Code."
+      ]
+    },
+    {
+      "query": "What flights has the user booked?",
+      "latency_s": 0.049,
+      "hit": true,
+      "expect_keywords": [
+        "tokyo",
+        "united"
+      ],
+      "top": [
+        "The user booked a flight to Tokyo departing March 14 on United Airlines.",
+        "The user booked a flight to Tokyo departing March 14 on United Airlines.",
+        "The user is reading 'The Three-Body Problem' by Liu Cixin."
+      ]
+    },
+    {
+      "query": "What instrument is the user learning?",
+      "latency_s": 0.048,
+      "hit": true,
+      "expect_keywords": [
+        "cello"
+      ],
+      "top": [
+        "The user is learning to play the cello, practicing about 30 minutes a day.",
+        "The user is learning to play the cello, practicing about 30 minutes a day.",
+        "The user is reading 'The Three-Body Problem' by Liu Cixin."
+      ]
+    },
+    {
+      "query": "What car does the user drive?",
+      "latency_s": 0.049,
+      "hit": true,
+      "expect_keywords": [
+        "subaru",
+        "outback"
+      ],
+      "top": [
+        "The user's car is a 2019 Subaru Outback.",
+        "The user is reading 'The Three-Body Problem' by Liu Cixin.",
+        "The user lives in Seattle."
+      ]
+    },
+    {
+      "query": "When is the memory service spec due?",
+      "latency_s": 0.048,
+      "hit": true,
+      "expect_keywords": [
+        "june 20",
+        "june"
+      ],
+      "top": [
+        "User noted the 002 memory-service review deadline is June 20.",
+        "The Memory Service spec (002) is due for review by June 20.",
+        "The Memory Service spec (002) is due for review by June 20."
+      ]
+    },
+    {
+      "query": "What book is the user reading?",
+      "latency_s": 0.049,
+      "hit": true,
+      "expect_keywords": [
+        "three-body",
+        "liu cixin"
+      ],
+      "top": [
+        "The user is reading 'The Three-Body Problem' by Liu Cixin.",
+        "The user has switched their primary editor from VS Code to Neovim.",
+        "The user's manager is named Priya Natarajan."
+      ]
+    }
+  ],
+  "final_memories": [
+    "The user prefers dark mode in every application.",
+    "User selected the vegetarian option when ordering lunch.",
+    "The Memory Service spec (002) is due for review by June 20.",
+    "The user booked a flight to Tokyo departing March 14 on United Airlines.",
+    "User spends most of their coding time inside VS Code.",
+    "The user is allergic to penicillin.",
+    "The user has started eating fish again and now describes themselves as pescatarian.",
+    "The user needs an oil change for their car at 60k miles.",
+    "The user pays for a Spotify Family plan shared with three relatives.",
+    "The user's manager is named Priya Natarajan.",
+    "The user lives in Seattle.",
+    "The user booked a flight to Tokyo departing March 14 on United Airlines.",
+    "The Memory Service spec (002) is due for review by June 20, 2026.",
+    "The user is learning to play the cello, practicing about 30 minutes a day.",
+    "The user lives in Seattle, Washington.",
+    "The user's main code editor is Visual Studio Code.",
+    "The user is reading 'The Three-Body Problem' by Liu Cixin.",
+    "The user's car is a 2019 Subaru Outback.",
+    "The user is learning to play the cello, practicing about 30 minutes a day.",
+    "The user is relocating to Austin, Texas next month.",
+    "The Memory Service spec (002) is due for review by June 20.",
+    "The user selected the vegetarian option when ordering lunch.",
+    "The user has switched their primary editor from VS Code to Neovim.",
+    "The user is vegetarian.",
+    "User noted the 002 memory-service review deadline is June 20."
+  ]
+}
