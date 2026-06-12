@@ -8,6 +8,7 @@ return 503 — the agent calls `/config` once at startup before first use.
 from __future__ import annotations
 
 import logging
+import re
 
 from fastapi import APIRouter, HTTPException, Request
 
@@ -28,6 +29,12 @@ from .models import (
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+_SECRET_RE = re.compile(r"(sk-[A-Za-z0-9_\-]{6,}|Bearer\s+\S+)")
+
+
+def _redact(text: str) -> str:
+    return _SECRET_RE.sub("[REDACTED]", text)
+
 
 def _require_backend(request: Request) -> MemoryBackend:
     backend: MemoryBackend | None = getattr(request.app.state, "backend", None)
@@ -43,7 +50,7 @@ def configure(request: Request, body: ConfigRequest) -> ConfigResponse:
     try:
         request.app.state.backend = request.app.state.backend_factory(body)
     except Exception as exc:
-        logger.exception("failed to initialize memory engine")
+        logger.error("failed to initialize memory engine: %s", _redact(str(exc)))
         raise HTTPException(
             status_code=400,
             detail="failed to initialize memory engine; check provider config and logs",

@@ -47,6 +47,16 @@ def test_unsupported_provider_raises() -> None:
         build_mem0_config(_cfg(type="mystery-llm"))
 
 
+def test_anthropic_provider_without_api_key_raises() -> None:
+    with pytest.raises(ValueError, match="Anthropic provider requires an API key"):
+        build_mem0_config(_cfg(type="anthropic", model="claude-haiku-4-5"))
+
+
+def test_openai_provider_without_api_key_raises() -> None:
+    with pytest.raises(ValueError, match="openai provider requires an API key"):
+        build_mem0_config(_cfg(type="openai", model="gpt-4o"))
+
+
 def test_openai_embedder_without_api_key_raises() -> None:
     cfg = ConfigRequest.model_validate(
         {

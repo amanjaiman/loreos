@@ -40,8 +40,12 @@ def _llm_config(p: ProviderConfig) -> dict[str, Any]:
             "config": {**common, "ollama_base_url": p.base_url or _DEFAULT_OLLAMA_URL},
         }
     if p.type == "anthropic":
+        if not p.api_key:
+            raise ValueError("Anthropic provider requires an API key; set provider.api_key")
         return {"provider": "anthropic", "config": {**common, "api_key": p.api_key}}
     if p.type in ("openai", "openai_compatible"):
+        if not p.api_key:
+            raise ValueError(f"{p.type} provider requires an API key; set provider.api_key")
         cfg = {**common, "api_key": p.api_key}
         if p.base_url:
             cfg["openai_base_url"] = p.base_url
