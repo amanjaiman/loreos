@@ -29,7 +29,7 @@ loreos/
 │   ├── ISSUE_TEMPLATE/ · PULL_REQUEST_TEMPLATE.md
 ├── agent/                      # LoreAgent.csproj (net8.0-windows) — Program.cs stub
 ├── cli/                        # Lore.Cli.csproj (net8.0) — Program.cs stub
-├── agent.tests/                # xUnit — one passing placeholder test
+├── agent.tests/                # xUnit (net8.0-windows, UseWPF=true) — one passing placeholder test
 ├── memoryd/
 │   ├── pyproject.toml          # ruff + mypy + pytest config
 │   ├── lore_memoryd/__init__.py · app.py   # FastAPI app, GET /health
@@ -48,8 +48,9 @@ loreos/
   set now so the csproj baseline is stable). `Program.cs` prints a version banner
   and exits `0`. No host builder wiring yet (spec 003+).
 - **`cli`** — `net8.0` console. `Program.cs` prints `lore <version>` and exits `0`.
-- **`agent.tests`** — xUnit project referencing `agent`; one `Assert.True(true)`
-  placeholder so `dotnet test` is wired.
+- **`agent.tests`** — `net8.0-windows`, `UseWPF=true` (must match the agent's TFM
+  so the project reference resolves). xUnit project referencing `agent`; one
+  `Assert.True(true)` placeholder so `dotnet test` is wired.
 - **`memoryd`** — FastAPI app exposing `GET /health → 200 {"status":"ok"}`. No mem0
   import yet (spec 002 pins and adds it). `pyproject.toml` declares fastapi +
   uvicorn + dev tools only.

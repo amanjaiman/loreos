@@ -15,7 +15,8 @@ Create `Lore.sln`, `global.json` (pin .NET SDK 8.0.204, rollForward latestPatch)
 (`LangVersion=latest`, nullable enable, implicit usings, `TreatWarningsAsErrors`,
 NET analyzers, `AnalysisLevel=8.0`, `AnalysisMode=All`, `EnforceCodeStyleInBuild=true`). Add
 empty `agent` (`net8.0-windows`, `UseWPF=true`), `cli` (`net8.0`), and
-`agent.tests` (xUnit) projects with `Program.cs`/test stubs.
+`agent.tests` (`net8.0-windows`, `UseWPF=true` — matches agent TFM so project
+reference resolves; xUnit) projects with `Program.cs`/test stubs.
 **Done when:** `dotnet build` is warning-clean and `dotnet test` passes the
 placeholder test.
 
