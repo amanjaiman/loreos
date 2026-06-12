@@ -61,12 +61,12 @@ loreos/
 
 Four required job groups, triggered on PRs to default and on pushes:
 
-| Job | Runner | Steps |
-|---|---|---|
-| `csharp` | `windows-latest` | setup-dotnet (from `global.json`) · `dotnet format --verify-no-changes` · `dotnet build -warnaserror` · `dotnet test` |
-| `python` | `ubuntu-latest` | setup-python 3.11 · `pip install -e memoryd[dev]` · `ruff check` · `mypy` · `pytest` |
-| `app` | `ubuntu-latest` | setup-node LTS · `npm ci` · `eslint` · `prettier --check` · `tsc --noEmit` · `npm run build` |
-| `secrets` | `ubuntu-latest` | `gitleaks detect` (full tree + history) |
+| Job       | Runner           | Steps                                                                                                                 |
+| --------- | ---------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `csharp`  | `windows-latest` | setup-dotnet (from `global.json`) · `dotnet format --verify-no-changes` · `dotnet build -warnaserror` · `dotnet test` |
+| `python`  | `ubuntu-latest`  | setup-python 3.11 · `pip install -e memoryd[dev]` · `ruff check` · `mypy` · `pytest`                                  |
+| `app`     | `ubuntu-latest`  | setup-node LTS · `npm ci` · `eslint` · `prettier --check` · `tsc --noEmit` · `npm run build`                          |
+| `secrets` | `ubuntu-latest`  | `gitleaks detect` (full tree + history)                                                                               |
 
 Branch protection requires all four. CI completes in <10 min (skeletons are tiny).
 
