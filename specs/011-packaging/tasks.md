@@ -52,9 +52,9 @@ the launch checklist. **When the repo is made public, enable branch protection o
 the default branch requiring the four CI checks (`csharp`, `python`, `app`,
 `secrets`)** — this is the deferred completion of spec 001 / T009, which GitHub
 blocks on free private repos.
-**Done when:** roadmap, issues, and checklist exist; branch protection requiring the
-four CI checks is active on the now-public default branch; the repo is ready to be
-made public (acceptance criterion 6).
+**Done when:** roadmap, issues, and checklist exist; the repo has been made public
+and branch protection requiring the four CI checks is active on the default branch
+(completing spec 001 / T009).
 
 ---
 
