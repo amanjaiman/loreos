@@ -78,10 +78,26 @@ def _embedder_config(emb: EmbedderConfig, provider: ProviderConfig) -> tuple[dic
             cfg["openai_base_url"] = emb.base_url or provider.base_url
         return {"provider": "openai", "config": cfg}, dims
 
-    # follow_provider (or unspecified): local default.
+    # follow_provider: use the provider's first-party embeddings when it has them
+    # (OpenAI-shaped), otherwise fall back to the validated local default so a
+    # chat-only key never incurs surprise embedding spend (acceptance criterion 4).
+    if provider.type == "openai" and provider.api_key:
+        model = "text-embedding-3-small"
+        cfg = {"model": model, "api_key": provider.api_key}
+        if provider.base_url:
+            cfg["openai_base_url"] = provider.base_url
+        return {"provider": "openai", "config": cfg}, _EMBED_DIMS[model]
+
+    # Local default (Ollama nomic-embed-text). Reuse the provider's own Ollama
+    # endpoint when the provider itself is Ollama.
+    ollama_url = (
+        provider.base_url
+        if provider.type == "ollama" and provider.base_url
+        else _DEFAULT_OLLAMA_URL
+    )
     return {
         "provider": "ollama",
-        "config": {"model": _LOCAL_EMBED_MODEL, "ollama_base_url": _DEFAULT_OLLAMA_URL},
+        "config": {"model": _LOCAL_EMBED_MODEL, "ollama_base_url": ollama_url},
     }, _LOCAL_EMBED_DIMS
 
 

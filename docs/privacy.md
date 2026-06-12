@@ -39,7 +39,11 @@ the table above, in the same PR that adds it.
   in the pre-open-source codebase and are deleted, not ported.
 - **No update check** unless and until added here explicitly.
 - **mem0 / Qdrant** are local. They are not in the egress list because they do not
-  leave the machine.
+  leave the machine. **Note:** mem0 OSS ships anonymous PostHog telemetry
+  (`us.i.posthog.com`) *enabled by default*; `memoryd` force-disables it
+  (`MEM0_TELEMETRY=False`, set in `lore_memoryd/__init__.py` before mem0 loads) so
+  it never fires. This is verified by a test (`tests/test_telemetry_disabled.py`)
+  and is non-negotiable per constitution §1.2.
 
 ## Where your data lives
 

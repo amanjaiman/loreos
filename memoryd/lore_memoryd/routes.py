@@ -7,6 +7,7 @@ return 503 — the agent calls `/config` once at startup before first use.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import re
 
@@ -47,6 +48,16 @@ def _require_backend(request: Request) -> MemoryBackend:
 def configure(request: Request, body: ConfigRequest) -> ConfigResponse:
     """(Re)initialize mem0 from a provider config. Idempotent: replaces any
     existing engine. Secrets in the body are localhost-only and never persisted."""
+    # Release any existing engine first: local Qdrant holds an exclusive lock on the
+    # data dir, so rebuilding on the same dir requires the old one to let go. A failed
+    # rebuild therefore leaves the service unconfigured (503) until the next /config.
+    old = getattr(request.app.state, "backend", None)
+    if old is not None:
+        request.app.state.backend = None
+        close = getattr(old, "close", None)
+        if callable(close):
+            with contextlib.suppress(Exception):
+                close()
     try:
         request.app.state.backend = request.app.state.backend_factory(body)
     except Exception as exc:

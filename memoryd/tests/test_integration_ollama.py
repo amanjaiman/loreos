@@ -59,3 +59,29 @@ def test_add_then_search_against_real_mem0(tmp_path: Path) -> None:
     assert found.status_code == 200, found.text
     memories = " ".join(m["memory"].lower() for m in found.json()["results"])
     assert "penicillin" in memories
+
+
+def _config(tmp_path: Path) -> dict[str, object]:
+    return {
+        "provider": {"type": "ollama", "model": "qwen2.5:7b-instruct"},
+        "embedder": {"type": "ollama", "model": "nomic-embed-text", "dims": 768},
+        "data_dir": str(tmp_path / "lore"),
+        "collection_name": "lore_it",
+    }
+
+
+def test_contradiction_converges_to_one_memory(tmp_path: Path) -> None:
+    # Acceptance criterion 3, via the Option-C reconciliation pass: a contradicting
+    # fact should update rather than duplicate — the stale city should be gone.
+    client = TestClient(create_app())
+    assert client.post("/config", json=_config(tmp_path)).status_code == 200
+
+    client.post("/memories", json={"text": "The user lives in Seattle.", "user_id": "u"})
+    client.post("/memories", json={"text": "The user just moved to Austin, Texas.", "user_id": "u"})
+
+    everything = " ".join(
+        m["memory"].lower()
+        for m in client.get("/memories", params={"user_id": "u"}).json()["results"]
+    )
+    assert "austin" in everything  # current truth retained
+    assert "seattle" not in everything  # stale fact reconciled away

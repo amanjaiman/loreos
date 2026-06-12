@@ -9,16 +9,18 @@ spawned and health-checked by the Lore agent. Binds to `127.0.0.1` only.
 |---|---|
 | `GET /health` | liveness (`{"status":"ok"}`) |
 | `POST /config` | (re)initialize mem0 from a provider config |
-| `POST /memories` | add (extract + store) |
+| `POST /memories` | add (extract + store + reconciliation pass) |
 | `POST /memories/search` | ranked semantic search |
 | `GET /memories` | list a user's memories |
 | `GET·PATCH·DELETE /memories/{id}` | single-item ops |
 
 mem0 + Qdrant are **pinned** (`mem0ai==2.0.5`); the engine is built by
 [`mem0_factory.py`](lore_memoryd/mem0_factory.py) and reached only through the
-typed [`backend.py`](lore_memoryd/backend.py) seam. The embedder defaults to a
-local model (Ollama `nomic-embed-text`) when the provider has no first-party
-embeddings — see [`../specs/002-memory-service/`](../specs/002-memory-service/).
+typed [`backend.py`](lore_memoryd/backend.py) seam. The `follow_provider`
+embedder policy uses the provider's own first-party embeddings when available
+(OpenAI → `text-embedding-3-small`, 1536-dim), and otherwise falls back to the
+local default (Ollama `nomic-embed-text`, 768-dim) so a chat-only key never
+incurs surprise embedding spend — see [`../specs/002-memory-service/`](../specs/002-memory-service/).
 
 ## Develop
 

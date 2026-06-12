@@ -20,6 +20,10 @@ class FakeBackend:
 
     def __init__(self) -> None:
         self._store: dict[str, dict[str, Any]] = {}
+        self.closed = False
+
+    def close(self) -> None:
+        self.closed = True
 
     def add(self, text: str, user_id: str, metadata: dict[str, Any] | None) -> list[AddedMemory]:
         mem_id = str(uuid.uuid4())

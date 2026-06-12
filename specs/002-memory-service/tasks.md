@@ -37,6 +37,11 @@ Pin mem0 + Qdrant in `pyproject.toml`. Wire mem0 in app lifespan.
 `pytest` green.
 
 ### T003 — follow_provider embedder + reconciliation  `[deps: T002]`
+
+> **Status: complete.** `follow_provider` OpenAI first-party path, `reconcile.py`
+> (spike Option C), `Mem0Backend.close()` + `/config` disposal, and the
+> `MEM0_TELEMETRY=False` kill-switch all landed here.
+
 Complete the `follow_provider` embedder policy in `mem0_factory.py`: prefer the
 provider's own first-party embeddings (e.g. OpenAI) before falling back to the local
 Ollama default (`nomic-embed-text`, 768-dim). Implement `reconcile.py` (spike Option

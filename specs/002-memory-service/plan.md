@@ -136,6 +136,13 @@ contract tests + CI job. See [`tasks.md`](tasks.md).
 - **`history_db_path` under the Lore data dir**, never mem0's global `~/.mem0`
   default — the global default leaks per-`user_id` "Last k Messages" across instances
   and poisons extraction (spike Finding 2).
+- **mem0 telemetry force-disabled (`MEM0_TELEMETRY=False`).** mem0 OSS ships anonymous
+  PostHog telemetry to `us.i.posthog.com` enabled by default — a direct conflict with
+  constitution §1.2 (zero telemetry) / §4.3 (closed egress). `memoryd` sets the
+  kill-switch in `lore_memoryd/__init__.py` before mem0 imports; this also stops mem0
+  creating a second global Qdrant (`~/.mem0/migrations_qdrant`) that would otherwise
+  lock across engine rebuilds. Documented in `docs/privacy.md`, guarded by a test.
+  (T003 finding.)
 - **Minimum capable extraction model.** Memory quality is strongly LLM-bound: a 2B
   model confabulates; a 7B-class (or hosted frontier) model extracts cleanly
   (spike Finding 2). Documented for the provider/onboarding surfaces.
