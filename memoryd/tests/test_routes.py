@@ -95,6 +95,7 @@ def test_health_still_ok(client: TestClient) -> None:
 
 
 def test_redact_masks_sk_token() -> None:
-    assert _redact("Incorrect API key: sk-proj-abc123XYZ") == "Incorrect API key: [REDACTED]"  # gitleaks:allow
+    result = _redact("Incorrect API key: sk-proj-abc123XYZ")  # gitleaks:allow
+    assert result == "Incorrect API key: [REDACTED]"
     assert _redact("Bearer eyJhbGc.some.token") == "[REDACTED]"
     assert _redact("no secrets here") == "no secrets here"
