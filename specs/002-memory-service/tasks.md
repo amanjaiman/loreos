@@ -8,6 +8,14 @@
 ---
 
 ### T001 — Evaluation + packaging spike  `[deps: spec 001]`
+
+> **Status: complete — GO** on mem0 and on PyInstaller packaging. See
+> [`spike-findings.md`](spike-findings.md). Two planned steps were not executed as
+> written: (a) no v1 `lore.db` was available, so a synthetic ~200-observation corpus
+> was authored instead (representative-not-real, recorded as a caveat); (b) the
+> clean-VM packaging check ran on the dev machine only — a pristine-VM run is deferred
+> to spec 011 T001. Both caveats are in `spike-findings.md`.
+
 On a throwaway branch: export ~200 distilled observations from a v1 `lore.db`
 (read-only script), run mem0 + on-disk Qdrant + a local model over them, and
 PyInstaller-bundle the prototype on a clean Windows VM. Write `spike-findings.md`
@@ -45,7 +53,11 @@ memoryd; the interface is the only memory seam in `agent/`.
 ### T005 — Agent host bootstrap + memoryd supervisor  `[deps: T004]`
 Build the `WebApplication` host + DI in `Program.cs` (registering config,
 `IMemoryService`, supervisor; mapping only `/health`). Implement `MemorydSupervisor`
-(spawn, health-gate with backoff, restart-on-crash, clean shutdown).
+(spawn, health-gate with backoff, restart-on-crash, clean shutdown). The health-gate
+backoff must allow for PyInstaller `--onefile` cold-start latency (the exe unpacks to
+a temp dir on first launch; spike Finding 4 measured a few seconds) — size backoff
+budget accordingly, or switch to `--onedir` in the installer spec to eliminate
+extraction overhead.
 **Done when:** the agent launches memoryd, gates on `/health`, and auto-recovers
 when memoryd is killed mid-run (integration test or documented manual check).
 

@@ -8,7 +8,14 @@
 
 ### T001 — PyInstaller the memoryd sidecar  `[deps: spec 002]`
 Write `installer/memoryd.spec` and build a single-exe `memoryd` (from 002's proven
-packaging approach). Make the 002 supervisor launch the packaged exe in production.
+packaging approach). Exclude `torch`, `transformers`, and `scipy`/`sklearn` (unused
+at runtime) to target ~175 MB (vs ~358 MB with the full ML stack — spec 002 spike
+Finding 4). Decide `--onefile` vs `--onedir` based on the supervisor health-gate
+budget: `--onefile` unpacks to a temp dir on first launch (cold-start overhead);
+`--onedir` avoids extraction at the cost of a flat file tree. The spike's
+`lore-memoryd-proto.exe --selftest` pattern (prints frozen dep versions, exits 0) is
+the clean-VM gate: copy the exe to a machine with no Python/Ollama and confirm it
+exits clean. Make the 002 supervisor launch the packaged exe in production.
 **Done when:** the memoryd exe runs standalone on a clean VM and the agent supervises
 it in a Release build.
 
