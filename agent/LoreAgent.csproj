@@ -10,4 +10,10 @@
     <AssemblyName>LoreAgent</AssemblyName>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- The agent host is an ASP.NET Core minimal-API app (spec 002 T005): the local
+         API on 127.0.0.1 that every surface is a client of (constitution §3.1). -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
 </Project>

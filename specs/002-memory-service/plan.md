@@ -78,6 +78,17 @@ their own:
 > container are owned by this spec. 003 and 005 extend it; they do not create a
 > second host.
 
+> **T005 verification (acceptance criterion 2).** Supervisor logic — spawn,
+> health-gate with backoff, restart-on-crash, clean shutdown, remote no-spawn — is
+> covered by deterministic unit tests over a faked process runner + health probe.
+> A live run additionally confirmed the real ASP.NET host comes up on
+> `127.0.0.1:7842`, spawns memoryd, gates on its `/health`, and **auto-recovers in
+> ~1.6 s after memoryd is force-killed mid-run**. Dev launch note: the supervisor
+> runs `python -m lore_memoryd`, so in dev memoryd must be importable by the
+> `python` on PATH (or set `memory:PackagedExecutable` to the bundled PyInstaller
+> exe, the production path). The packaged exe removes the interpreter dependency
+> entirely.
+
 ## Config
 
 ```jsonc
