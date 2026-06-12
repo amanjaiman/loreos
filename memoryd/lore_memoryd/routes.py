@@ -7,6 +7,7 @@ return 503 — the agent calls `/config` once at startup before first use.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import re
 
@@ -55,7 +56,8 @@ def configure(request: Request, body: ConfigRequest) -> ConfigResponse:
         request.app.state.backend = None
         close = getattr(old, "close", None)
         if callable(close):
-            close()
+            with contextlib.suppress(Exception):
+                close()
     try:
         request.app.state.backend = request.app.state.backend_factory(body)
     except Exception as exc:

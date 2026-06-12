@@ -81,7 +81,7 @@ def _embedder_config(emb: EmbedderConfig, provider: ProviderConfig) -> tuple[dic
     # follow_provider: use the provider's first-party embeddings when it has them
     # (OpenAI-shaped), otherwise fall back to the validated local default so a
     # chat-only key never incurs surprise embedding spend (acceptance criterion 4).
-    if provider.type in ("openai", "openai_compatible") and provider.api_key:
+    if provider.type == "openai" and provider.api_key:
         model = "text-embedding-3-small"
         cfg = {"model": model, "api_key": provider.api_key}
         if provider.base_url:
