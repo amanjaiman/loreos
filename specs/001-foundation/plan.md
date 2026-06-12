@@ -35,11 +35,11 @@ loreos/
 │   ├── lore_memoryd/__init__.py · app.py   # FastAPI app, GET /health
 │   └── tests/test_health.py
 ├── app/                        # electron-forge + React + TS shell → placeholder window
-├── skills/                     # (empty; populated by spec 008)
+├── skills/                     # README placeholder; populated by spec 008
 ├── docs/
 │   ├── architecture.md         # one-behavior-layer / thin-shim overview
 │   └── privacy.md              # network-egress section (currently: none)
-└── installer/                  # (empty; populated by spec 011)
+└── installer/                  # README placeholder; populated by spec 011
 ```
 
 ## Component skeletons (minimum buildable)

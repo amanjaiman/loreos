@@ -41,8 +41,8 @@ start` opens the window.
 
 ### T005 — Repo skeleton & directory placeholders  `[deps: —]`
 Create remaining top-level dirs (`skills/`, `installer/`, `docs/`) with
-`.gitkeep`/README placeholders, and `.gitignore` covering .NET, Python, Node, and
-Electron build artifacts.
+README placeholders (each naming the spec that will populate it), and `.gitignore`
+covering .NET, Python, Node, and Electron build artifacts.
 **Done when:** tree matches `plan.md`; `git status` is clean after a build (no
 artifacts tracked).
 
