@@ -104,8 +104,8 @@ Run the agent: `LoreAgent.exe` (agent mode, local API on :7842) or
   Adding an HTTP call anywhere else will be rejected.
 - **No secrets in code or config.** User keys go in Windows Credential Manager and
   are referenced by handle. `gitleaks` will catch you; review will too.
-- **No telemetry. No new outbound calls** without updating `docs/privacy.md` in the
-  same PR.
+- **No telemetry. No new outbound calls** without updating
+  [docs/privacy.md](docs/privacy.md) in the same PR.
 - **No business layer.** Auth, accounts, cloud sync, analytics, hosted inference,
   and MCP-key management from `lore/v1` are deleted, not ported. If a task seems to
   need them, you have misread the spec.
