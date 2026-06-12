@@ -48,7 +48,7 @@ This is the only spec with no upstream dependency. Specs 002–011 depend on it.
   scan — all required on PRs to the default branch.
 - Tooling configuration: `.editorconfig`, analyzer rulesets, `ruff`/`mypy` config
   in `pyproject.toml`, `eslint`/`prettier` config, `gitleaks` config.
-- `no-mistakes init` run and committed; repo default branch protected.
+- `no-mistakes init` run and committed; branch protection configured where the platform allows (hard enforcement deferred to spec 011).
 
 ### Out of scope
 
