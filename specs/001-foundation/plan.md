@@ -141,3 +141,26 @@ gate. See [`tasks.md`](tasks.md).
   `suggestion`.** The logging infrastructure does not exist yet; elevating these to
   errors before spec 003 would fail every placeholder that touches ILogger. Revisit
   when logging arrives.
+- **TypeScript 5.4 over the template default (4.5).** Bumped to 5.4 (`~5.4.5`) with
+  `strict: true` to match the constitution's analyzers-as-gates posture. The template
+  targets 4.5 but 5.4 is stable and the stricter checker catches more at scaffold time.
+- **typescript-eslint v7 over template v5.** v5 does not support TypeScript 5.x;
+  v7 does, with full TS 5.4 compatibility. ESLint 8 and the `.eslintrc` (non-flat)
+  config format are kept as-is since Electron Forge tooling has not migrated to v9.
+- **Prettier added at scaffold time.** `prettier` (^3) with `singleQuote: true`,
+  `trailingComma: "all"` and `format` / `format:check` scripts; `.prettierignore`
+  covers `.webpack/` and `out/` build output. Enforces consistent style before any
+  spec-010 code lands.
+- **`renderer.ts` renamed `renderer.tsx`.** The renderer entry uses JSX; TypeScript
+  requires the `.tsx` extension. Forge `entryPoints` updated accordingly.
+- **DevTools auto-open removed.** The template calls `mainWindow.webContents.openDevTools()`
+  unconditionally; removed so the placeholder window opens clean. Dev tooling is a
+  spec-010 decision.
+- **`build` script aliases `electron-forge package`.** The CI table in this plan uses
+  `npm run build`; the script maps to `electron-forge package` (produces a platform
+  binary without a full installer, keeping the build fast).
+- **`engines: { node: ">=20" }`.** Pins the minimum Node runtime to 20 per the
+  pinned-toolchain NFR. Aligns with the `ubuntu-latest` / Node LTS runner in CI.
+- **31 npm audit vulnerabilities in dev tooling.** These are known Electron Forge
+  template dependencies (dev-only, no runtime path). Not addressed in T004; tracked
+  as template noise. Spec 011 (packaging) owns dependency hardening.
