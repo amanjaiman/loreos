@@ -53,6 +53,15 @@ search via the local embedder; a contradicting fact converges to one current mem
 via reconciliation; both covered by tests.
 
 ### T004 — `IMemoryService` + `MemorydClient` + models  `[deps: T002]`
+
+> **Status: complete.** `IMemoryService` (7 methods), `MemorydClient` (sealed typed
+> HTTP client, snake_case JSON, `GetAllAsync` offset/limit pagination, `ConfigureAsync`
+> kept off the interface — lifecycle, not memory-ops), `MemoryModels`, and
+> `MemorydException` all landed here. memoryd's `GET /memories` gained `limit` +
+> `offset` query params to support client-side pagination. 14 C# unit tests (no
+> network; `StubHttpMessageHandler`); `.editorconfig` gains a `*.tests` section
+> relaxing CA1707/CA2007/CA1062 for xUnit conventions.
+
 Define `IMemoryService` (Remember/Search/GetRecent/GetAll/Get/Update/Delete) and
 implement `MemorydClient` as a typed HTTP client of memoryd, with error mapping. No
 mem0 vocabulary in the interface.
