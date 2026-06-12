@@ -48,9 +48,13 @@ trust-critical paths are confirmed (acceptance criterion 5).
 ### T007 — Roadmap + good-first-issues + launch checklist  `[deps: T006]`
 Write `docs/roadmap.md` (macOS/Linux/browser-ext/local-review/encryption/deferred
 buckets+retention/future surfaces with labels); seed 5–10 good-first-issues; write
-the launch checklist.
-**Done when:** roadmap, issues, and checklist exist; the repo is ready to be made
-public (acceptance criterion 6).
+the launch checklist. **When the repo is made public, enable branch protection on
+the default branch requiring the four CI checks (`csharp`, `python`, `app`,
+`secrets`)** — this is the deferred completion of spec 001 / T009, which GitHub
+blocks on free private repos.
+**Done when:** roadmap, issues, and checklist exist; branch protection requiring the
+four CI checks is active on the now-public default branch; the repo is ready to be
+made public (acceptance criterion 6).
 
 ---
 
