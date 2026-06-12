@@ -51,9 +51,10 @@ key never incurs surprise embedding bills.
 ```
 agent/Memory/
 ├── IMemoryService.cs       # Remember, Search, GetRecent, GetAll, Get, Update, Delete
-├── MemorydClient.cs        # HttpClient impl; typed models; error mapping
+├── MemorydClient.cs        # HttpClient impl; typed models; error mapping; ConfigureAsync (T005)
 ├── MemorydSupervisor.cs    # BackgroundService: spawn, health-gate, restart, dispose
-└── MemoryModels.cs         # Memory record + result types
+├── MemoryModels.cs         # MemoryRecord, AddedMemory; MemoryConfig / provider / embedder records
+└── MemorydException.cs     # Thrown on unexpected HTTP status; carries operation + status + body
 ```
 
 `IMemoryService` is intentionally narrow and mem0-agnostic (no mem0 vocabulary
@@ -146,3 +147,14 @@ contract tests + CI job. See [`tasks.md`](tasks.md).
 - **Minimum capable extraction model.** Memory quality is strongly LLM-bound: a 2B
   model confabulates; a 7B-class (or hosted frontier) model extracts cleanly
   (spike Finding 2). Documented for the provider/onboarding surfaces.
+- **`GetAllAsync` paginates with offset/limit** rather than sending a single
+  unbounded request. memoryd's `GET /memories` accepts `limit` + `offset`; mem0 has
+  no native offset, so `Mem0Backend` slices `[offset:offset+limit]` (O(N) per page →
+  O(N²) overall — acceptable for maintenance tooling, not hot-path reads; hot-path
+  callers should use `SearchAsync` or `GetRecentAsync`). `MemorydClient.GetAllAsync`
+  loops until a short page signals the end; page size defaults to 500 and is
+  constructor-injectable so tests can drive pagination with tiny pages.
+- **`ConfigureAsync` is on `MemorydClient` directly, not `IMemoryService`.** It is a
+  lifecycle operation (the T005 supervisor calls it once memoryd is healthy), not a
+  memory-ops call. Keeping it off the interface prevents callers from re-initializing
+  the engine accidentally and keeps the seam narrow.
