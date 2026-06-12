@@ -78,6 +78,39 @@ validates committed history (commit first), `--intent` is required and must be
 complete, and you never hand-edit code to fix a finding while a run is active — the
 pipeline owns the fix.
 
+### Get it green locally BEFORE you invoke the gate — this is the dev-loop speed lever
+
+Every gate run executes review → test → lint → push → PR → **CI**, and **each fix
+round re-runs the whole thing**, including a fresh CI cycle on GitHub Actions (the
+Windows runner alone costs 1–2 min to provision before any job starts). A task that
+trips the gate three times pays that cost three times. The cheapest run is the one
+that finds nothing.
+
+So before `git commit` + `axi run`, run the **same checks CI runs**, locally, for
+every component you touched, and don't invoke the gate until they're all green:
+
+```sh
+# C# (agent / cli)
+dotnet format --verify-no-changes   # formatting — a top source of avoidable fix rounds
+dotnet build -warnaserror           # analyzers-as-errors
+dotnet test
+# Python (memoryd)
+ruff check . && mypy . && pytest -q
+# App
+npm --prefix app run lint && npx --prefix app tsc --noEmit && npm --prefix app run build
+```
+
+This single habit is what keeps the gate a quick rubber-stamp instead of a
+multi-minute bounce. Treat a gate fix-round as a signal you skipped a local check.
+
+### Prefer Bash for routine git/file ops
+
+The default shell here is Windows PowerShell, which pays profile-load startup on
+every invocation. For routine `git`, file, and check commands, prefer the **Bash**
+tool — it's faster per call and the POSIX one-liners above run as-is. Reserve long
+timeouts for the genuinely long calls (`no-mistakes axi run` / `respond`, which
+block for minutes on review/test/CI — that wait is normal, don't cancel it).
+
 ---
 
 ## Build & run quick reference
@@ -109,8 +142,9 @@ Run the agent: `LoreAgent.exe` (agent mode, local API on :7842) or
 - **No business layer.** Auth, accounts, cloud sync, analytics, hosted inference,
   and MCP-key management from `lore/v1` are deleted, not ported. If a task seems to
   need them, you have misread the spec.
-- **Format and analyzers are gates.** Run the component's formatter/linter before
-  you commit; CI fails on drift.
+- **Format and analyzers are gates.** Run the full local check suite before you
+  commit (see "Get it green locally" above) — drift fails CI and costs you a whole
+  gate fix-round.
 - **Tests come from acceptance criteria.** If a behavior is in the spec's
   acceptance list, it has a test.
 
