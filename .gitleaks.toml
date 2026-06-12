@@ -1,0 +1,10 @@
+# gitleaks configuration for loreos.
+# constitution.md §4.1: no secrets in the repo, ever. We run gitleaks' full
+# default ruleset with NO allowlist — not even "public by design" keys are
+# permitted (the legacy repo's embedded project credentials are exactly what
+# this guards against).
+
+title = "loreos gitleaks config"
+
+[extend]
+useDefault = true
