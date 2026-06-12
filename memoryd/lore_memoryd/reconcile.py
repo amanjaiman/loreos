@@ -111,13 +111,14 @@ class Reconciler:
         for neighbor in self._neighbors(am, user_id):
             verdict = self._judge(am.memory, str(neighbor.get("memory", "")))
             if verdict == "duplicate":
-                # The existing memory already captures this fact — drop the new one.
-                self._mem.delete(am.id)
+                if am.id:
+                    self._mem.delete(am.id)
                 return None
             if verdict == "supersedes":
-                # The new memory is the current truth — remove the stale one.
-                self._mem.delete(str(neighbor.get("id", "")))
-                event = "UPDATE"
+                nid = str(neighbor.get("id", ""))
+                if nid:
+                    self._mem.delete(nid)
+                    event = "UPDATE"
         return AddedMemory(id=am.id, memory=am.memory, event=event)
 
     def _neighbors(self, am: AddedMemory, user_id: str) -> list[dict[str, Any]]:

@@ -78,6 +78,13 @@ def test_non_add_events_pass_through_untouched() -> None:
     assert mem.deleted == [] and survivors == none_event
 
 
+def test_supersedes_neighbor_without_id_skips_delete_and_survives_as_add() -> None:
+    mem = FakeReconcileMem([{"memory": "The user lives in Seattle.", "score": 0.9}])
+    survivors = Reconciler(mem, _judge_returning("supersedes")).reconcile(_NEW, "u1")
+    assert mem.deleted == []
+    assert len(survivors) == 1 and survivors[0].id == "new" and survivors[0].event == "ADD"
+
+
 def test_parse_verdict() -> None:
     assert _parse_verdict("DUPLICATE") == "duplicate"
     assert _parse_verdict("The answer is SUPERSEDES.") == "supersedes"
