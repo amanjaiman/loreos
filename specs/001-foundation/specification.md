@@ -48,7 +48,7 @@ This is the only spec with no upstream dependency. Specs 002–011 depend on it.
   scan — all required on PRs to the default branch.
 - Tooling configuration: `.editorconfig`, analyzer rulesets, `ruff`/`mypy` config
   in `pyproject.toml`, `eslint`/`prettier` config, `gitleaks` config.
-- `no-mistakes init` run and committed; repo default branch protected.
+- `no-mistakes init` run and committed; branch protection configured where the platform allows (hard enforcement deferred to spec 011).
 
 ### Out of scope
 
@@ -69,7 +69,9 @@ This is the only spec with no upstream dependency. Specs 002–011 depend on it.
    app start` opens a placeholder window.
 5. The CI workflow runs all four job groups (C#, Python, app, gitleaks) on a PR and
    is **required** to pass before merge; a deliberately introduced lint error and a
-   planted fake secret each fail CI.
+   planted fake secret each fail CI. *(Hard-enforcement via branch protection is
+   deferred to spec 011 — GitHub blocks it on free private repos; until then the
+   `no-mistakes` gate soft-enforces the four checks. See T009.)*
 6. `LICENSE` is Apache 2.0; `README.md` contains the project one-liner and a
    "build every component" quickstart that matches reality.
 7. `docs/privacy.md` exists with a "Network egress" section listing zero
@@ -77,7 +79,8 @@ This is the only spec with no upstream dependency. Specs 002–011 depend on it.
    one-behavior-layer / thin-shim architecture.
 8. `gitleaks` reports clean on the whole tree and history.
 9. `no-mistakes` is initialized; a trivial change can be taken through the gate to a
-   `checks-passed` outcome on a feature branch.
+   `checks-passed` outcome on a feature branch. *(Branch protection that would make
+   the four checks mandatory is deferred to spec 011; see criterion 5 and T009.)*
 
 ## Non-functional requirements
 

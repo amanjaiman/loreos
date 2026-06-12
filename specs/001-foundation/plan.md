@@ -68,7 +68,7 @@ Four required job groups, triggered on PRs to default and on pushes:
 | `app`     | `ubuntu-latest`  | setup-node LTS · `npm ci` · `eslint` · `prettier --check` · `tsc --noEmit` · `npm run build`                          |
 | `secrets` | `ubuntu-latest`  | `gitleaks detect` (full tree + history)                                                                               |
 
-Branch protection requires all four. CI completes in <10 min (skeletons are tiny).
+All four checks are required on PRs. Branch protection enforcing them is deferred to spec 011 (GitHub blocks it on free private repos; see T009 deviation note). CI completes in <10 min (skeletons are tiny).
 
 ## Tooling configuration
 

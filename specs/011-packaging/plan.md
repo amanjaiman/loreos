@@ -65,7 +65,10 @@ credential storage (004), and diff actual network egress against `privacy.md`. R
 
 Polish issue/PR templates; seed 5–10 good-first-issues across components; write the
 launch checklist (Show HN, r/LocalLLaMA, mem0 community/Discord as "an ambient
-capture agent for mem0", MCP server directories, skill/plugin marketplaces).
+capture agent for mem0", MCP server directories, skill/plugin marketplaces). When
+the repo is made public, enable branch protection on the default branch requiring the
+four CI checks (`csharp`, `python`, `app`, `secrets`) — this completes the deferred
+spec 001 / T009 work (GitHub blocks branch protection on free private repos).
 
 ## Decisions
 
