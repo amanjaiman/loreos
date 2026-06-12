@@ -45,3 +45,31 @@ def test_follow_provider_uses_local_embedder_default() -> None:
 def test_unsupported_provider_raises() -> None:
     with pytest.raises(ValueError, match="Unsupported provider"):
         build_mem0_config(_cfg(type="mystery-llm"))
+
+
+def test_openai_embedder_without_api_key_raises() -> None:
+    cfg = ConfigRequest.model_validate(
+        {
+            "provider": {"type": "ollama", "model": "qwen2.5:7b-instruct"},
+            "embedder": {"type": "openai", "model": "text-embedding-3-small"},
+            "data_dir": "/data/lore",
+            "collection_name": "lore",
+        }
+    )
+    with pytest.raises(ValueError, match="OpenAI embedder requires an API key"):
+        build_mem0_config(cfg)
+
+
+def test_openai_embedder_with_api_key_builds_config() -> None:
+    cfg = ConfigRequest.model_validate(
+        {
+            "provider": {"type": "openai", "model": "gpt-4o", "api_key": "sk-test"},
+            "embedder": {"type": "openai", "model": "text-embedding-3-small"},
+            "data_dir": "/data/lore",
+            "collection_name": "lore",
+        }
+    )
+    result = build_mem0_config(cfg)
+    assert result["embedder"]["provider"] == "openai"
+    assert result["embedder"]["config"]["api_key"] == "sk-test"
+    assert result["vector_store"]["config"]["embedding_model_dims"] == 1536

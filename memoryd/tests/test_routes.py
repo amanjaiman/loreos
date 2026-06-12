@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, NoReturn
 
 from fastapi.testclient import TestClient
+
+from lore_memoryd.app import create_app
+from lore_memoryd.backend import MemoryBackend
+from lore_memoryd.models import ConfigRequest
 
 
 def test_memory_routes_require_config(client: TestClient) -> None:
@@ -70,6 +74,20 @@ def test_missing_id_returns_404(client: TestClient, sample_config: dict[str, Any
     assert client.get("/memories/nope").status_code == 404
     assert client.patch("/memories/nope", json={"text": "x"}).status_code == 404
     assert client.delete("/memories/nope").status_code == 404
+
+
+def test_configure_error_returns_generic_message(sample_config: dict[str, Any]) -> None:
+    secret = "sk-secret-key-12345"
+
+    def failing_factory(_cfg: ConfigRequest) -> NoReturn:
+        raise ValueError(f"Invalid API key: {secret}")
+
+    error_client = TestClient(create_app(backend_factory=failing_factory))
+    resp = error_client.post("/config", json=sample_config)
+    assert resp.status_code == 400
+    body = resp.json()["detail"]
+    assert secret not in body
+    assert "provider config" in body
 
 
 def test_health_still_ok(client: TestClient) -> None:

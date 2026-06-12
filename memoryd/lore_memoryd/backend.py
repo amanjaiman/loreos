@@ -73,7 +73,7 @@ class Mem0Backend:
     def search(
         self, query: str, user_id: str, limit: int, filters: dict[str, Any] | None
     ) -> list[MemoryItem]:
-        merged: dict[str, Any] = {"user_id": user_id, **(filters or {})}
+        merged: dict[str, Any] = {**(filters or {}), "user_id": user_id}
         raw = self._mem.search(query, filters=merged, top_k=limit)
         return [_to_item(d) for d in _results(raw)]
 
@@ -86,9 +86,13 @@ class Mem0Backend:
         return _to_item(raw) if isinstance(raw, dict) and raw.get("id") else None
 
     def update(self, memory_id: str, text: str) -> MemoryItem | None:
+        if self.get(memory_id) is None:
+            return None
         self._mem.update(memory_id, data=text)
         return self.get(memory_id)
 
     def delete(self, memory_id: str) -> bool:
+        if self.get(memory_id) is None:
+            return False
         self._mem.delete(memory_id)
         return True

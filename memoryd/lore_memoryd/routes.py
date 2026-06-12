@@ -7,6 +7,8 @@ return 503 — the agent calls `/config` once at startup before first use.
 
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter, HTTPException, Request
 
 from .backend import MemoryBackend
@@ -24,6 +26,7 @@ from .models import (
 )
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def _require_backend(request: Request) -> MemoryBackend:
@@ -39,9 +42,11 @@ def configure(request: Request, body: ConfigRequest) -> ConfigResponse:
     existing engine. Secrets in the body are localhost-only and never persisted."""
     try:
         request.app.state.backend = request.app.state.backend_factory(body)
-    except Exception as exc:  # surface actionable config errors (constitution §5)
+    except Exception as exc:
+        logger.exception("failed to initialize memory engine")
         raise HTTPException(
-            status_code=400, detail=f"failed to initialize memory engine: {exc}"
+            status_code=400,
+            detail="failed to initialize memory engine; check provider config and logs",
         ) from exc
     return ConfigResponse(collection_name=body.collection_name)
 

@@ -63,8 +63,13 @@ def _embedder_config(emb: EmbedderConfig, provider: ProviderConfig) -> tuple[dic
             "config": {"model": emb.model, "ollama_base_url": emb.base_url or _DEFAULT_OLLAMA_URL},
         }, dims
     if emb.type == "openai" and emb.model:
+        api_key = provider.api_key if provider.type in ("openai", "openai_compatible") else None
+        if not api_key:
+            raise ValueError(
+                "OpenAI embedder requires an API key; set provider.api_key or use a local embedder"
+            )
         dims = emb.dims or _EMBED_DIMS.get(emb.model, 1536)
-        cfg: dict[str, Any] = {"model": emb.model, "api_key": provider.api_key}
+        cfg: dict[str, Any] = {"model": emb.model, "api_key": api_key}
         if emb.base_url or provider.base_url:
             cfg["openai_base_url"] = emb.base_url or provider.base_url
         return {"provider": "openai", "config": cfg}, dims
