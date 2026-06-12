@@ -32,7 +32,7 @@ class MemoryBackend(Protocol):
         self, query: str, user_id: str, limit: int, filters: dict[str, Any] | None
     ) -> list[MemoryItem]: ...
 
-    def get_all(self, user_id: str, limit: int) -> list[MemoryItem]: ...
+    def get_all(self, user_id: str, limit: int, offset: int) -> list[MemoryItem]: ...
 
     def get(self, memory_id: str) -> MemoryItem | None: ...
 
@@ -94,9 +94,13 @@ class Mem0Backend:
         raw = self._mem.search(query, filters=merged, top_k=limit)
         return [_to_item(d) for d in _results(raw)]
 
-    def get_all(self, user_id: str, limit: int) -> list[MemoryItem]:
-        raw = self._mem.get_all(filters={"user_id": user_id}, top_k=limit)
-        return [_to_item(d) for d in _results(raw)]
+    def get_all(self, user_id: str, limit: int, offset: int = 0) -> list[MemoryItem]:
+        # mem0's get_all has no offset, so fetch through the requested window and
+        # slice. Pagination lets the agent enumerate a whole store (MemorydClient
+        # loops pages); a single huge top_k could otherwise hit an engine cap.
+        raw = self._mem.get_all(filters={"user_id": user_id}, top_k=offset + limit)
+        window = _results(raw)[offset : offset + limit]
+        return [_to_item(d) for d in window]
 
     def get(self, memory_id: str) -> MemoryItem | None:
         raw = self._mem.get(memory_id)

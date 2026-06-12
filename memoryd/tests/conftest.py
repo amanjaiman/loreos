@@ -49,8 +49,9 @@ class FakeBackend:
         ]
         return hits[:limit]
 
-    def get_all(self, user_id: str, limit: int) -> list[MemoryItem]:
-        return [self._item(d) for d in self._store.values() if d["user_id"] == user_id][:limit]
+    def get_all(self, user_id: str, limit: int, offset: int = 0) -> list[MemoryItem]:
+        items = [self._item(d) for d in self._store.values() if d["user_id"] == user_id]
+        return items[offset : offset + limit]
 
     def get(self, memory_id: str) -> MemoryItem | None:
         d = self._store.get(memory_id)

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
@@ -18,12 +19,26 @@ public sealed class MemorydClientTests : IDisposable
     }
 
     private (MemorydClient Client, StubHttpMessageHandler Handler) Build(
-        Func<HttpRequestMessage, (HttpStatusCode, string)> responder)
+        Func<HttpRequestMessage, (HttpStatusCode, string)> responder,
+        int getAllPageSize = 500)
     {
         var handler = new StubHttpMessageHandler(responder);
         var http = new HttpClient(handler) { BaseAddress = new Uri("http://127.0.0.1:7842/") };
         _clients.Add(http);
-        return (new MemorydClient(http), handler);
+        return (new MemorydClient(http, getAllPageSize), handler);
+    }
+
+    private static int QueryOffset(Uri uri)
+    {
+        foreach (string part in uri.Query.TrimStart('?').Split('&'))
+        {
+            if (part.StartsWith("offset=", StringComparison.Ordinal))
+            {
+                return int.Parse(part["offset=".Length..], CultureInfo.InvariantCulture);
+            }
+        }
+
+        return 0;
     }
 
     private static JsonElement Body(StubHttpMessageHandler handler) =>
@@ -98,6 +113,36 @@ public sealed class MemorydClientTests : IDisposable
         Assert.Single(result);
         Assert.Equal("/memories", handler.LastUri!.AbsolutePath);
         Assert.Contains("user_id=u1", handler.LastUri.Query, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_pages_until_a_short_page()
+    {
+        var requestedOffsets = new List<int>();
+        (MemorydClient client, _) = Build(
+            request =>
+            {
+                int offset = QueryOffset(request.RequestUri!);
+                requestedOffsets.Add(offset);
+                int count = offset < 4 ? 2 : 1; // pages of size 2, 2, then a partial 1
+                string items = string.Join(
+                    ",",
+                    Enumerable.Range(0, count).Select(i => $"{{\"id\":\"m{offset + i}\",\"memory\":\"x\"}}"));
+                return (HttpStatusCode.OK, $"{{\"results\":[{items}]}}");
+            },
+            getAllPageSize: 2);
+
+        IReadOnlyList<MemoryRecord> all = await client.GetAllAsync("u1");
+
+        Assert.Equal(5, all.Count); // 2 + 2 + 1 across three pages
+        Assert.Equal([0, 2, 4], requestedOffsets); // stopped after the short page
+    }
+
+    [Fact]
+    public async Task ListResponse_missing_results_yields_empty_not_null()
+    {
+        (MemorydClient client, _) = Build(_ => (HttpStatusCode.OK, "{}"));
+        Assert.Empty(await client.GetRecentAsync("u1"));
     }
 
     [Fact]

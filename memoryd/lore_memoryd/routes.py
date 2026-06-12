@@ -84,9 +84,11 @@ def search_memories(request: Request, body: SearchRequest) -> SearchResponse:
 
 
 @router.get("/memories", response_model=MemoriesResponse)
-def list_memories(request: Request, user_id: str = "default", limit: int = 100) -> MemoriesResponse:
+def list_memories(
+    request: Request, user_id: str = "default", limit: int = 100, offset: int = 0
+) -> MemoriesResponse:
     backend = _require_backend(request)
-    return MemoriesResponse(results=backend.get_all(user_id, limit))
+    return MemoriesResponse(results=backend.get_all(user_id, limit, offset))
 
 
 @router.get("/memories/{memory_id}", response_model=MemoryItem)

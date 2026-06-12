@@ -11,7 +11,7 @@ spawned and health-checked by the Lore agent. Binds to `127.0.0.1` only.
 | `POST /config` | (re)initialize mem0 from a provider config |
 | `POST /memories` | add (extract + store + reconciliation pass) |
 | `POST /memories/search` | ranked semantic search |
-| `GET /memories` | list a user's memories |
+| `GET /memories` | list a user's memories (paged: `limit` + `offset`) |
 | `GET·PATCH·DELETE /memories/{id}` | single-item ops |
 
 mem0 + Qdrant are **pinned** (`mem0ai==2.0.5`); the engine is built by

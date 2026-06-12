@@ -43,6 +43,30 @@ def test_add_then_search_and_get_all(client: TestClient, sample_config: dict[str
     assert len(all_for_user.json()["results"]) == 1
 
 
+def test_list_memories_paginates_with_limit_and_offset(
+    client: TestClient, sample_config: dict[str, Any]
+) -> None:
+    _configure(client, sample_config)
+    for i in range(5):
+        client.post("/memories", json={"text": f"fact {i}", "user_id": "u1"})
+
+    page1 = client.get("/memories", params={"user_id": "u1", "limit": 2, "offset": 0}).json()[
+        "results"
+    ]
+    page2 = client.get("/memories", params={"user_id": "u1", "limit": 2, "offset": 2}).json()[
+        "results"
+    ]
+    page3 = client.get("/memories", params={"user_id": "u1", "limit": 2, "offset": 4}).json()[
+        "results"
+    ]
+
+    assert len(page1) == 2
+    assert len(page2) == 2
+    assert len(page3) == 1  # last partial page signals the end
+    ids = {m["id"] for m in page1 + page2 + page3}
+    assert len(ids) == 5  # no overlap across pages
+
+
 def test_search_is_user_scoped(client: TestClient, sample_config: dict[str, Any]) -> None:
     _configure(client, sample_config)
     client.post("/memories", json={"text": "User drives a Subaru.", "user_id": "u1"})
