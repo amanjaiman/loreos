@@ -1,0 +1,68 @@
+# 002 — Memory Service · Tasks
+
+> Each task is one PR (~1–4 h), dependency-ordered. **Every task ends at a green
+> `no-mistakes` gate on a feature branch** (constitution §7) — implicit in every
+> "Done when". `[deps: …]` lists prerequisite tasks (T0xx within this spec; spec
+> IDs for cross-spec).
+
+---
+
+### T001 — Evaluation + packaging spike  `[deps: spec 001]`
+On a throwaway branch: export ~200 distilled observations from a v1 `lore.db`
+(read-only script), run mem0 + on-disk Qdrant + a local model over them, and
+PyInstaller-bundle the prototype on a clean Windows VM. Write `spike-findings.md`
+(extraction/dedup/search/latency results, packaging result, go/no-go + fallback).
+**Done when:** `spike-findings.md` is committed with an explicit go/no-go; if
+no-go, `plan.md` is amended to the fallback before any further task starts.
+*(Spike code is not merged into the product; the report is the deliverable.)*
+
+### T002 — memoryd skeleton → real routes  `[deps: T001]`
+Grow the foundation `memoryd` from `/health`-only into the full route set
+(`/config`, `/memories` add/search/get_all/get/update/delete) with pydantic models.
+Pin mem0 + Qdrant in `pyproject.toml`. Wire mem0 in app lifespan.
+**Done when:** routes work against a local mem0 with a test config; `ruff`, `mypy`,
+`pytest` green.
+
+### T003 — mem0 factory + local embedder default  `[deps: T002]`
+Implement `mem0_factory.py`: build mem0's `config` (LLM, embedder, on-disk Qdrant)
+from a provider config. Implement the `follow_provider` embedder with a local
+default when the provider has no first-party embeddings.
+**Done when:** a provider config with no embedding capability still yields working
+search via the local embedder; covered by a test.
+
+### T004 — `IMemoryService` + `MemorydClient` + models  `[deps: T002]`
+Define `IMemoryService` (Remember/Search/GetRecent/GetAll/Get/Update/Delete) and
+implement `MemorydClient` as a typed HTTP client of memoryd, with error mapping. No
+mem0 vocabulary in the interface.
+**Done when:** unit tests cover client request/response shaping against a mocked
+memoryd; the interface is the only memory seam in `agent/`.
+
+### T005 — Agent host bootstrap + memoryd supervisor  `[deps: T004]`
+Build the `WebApplication` host + DI in `Program.cs` (registering config,
+`IMemoryService`, supervisor; mapping only `/health`). Implement `MemorydSupervisor`
+(spawn, health-gate with backoff, restart-on-crash, clean shutdown).
+**Done when:** the agent launches memoryd, gates on `/health`, and auto-recovers
+when memoryd is killed mid-run (integration test or documented manual check).
+
+### T006 — Remote engine mode  `[deps: T004]`
+Support `memory.engine: "remote"`: `MemorydClient` targets a user-hosted mem0
+server (no sidecar spawned). Document the self-hosted multi-device setup in
+`docs/multi-device.md` (stub; expanded in 011).
+**Done when:** flipping config to `remote` against a test server works with zero
+code change; covered by a test using a stand-in server.
+
+### T007 — Contract tests + CI job  `[deps: T002, T004]`
+Add contract tests asserting mem0's add/search/update/delete behaviors against the
+pinned version, and a CI job that runs them. Assert the dedup/update behavior from
+acceptance criterion 3 explicitly.
+**Done when:** the contract suite is green in CI against the pinned mem0; bumping
+mem0 is a deliberate, test-guarded change.
+
+---
+
+## Definition of done for spec 002
+
+All acceptance criteria pass; memory is reachable only via `IMemoryService`; the
+agent supervises memoryd reliably; embedded and remote engines both work from
+config alone; contract tests guard the pinned mem0 in CI; the spike report justifies
+the design. Specs 003, 004, 005, and 009 can now build on the memory seam.
