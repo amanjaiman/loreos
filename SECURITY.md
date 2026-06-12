@@ -7,7 +7,7 @@ product. The non-negotiables, enforced in CI and review (constitution §4):
   no Lore-operated server in the data path and no remote listener.
 - **Zero telemetry.** The only outbound calls Lore makes are to the model
   endpoints you explicitly configure. The closed egress list lives in
-  `docs/privacy.md`.
+  [docs/privacy.md](docs/privacy.md).
 - **No secrets in the repo.** `gitleaks` scans every PR and the full history.
   Your API keys live in Windows Credential Manager, referenced by handle —
   never in config files or logs.

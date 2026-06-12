@@ -49,8 +49,8 @@ green. CI runs the same checks locally available to you:
 ## Hard rules that save a review round
 
 - **No secrets, ever** — not even "public by design" keys or project URLs.
-- **No telemetry, no new outbound calls** without updating `docs/privacy.md`
-  in the same PR.
+- **No telemetry, no new outbound calls** without updating
+  [docs/privacy.md](docs/privacy.md) in the same PR.
 - **Touch external systems only through their seam** (constitution §3).
 - **A red linter is a red build** — run the component's checks before pushing.
 
