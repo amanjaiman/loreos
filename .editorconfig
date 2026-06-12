@@ -74,3 +74,14 @@ dotnet_diagnostic.CA1014.severity = none
 # CA1848/CA2254: LoggerMessage delegates — revisit when logging arrives (003+).
 dotnet_diagnostic.CA1848.severity = suggestion
 dotnet_diagnostic.CA2254.severity = suggestion
+
+#### Test projects (*.tests) ####
+# Relax the rules that conflict with xUnit conventions. Applies to every test
+# project (spec 002 T004). Product analyzer policy above is unchanged.
+[*.tests/**.cs]
+# CA1707: underscores in names — test names use Method_Scenario_Expected.
+dotnet_diagnostic.CA1707.severity = none
+# CA2007: ConfigureAwait — there is no synchronization context in test runs.
+dotnet_diagnostic.CA2007.severity = none
+# CA1062: validate public-method arguments — not relevant to test helpers.
+dotnet_diagnostic.CA1062.severity = none

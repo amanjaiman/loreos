@@ -1,0 +1,45 @@
+namespace Lore.Agent.Memory;
+
+/// <summary>The single seam to Lore's memory store (constitution §3.2). Every read
+/// and write of memory in the agent goes through this interface; nothing else in the
+/// codebase knows that mem0 or memoryd exist. The method names are intentionally
+/// mem0-agnostic.</summary>
+public interface IMemoryService
+{
+    /// <summary>Store an observation. memoryd extracts, dedupes, and reconciles it,
+    /// returning the resulting memories (which may be zero, one, or several).</summary>
+    Task<IReadOnlyList<AddedMemory>> RememberAsync(
+        string observation,
+        string userId = "default",
+        IReadOnlyDictionary<string, object?>? metadata = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Semantic search for memories relevant to <paramref name="query"/>,
+    /// most relevant first.</summary>
+    Task<IReadOnlyList<MemoryRecord>> SearchAsync(
+        string query,
+        string userId = "default",
+        int limit = 10,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>The most recent memories for a user.</summary>
+    Task<IReadOnlyList<MemoryRecord>> GetRecentAsync(
+        string userId = "default",
+        int count = 20,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>All memories for a user.</summary>
+    Task<IReadOnlyList<MemoryRecord>> GetAllAsync(
+        string userId = "default",
+        CancellationToken cancellationToken = default);
+
+    /// <summary>One memory by id, or <c>null</c> if it does not exist.</summary>
+    Task<MemoryRecord?> GetAsync(string id, CancellationToken cancellationToken = default);
+
+    /// <summary>Replace a memory's text, returning the updated record, or <c>null</c>
+    /// if it does not exist.</summary>
+    Task<MemoryRecord?> UpdateAsync(string id, string text, CancellationToken cancellationToken = default);
+
+    /// <summary>Delete a memory. Returns <c>false</c> if it did not exist.</summary>
+    Task<bool> DeleteAsync(string id, CancellationToken cancellationToken = default);
+}
