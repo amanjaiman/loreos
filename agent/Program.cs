@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Text;
 
 namespace Lore.Agent;
 
@@ -11,6 +10,6 @@ internal static class Program
     {
         Version version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0);
         Console.WriteLine($"LoreAgent {version.ToString(3)}");
-        return 0;
+                return 0;
     }
 }
