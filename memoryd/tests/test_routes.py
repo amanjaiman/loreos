@@ -77,7 +77,7 @@ def test_missing_id_returns_404(client: TestClient, sample_config: dict[str, Any
 
 
 def test_configure_error_returns_generic_message(sample_config: dict[str, Any]) -> None:
-    secret = "sk-secret-key-12345"
+    secret = "fake-token-12345"
 
     def failing_factory(_cfg: ConfigRequest) -> NoReturn:
         raise ValueError(f"Invalid API key: {secret}")
@@ -95,6 +95,6 @@ def test_health_still_ok(client: TestClient) -> None:
 
 
 def test_redact_masks_sk_token() -> None:
-    assert _redact("Incorrect API key: sk-proj-abc123XYZ") == "Incorrect API key: [REDACTED]"
+    assert _redact("Incorrect API key: sk-proj-abc123XYZ") == "Incorrect API key: [REDACTED]"  # gitleaks:allow
     assert _redact("Bearer eyJhbGc.some.token") == "[REDACTED]"
     assert _redact("no secrets here") == "no secrets here"
