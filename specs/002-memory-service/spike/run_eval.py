@@ -119,8 +119,12 @@ def main() -> None:
         for e in events:
             event_counts[e] = event_counts.get(e, 0) + 1
         add_records.append(
-            {"obs_id": o["id"], "latency_s": round(elapsed, 3), "events": events,
-             "memories": [r.get("memory") for r in results] if isinstance(results, list) else []}
+            {
+                "obs_id": o["id"],
+                "latency_s": round(elapsed, 3),
+                "events": events,
+                "memories": [r.get("memory") for r in results] if isinstance(results, list) else [],
+            }
         )
         if i % 10 == 0:
             print(f"[{i}/{len(observations)}] {o['id']} events={events} {elapsed:.2f}s")
@@ -144,8 +148,13 @@ def main() -> None:
         joined = " || ".join(texts).lower()
         hit = any(kw.lower() in joined for kw in keywords) if keywords else None
         search_records.append(
-            {"query": query, "latency_s": round(elapsed, 3), "hit": hit,
-             "expect_keywords": keywords, "top": texts[:3]}
+            {
+                "query": query,
+                "latency_s": round(elapsed, 3),
+                "hit": hit,
+                "expect_keywords": keywords,
+                "top": texts[:3],
+            }
         )
 
     add_latencies = [r["latency_s"] for r in add_records if "latency_s" in r]
@@ -154,8 +163,12 @@ def main() -> None:
     scored = [r for r in search_records if r["hit"] is not None]
 
     summary = {
-        "stack": {"llm": LLM_MODEL, "embedder": EMBED_MODEL, "embed_dims": EMBED_DIMS,
-                  "vector_store": "qdrant-on-disk"},
+        "stack": {
+            "llm": LLM_MODEL,
+            "embedder": EMBED_MODEL,
+            "embed_dims": EMBED_DIMS,
+            "vector_store": "qdrant-on-disk",
+        },
         "observations_in": len(observations),
         "memories_out": final_count,
         "event_counts": event_counts,
@@ -169,7 +182,9 @@ def main() -> None:
         "summary": summary,
         "add_records": add_records,
         "search_records": search_records,
-        "final_memories": [r.get("memory") for r in all_results] if isinstance(all_results, list) else [],
+        "final_memories": [r.get("memory") for r in all_results]
+        if isinstance(all_results, list)
+        else [],
     }
     out_path = here / args.out
     out_path.write_text(json.dumps(out, indent=2), encoding="utf-8")
