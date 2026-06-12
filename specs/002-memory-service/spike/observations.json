@@ -1,0 +1,2077 @@
+{
+  "observations": [
+    {
+      "id": "a1",
+      "text": "The user's main code editor is Visual Studio Code.",
+      "domain": "preferences",
+      "dedup_group": "editor",
+      "contradicts": null,
+      "tags": [
+        "editor"
+      ]
+    },
+    {
+      "id": "a2",
+      "text": "User spends most of their coding time inside VS Code.",
+      "domain": "preferences",
+      "dedup_group": "editor",
+      "contradicts": null,
+      "tags": [
+        "editor"
+      ]
+    },
+    {
+      "id": "a3",
+      "text": "Observed the user editing files in Visual Studio Code again today.",
+      "domain": "preferences",
+      "dedup_group": "editor",
+      "contradicts": null,
+      "tags": [
+        "editor"
+      ]
+    },
+    {
+      "id": "a4",
+      "text": "The user has switched their primary editor from VS Code to Neovim.",
+      "domain": "preferences",
+      "dedup_group": null,
+      "contradicts": "a1",
+      "tags": [
+        "editor"
+      ]
+    },
+    {
+      "id": "b1",
+      "text": "The user lives in Seattle.",
+      "domain": "personal",
+      "dedup_group": "city",
+      "contradicts": null,
+      "tags": [
+        "location"
+      ]
+    },
+    {
+      "id": "b2",
+      "text": "User mentioned being based in Seattle, Washington.",
+      "domain": "personal",
+      "dedup_group": "city",
+      "contradicts": null,
+      "tags": [
+        "location"
+      ]
+    },
+    {
+      "id": "b3",
+      "text": "The user is relocating to Austin, Texas next month.",
+      "domain": "personal",
+      "dedup_group": null,
+      "contradicts": "b1",
+      "tags": [
+        "location"
+      ]
+    },
+    {
+      "id": "c1",
+      "text": "The Memory Service spec (002) is due for review by June 20.",
+      "domain": "work",
+      "dedup_group": "deadline002",
+      "contradicts": null,
+      "tags": [
+        "deadline",
+        "lore"
+      ]
+    },
+    {
+      "id": "c2",
+      "text": "User noted the 002 memory-service review deadline is June 20.",
+      "domain": "work",
+      "dedup_group": "deadline002",
+      "contradicts": null,
+      "tags": [
+        "deadline",
+        "lore"
+      ]
+    },
+    {
+      "id": "d1",
+      "text": "The user is vegetarian.",
+      "domain": "health",
+      "dedup_group": "diet",
+      "contradicts": null,
+      "tags": [
+        "diet"
+      ]
+    },
+    {
+      "id": "d2",
+      "text": "User selected the vegetarian option when ordering lunch.",
+      "domain": "health",
+      "dedup_group": "diet",
+      "contradicts": null,
+      "tags": [
+        "diet"
+      ]
+    },
+    {
+      "id": "d3",
+      "text": "The user has started eating fish again and now describes themselves as pescatarian.",
+      "domain": "health",
+      "dedup_group": null,
+      "contradicts": "d1",
+      "tags": [
+        "diet"
+      ]
+    },
+    {
+      "id": "s1",
+      "text": "The user booked a flight to Tokyo departing March 14 on United Airlines.",
+      "domain": "travel",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "travel",
+        "flight"
+      ]
+    },
+    {
+      "id": "s2",
+      "text": "User is allergic to penicillin.",
+      "domain": "health",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "medical",
+        "allergy"
+      ]
+    },
+    {
+      "id": "s3",
+      "text": "The user's manager is named Priya Natarajan.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "people",
+        "manager"
+      ]
+    },
+    {
+      "id": "s4",
+      "text": "The user is learning to play the cello, practicing about 30 minutes a day.",
+      "domain": "hobby",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "music",
+        "learning"
+      ]
+    },
+    {
+      "id": "s5",
+      "text": "The user prefers dark mode in every application.",
+      "domain": "preferences",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "ui"
+      ]
+    },
+    {
+      "id": "s6",
+      "text": "User's car is a 2019 Subaru Outback, due for an oil change at 60k miles.",
+      "domain": "personal",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "car"
+      ]
+    },
+    {
+      "id": "s7",
+      "text": "The user is reading 'The Three-Body Problem' by Liu Cixin.",
+      "domain": "hobby",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "reading"
+      ]
+    },
+    {
+      "id": "s8",
+      "text": "User pays for a Spotify Family plan shared with three relatives.",
+      "domain": "finance",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "subscription"
+      ]
+    },
+    {
+      "id": "f000",
+      "text": "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f001",
+      "text": "User opened a pull request titled 'add search route' on GitHub.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f002",
+      "text": "The user is reviewing the onboarding document in a browser tab.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f003",
+      "text": "User joined a video call with the memory team in Microsoft Teams.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f004",
+      "text": "The user wrote a Slack message to #design-review about Qdrant tuning.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f005",
+      "text": "The user is reading the PyInstaller documentation page on single-file builds.",
+      "domain": "learning",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f006",
+      "text": "User watched a tutorial about Electron on YouTube.",
+      "domain": "learning",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f007",
+      "text": "The user searched for hotels in Chicago for the October trip.",
+      "domain": "travel",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f008",
+      "text": "User added a webcam to their Amazon cart.",
+      "domain": "shopping",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f009",
+      "text": "The user compared prices for a noise-cancelling headphones across two retailer sites.",
+      "domain": "shopping",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f010",
+      "text": "The user reviewed their Ally checking account balance.",
+      "domain": "finance",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f011",
+      "text": "User scheduled a car service appointment for October.",
+      "domain": "personal",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f012",
+      "text": "The user browsed recipes for thai curry on a cooking blog.",
+      "domain": "hobby",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f013",
+      "text": "User replied to an email from the recruiter about the new embedder.",
+      "domain": "communication",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f014",
+      "text": "The user is debugging a memory leak in routes.py inside their IDE.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f015",
+      "text": "User opened a pull request titled 'fix health gate backoff' on GitHub.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f016",
+      "text": "The user is reviewing the privacy document in a browser tab.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f017",
+      "text": "User joined a video call with the infra team in Microsoft Teams.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f018",
+      "text": "The user wrote a Slack message to #incidents about the new embedder.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f019",
+      "text": "The user is reading the PyInstaller documentation page on vector search.",
+      "domain": "learning",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f020",
+      "text": "User watched a tutorial about Electron on YouTube.",
+      "domain": "learning",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f021",
+      "text": "The user searched for hotels in Denver for the August trip.",
+      "domain": "travel",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f022",
+      "text": "User added a standing desk mat to their Amazon cart.",
+      "domain": "shopping",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f023",
+      "text": "The user compared prices for a webcam across two retailer sites.",
+      "domain": "shopping",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f024",
+      "text": "The user reviewed their Chase checking account balance.",
+      "domain": "finance",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f025",
+      "text": "User scheduled a haircut appointment for August.",
+      "domain": "personal",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f026",
+      "text": "The user browsed recipes for sourdough bread on a cooking blog.",
+      "domain": "hobby",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f027",
+      "text": "User replied to an email from Dana about a flaky test.",
+      "domain": "communication",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f028",
+      "text": "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f029",
+      "text": "User opened a pull request titled 'remote engine mode' on GitHub.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f030",
+      "text": "The user is reviewing the architecture document in a browser tab.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f031",
+      "text": "User joined a video call with the design team in Microsoft Teams.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f032",
+      "text": "The user wrote a Slack message to #random about a flaky test.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f033",
+      "text": "The user is reading the PyInstaller documentation page on hooks.",
+      "domain": "learning",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f034",
+      "text": "User watched a tutorial about Electron on YouTube.",
+      "domain": "learning",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f035",
+      "text": "The user searched for hotels in Portland for the October trip.",
+      "domain": "travel",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f036",
+      "text": "User added a USB-C hub to their Amazon cart.",
+      "domain": "shopping",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f037",
+      "text": "The user compared prices for a standing desk mat across two retailer sites.",
+      "domain": "shopping",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f038",
+      "text": "The user reviewed their local credit union checking account balance.",
+      "domain": "finance",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f039",
+      "text": "User scheduled a car service appointment for October.",
+      "domain": "personal",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f040",
+      "text": "The user browsed recipes for ramen on a cooking blog.",
+      "domain": "hobby",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f041",
+      "text": "User replied to an email from Marcus about the release date.",
+      "domain": "communication",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f042",
+      "text": "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f043",
+      "text": "User opened a pull request titled 'wire DI container' on GitHub.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f044",
+      "text": "The user is reviewing the release notes document in a browser tab.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f045",
+      "text": "User joined a video call with the platform team in Microsoft Teams.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f046",
+      "text": "The user wrote a Slack message to #lore-eng about the release date.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f047",
+      "text": "The user is reading the PyInstaller documentation page on single-file builds.",
+      "domain": "learning",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f048",
+      "text": "User watched a tutorial about Electron on YouTube.",
+      "domain": "learning",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f049",
+      "text": "The user searched for hotels in Boston for the August trip.",
+      "domain": "travel",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f050",
+      "text": "User added a mechanical keyboard to their Amazon cart.",
+      "domain": "shopping",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f051",
+      "text": "The user compared prices for a USB-C hub across two retailer sites.",
+      "domain": "shopping",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f052",
+      "text": "The user reviewed their Ally checking account balance.",
+      "domain": "finance",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f053",
+      "text": "User scheduled a haircut appointment for August.",
+      "domain": "personal",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f054",
+      "text": "The user browsed recipes for risotto on a cooking blog.",
+      "domain": "hobby",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f055",
+      "text": "User replied to an email from Priya about the spike results.",
+      "domain": "communication",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f056",
+      "text": "The user is debugging a memory leak in routes.py inside their IDE.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f057",
+      "text": "User opened a pull request titled 'pin mem0 version' on GitHub.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f058",
+      "text": "The user is reviewing the API reference document in a browser tab.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f059",
+      "text": "User joined a video call with the capture team in Microsoft Teams.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f060",
+      "text": "The user wrote a Slack message to #dev about the spike results.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f061",
+      "text": "The user is reading the PyInstaller documentation page on vector search.",
+      "domain": "learning",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f062",
+      "text": "User watched a tutorial about Electron on YouTube.",
+      "domain": "learning",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f063",
+      "text": "The user searched for hotels in Vancouver for the October trip.",
+      "domain": "travel",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f064",
+      "text": "User added a noise-cancelling headphones to their Amazon cart.",
+      "domain": "shopping",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f065",
+      "text": "The user compared prices for a mechanical keyboard across two retailer sites.",
+      "domain": "shopping",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f066",
+      "text": "The user reviewed their Chase checking account balance.",
+      "domain": "finance",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f067",
+      "text": "User scheduled a car service appointment for October.",
+      "domain": "personal",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f068",
+      "text": "The user browsed recipes for tacos on a cooking blog.",
+      "domain": "hobby",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f069",
+      "text": "User replied to an email from a vendor about Qdrant tuning.",
+      "domain": "communication",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f070",
+      "text": "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f071",
+      "text": "User opened a pull request titled 'add search route' on GitHub.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f072",
+      "text": "The user is reviewing the onboarding document in a browser tab.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f073",
+      "text": "User joined a video call with the memory team in Microsoft Teams.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f074",
+      "text": "The user wrote a Slack message to #design-review about Qdrant tuning.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f075",
+      "text": "The user is reading the PyInstaller documentation page on hooks.",
+      "domain": "learning",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f076",
+      "text": "User watched a tutorial about Electron on YouTube.",
+      "domain": "learning",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f077",
+      "text": "The user searched for hotels in Chicago for the August trip.",
+      "domain": "travel",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f078",
+      "text": "User added a webcam to their Amazon cart.",
+      "domain": "shopping",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f079",
+      "text": "The user compared prices for a noise-cancelling headphones across two retailer sites.",
+      "domain": "shopping",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f080",
+      "text": "The user reviewed their local credit union checking account balance.",
+      "domain": "finance",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f081",
+      "text": "User scheduled a haircut appointment for August.",
+      "domain": "personal",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f082",
+      "text": "The user browsed recipes for thai curry on a cooking blog.",
+      "domain": "hobby",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f083",
+      "text": "User replied to an email from the recruiter about the new embedder.",
+      "domain": "communication",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f084",
+      "text": "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f085",
+      "text": "User opened a pull request titled 'fix health gate backoff' on GitHub.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f086",
+      "text": "The user is reviewing the privacy document in a browser tab.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f087",
+      "text": "User joined a video call with the infra team in Microsoft Teams.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f088",
+      "text": "The user wrote a Slack message to #incidents about the new embedder.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f089",
+      "text": "The user is reading the PyInstaller documentation page on single-file builds.",
+      "domain": "learning",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f090",
+      "text": "User watched a tutorial about Electron on YouTube.",
+      "domain": "learning",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f091",
+      "text": "The user searched for hotels in Denver for the October trip.",
+      "domain": "travel",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f092",
+      "text": "User added a standing desk mat to their Amazon cart.",
+      "domain": "shopping",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f093",
+      "text": "The user compared prices for a webcam across two retailer sites.",
+      "domain": "shopping",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f094",
+      "text": "The user reviewed their Ally checking account balance.",
+      "domain": "finance",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f095",
+      "text": "User scheduled a car service appointment for October.",
+      "domain": "personal",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f096",
+      "text": "The user browsed recipes for sourdough bread on a cooking blog.",
+      "domain": "hobby",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f097",
+      "text": "User replied to an email from Dana about a flaky test.",
+      "domain": "communication",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f098",
+      "text": "The user is debugging a memory leak in routes.py inside their IDE.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f099",
+      "text": "User opened a pull request titled 'remote engine mode' on GitHub.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f100",
+      "text": "The user is reviewing the architecture document in a browser tab.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f101",
+      "text": "User joined a video call with the design team in Microsoft Teams.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f102",
+      "text": "The user wrote a Slack message to #random about a flaky test.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f103",
+      "text": "The user is reading the PyInstaller documentation page on vector search.",
+      "domain": "learning",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f104",
+      "text": "User watched a tutorial about Electron on YouTube.",
+      "domain": "learning",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f105",
+      "text": "The user searched for hotels in Portland for the August trip.",
+      "domain": "travel",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f106",
+      "text": "User added a USB-C hub to their Amazon cart.",
+      "domain": "shopping",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f107",
+      "text": "The user compared prices for a standing desk mat across two retailer sites.",
+      "domain": "shopping",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f108",
+      "text": "The user reviewed their Chase checking account balance.",
+      "domain": "finance",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f109",
+      "text": "User scheduled a haircut appointment for August.",
+      "domain": "personal",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f110",
+      "text": "The user browsed recipes for ramen on a cooking blog.",
+      "domain": "hobby",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f111",
+      "text": "User replied to an email from Marcus about the release date.",
+      "domain": "communication",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f112",
+      "text": "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f113",
+      "text": "User opened a pull request titled 'wire DI container' on GitHub.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f114",
+      "text": "The user is reviewing the release notes document in a browser tab.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f115",
+      "text": "User joined a video call with the platform team in Microsoft Teams.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f116",
+      "text": "The user wrote a Slack message to #lore-eng about the release date.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f117",
+      "text": "The user is reading the PyInstaller documentation page on hooks.",
+      "domain": "learning",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f118",
+      "text": "User watched a tutorial about Electron on YouTube.",
+      "domain": "learning",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f119",
+      "text": "The user searched for hotels in Boston for the October trip.",
+      "domain": "travel",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f120",
+      "text": "User added a mechanical keyboard to their Amazon cart.",
+      "domain": "shopping",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f121",
+      "text": "The user compared prices for a USB-C hub across two retailer sites.",
+      "domain": "shopping",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f122",
+      "text": "The user reviewed their local credit union checking account balance.",
+      "domain": "finance",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f123",
+      "text": "User scheduled a car service appointment for October.",
+      "domain": "personal",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f124",
+      "text": "The user browsed recipes for risotto on a cooking blog.",
+      "domain": "hobby",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f125",
+      "text": "User replied to an email from Priya about the spike results.",
+      "domain": "communication",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f126",
+      "text": "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f127",
+      "text": "User opened a pull request titled 'pin mem0 version' on GitHub.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f128",
+      "text": "The user is reviewing the API reference document in a browser tab.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f129",
+      "text": "User joined a video call with the capture team in Microsoft Teams.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f130",
+      "text": "The user wrote a Slack message to #dev about the spike results.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f131",
+      "text": "The user is reading the PyInstaller documentation page on single-file builds.",
+      "domain": "learning",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f132",
+      "text": "User watched a tutorial about Electron on YouTube.",
+      "domain": "learning",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f133",
+      "text": "The user searched for hotels in Vancouver for the August trip.",
+      "domain": "travel",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f134",
+      "text": "User added a noise-cancelling headphones to their Amazon cart.",
+      "domain": "shopping",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f135",
+      "text": "The user compared prices for a mechanical keyboard across two retailer sites.",
+      "domain": "shopping",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f136",
+      "text": "The user reviewed their Ally checking account balance.",
+      "domain": "finance",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f137",
+      "text": "User scheduled a haircut appointment for August.",
+      "domain": "personal",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f138",
+      "text": "The user browsed recipes for tacos on a cooking blog.",
+      "domain": "hobby",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f139",
+      "text": "User replied to an email from a vendor about Qdrant tuning.",
+      "domain": "communication",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f140",
+      "text": "The user is debugging a memory leak in routes.py inside their IDE.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f141",
+      "text": "User opened a pull request titled 'add search route' on GitHub.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f142",
+      "text": "The user is reviewing the onboarding document in a browser tab.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f143",
+      "text": "User joined a video call with the memory team in Microsoft Teams.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f144",
+      "text": "The user wrote a Slack message to #design-review about Qdrant tuning.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f145",
+      "text": "The user is reading the PyInstaller documentation page on vector search.",
+      "domain": "learning",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f146",
+      "text": "User watched a tutorial about Electron on YouTube.",
+      "domain": "learning",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f147",
+      "text": "The user searched for hotels in Chicago for the October trip.",
+      "domain": "travel",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f148",
+      "text": "User added a webcam to their Amazon cart.",
+      "domain": "shopping",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f149",
+      "text": "The user compared prices for a noise-cancelling headphones across two retailer sites.",
+      "domain": "shopping",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f150",
+      "text": "The user reviewed their Chase checking account balance.",
+      "domain": "finance",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f151",
+      "text": "User scheduled a car service appointment for October.",
+      "domain": "personal",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f152",
+      "text": "The user browsed recipes for thai curry on a cooking blog.",
+      "domain": "hobby",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f153",
+      "text": "User replied to an email from the recruiter about the new embedder.",
+      "domain": "communication",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f154",
+      "text": "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f155",
+      "text": "User opened a pull request titled 'fix health gate backoff' on GitHub.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f156",
+      "text": "The user is reviewing the privacy document in a browser tab.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f157",
+      "text": "User joined a video call with the infra team in Microsoft Teams.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f158",
+      "text": "The user wrote a Slack message to #incidents about the new embedder.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f159",
+      "text": "The user is reading the PyInstaller documentation page on hooks.",
+      "domain": "learning",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f160",
+      "text": "User watched a tutorial about Electron on YouTube.",
+      "domain": "learning",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f161",
+      "text": "The user searched for hotels in Denver for the August trip.",
+      "domain": "travel",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f162",
+      "text": "User added a standing desk mat to their Amazon cart.",
+      "domain": "shopping",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f163",
+      "text": "The user compared prices for a webcam across two retailer sites.",
+      "domain": "shopping",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f164",
+      "text": "The user reviewed their local credit union checking account balance.",
+      "domain": "finance",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f165",
+      "text": "User scheduled a haircut appointment for August.",
+      "domain": "personal",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f166",
+      "text": "The user browsed recipes for sourdough bread on a cooking blog.",
+      "domain": "hobby",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f167",
+      "text": "User replied to an email from Dana about a flaky test.",
+      "domain": "communication",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f168",
+      "text": "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f169",
+      "text": "User opened a pull request titled 'remote engine mode' on GitHub.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f170",
+      "text": "The user is reviewing the architecture document in a browser tab.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f171",
+      "text": "User joined a video call with the design team in Microsoft Teams.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f172",
+      "text": "The user wrote a Slack message to #random about a flaky test.",
+      "domain": "work",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f173",
+      "text": "The user is reading the PyInstaller documentation page on single-file builds.",
+      "domain": "learning",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f174",
+      "text": "User watched a tutorial about Electron on YouTube.",
+      "domain": "learning",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f175",
+      "text": "The user searched for hotels in Portland for the October trip.",
+      "domain": "travel",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f176",
+      "text": "User added a USB-C hub to their Amazon cart.",
+      "domain": "shopping",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f177",
+      "text": "The user compared prices for a standing desk mat across two retailer sites.",
+      "domain": "shopping",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f178",
+      "text": "The user reviewed their Ally checking account balance.",
+      "domain": "finance",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    },
+    {
+      "id": "f179",
+      "text": "User scheduled a car service appointment for October.",
+      "domain": "personal",
+      "dedup_group": null,
+      "contradicts": null,
+      "tags": [
+        "filler"
+      ]
+    }
+  ],
+  "search_queries": [
+    {
+      "query": "What editor does the user use?",
+      "expect": [
+        "a4"
+      ],
+      "note": "post-update truth"
+    },
+    {
+      "query": "Where does the user live?",
+      "expect": [
+        "b3"
+      ],
+      "note": "post-update truth"
+    },
+    {
+      "query": "Does the user have any allergies?",
+      "expect": [
+        "s2"
+      ]
+    },
+    {
+      "query": "What are the user's dietary restrictions?",
+      "expect": [
+        "d3"
+      ],
+      "note": "pescatarian now"
+    },
+    {
+      "query": "Who is the user's manager?",
+      "expect": [
+        "s3"
+      ]
+    },
+    {
+      "query": "What flights has the user booked?",
+      "expect": [
+        "s1"
+      ]
+    },
+    {
+      "query": "What instrument is the user learning?",
+      "expect": [
+        "s4"
+      ]
+    },
+    {
+      "query": "What car does the user drive?",
+      "expect": [
+        "s6"
+      ]
+    },
+    {
+      "query": "When is the memory service spec due?",
+      "expect": [
+        "c1",
+        "c2"
+      ]
+    },
+    {
+      "query": "What book is the user reading?",
+      "expect": [
+        "s7"
+      ]
+    }
+  ],
+  "count": 200
+}

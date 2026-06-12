@@ -62,8 +62,10 @@ launch.
    endpoints) and matches the code; `docs/multi-device.md` walkthrough works.
 5. The security pass is documented; `gitleaks` is clean over the full history; the
    trust-critical paths are confirmed.
-6. Roadmap, good-first-issues, and the launch checklist exist; the repo is ready to
-   be made public.
+6. Roadmap, good-first-issues, and the launch checklist exist; the repo has been
+   made public and branch protection requiring the four CI checks (`csharp`,
+   `python`, `app`, `secrets`) is active on the default branch (completing the
+   spec 001 / T009 deferral).
 
 ## Non-functional requirements
 

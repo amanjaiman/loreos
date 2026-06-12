@@ -1,0 +1,14 @@
+# Spike build/run artifacts. Tracked: the harness scripts, the corpus
+# (observations.json), and the evidence behind the report (anchors_clean.json =
+# validated anchor run, results_full.json = full-corpus run). Everything below is
+# regenerable and not committed.
+build/
+build_slim/
+dist/
+__pycache__/
+*.spec
+*.log
+# Contaminated/superseded intermediate runs (see spike-findings.md Finding 2):
+anchors.json
+anchors_qwen.json
+smoke.json

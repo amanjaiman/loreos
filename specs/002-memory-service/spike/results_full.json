@@ -1,0 +1,4797 @@
+{
+  "summary": {
+    "stack": {
+      "llm": "qwen2.5:7b-instruct",
+      "embedder": "nomic-embed-text",
+      "embed_dims": 768,
+      "vector_store": "qdrant-on-disk"
+    },
+    "observations_in": 200,
+    "memories_out": 1000,
+    "event_counts": {
+      "ADD": 1077,
+      "UPDATE": 0,
+      "DELETE": 0,
+      "NONE": 0
+    },
+    "add_total_s": 1949.5,
+    "add_latency_s": {
+      "n": 200,
+      "min": 1.653,
+      "p50": 14.193,
+      "p95": 17.895,
+      "max": 20.28,
+      "mean": 9.747
+    },
+    "search_latency_s": {
+      "n": 10,
+      "min": 0.055,
+      "p50": 0.056,
+      "p95": 0.061,
+      "max": 0.061,
+      "mean": 0.057
+    },
+    "search_hit_rate": "9/10"
+  },
+  "add_records": [
+    {
+      "obs_id": "a1",
+      "latency_s": 7.251,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user's main code editor is Visual Studio Code."
+      ]
+    },
+    {
+      "obs_id": "a2",
+      "latency_s": 4.298,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "User spends most of their coding time inside VS Code."
+      ]
+    },
+    {
+      "obs_id": "a3",
+      "latency_s": 1.773,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "a4",
+      "latency_s": 3.12,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user has switched their primary editor from VS Code to Neovim."
+      ]
+    },
+    {
+      "obs_id": "b1",
+      "latency_s": 2.52,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user lives in Seattle."
+      ]
+    },
+    {
+      "obs_id": "b2",
+      "latency_s": 3.16,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user lives in Seattle, Washington."
+      ]
+    },
+    {
+      "obs_id": "b3",
+      "latency_s": 2.729,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user is relocating to Austin, Texas next month."
+      ]
+    },
+    {
+      "obs_id": "c1",
+      "latency_s": 3.594,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The Memory Service spec (002) is due for review by June 20, 2026."
+      ]
+    },
+    {
+      "obs_id": "c2",
+      "latency_s": 1.802,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "d1",
+      "latency_s": 2.72,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user is vegetarian."
+      ]
+    },
+    {
+      "obs_id": "d2",
+      "latency_s": 2.882,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "User selected the vegetarian option when ordering lunch."
+      ]
+    },
+    {
+      "obs_id": "d3",
+      "latency_s": 2.959,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user has started eating fish again and now describes themselves as pescatarian."
+      ]
+    },
+    {
+      "obs_id": "s1",
+      "latency_s": 2.888,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user booked a flight to Tokyo departing March 14 on United Airlines."
+      ]
+    },
+    {
+      "obs_id": "s2",
+      "latency_s": 2.604,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user is allergic to penicillin."
+      ]
+    },
+    {
+      "obs_id": "s3",
+      "latency_s": 14.622,
+      "events": [
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The Memory Service spec (002) is due for review by June 20.",
+        "The user's manager is named Priya Natarajan."
+      ]
+    },
+    {
+      "obs_id": "s4",
+      "latency_s": 3.165,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user is learning to play the cello, practicing about 30 minutes a day."
+      ]
+    },
+    {
+      "obs_id": "s5",
+      "latency_s": 20.28,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The Memory Service spec (002) is due for review by June 20.",
+        "User noted the 002 memory-service review deadline is June 20.",
+        "The user selected the vegetarian option when ordering lunch.",
+        "The user booked a flight to Tokyo departing March 14 on United Airlines.",
+        "The user is learning to play the cello, practicing about 30 minutes a day.",
+        "The user prefers dark mode in every application."
+      ]
+    },
+    {
+      "obs_id": "s6",
+      "latency_s": 7.17,
+      "events": [
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user's car is a 2019 Subaru Outback.",
+        "The user needs an oil change for their car at 60k miles."
+      ]
+    },
+    {
+      "obs_id": "s7",
+      "latency_s": 3.079,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user is reading 'The Three-Body Problem' by Liu Cixin."
+      ]
+    },
+    {
+      "obs_id": "s8",
+      "latency_s": 3.031,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user pays for a Spotify Family plan shared with three relatives."
+      ]
+    },
+    {
+      "obs_id": "f000",
+      "latency_s": 15.002,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user selected the vegetarian option when ordering lunch.",
+        "The user has started eating fish again and now describes themselves as pescatarian.",
+        "The user booked a flight to Tokyo departing March 14 on United Airlines.",
+        "The user is learning to play the cello, practicing about 30 minutes a day.",
+        "The user prefers dark mode in every application.",
+        "The user's car is a 2019 Subaru Outback, due for an oil change at 60k miles."
+      ]
+    },
+    {
+      "obs_id": "f001",
+      "latency_s": 18.946,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user has started eating fish again and now describes themselves as pescatarian.",
+        "The user is learning to play the cello, practicing about 30 minutes a day.",
+        "The user prefers dark mode in every application.",
+        "The user's car is a 2019 Subaru Outback, due for an oil change at 60k miles.",
+        "The user pays for a Spotify Family plan shared with three relatives.",
+        "The user opened a pull request titled 'add search route' on GitHub."
+      ]
+    },
+    {
+      "obs_id": "f002",
+      "latency_s": 18.756,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user booked a flight to Tokyo departing March 14 on United Airlines.",
+        "The user is allergic to penicillin.",
+        "The user is learning to play the cello, practicing about 30 minutes a day.",
+        "The user prefers dark mode in every application.",
+        "The user's car is a 2019 Subaru Outback, due for an oil change at 60k miles.",
+        "The user pays for a Spotify Family plan shared with three relatives.",
+        "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+        "The user opened a pull request titled 'add search route' on GitHub.",
+        "The user is reviewing the onboarding document in a browser tab."
+      ]
+    },
+    {
+      "obs_id": "f003",
+      "latency_s": 19.735,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user is allergic to penicillin.",
+        "The user is learning to play the cello, practicing about 30 minutes a day.",
+        "The user prefers dark mode in every application.",
+        "The user's car is a 2019 Subaru Outback, due for an oil change at 60k miles.",
+        "The user pays for a Spotify Family plan shared with three relatives.",
+        "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+        "The user is reviewing the onboarding document in a browser tab.",
+        "The user joined a video call with the memory team in Microsoft Teams."
+      ]
+    },
+    {
+      "obs_id": "f004",
+      "latency_s": 17.895,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user is learning to play the cello, practicing about 30 minutes a day.",
+        "The user prefers dark mode in every application.",
+        "The user's car is a 2019 Subaru Outback, due for an oil change at 60k miles.",
+        "The user pays for a Spotify Family plan shared with three relatives.",
+        "The user wrote a Slack message to #design-review about Qdrant tuning."
+      ]
+    },
+    {
+      "obs_id": "f005",
+      "latency_s": 18.97,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user is learning to play the cello, practicing about 30 minutes a day.",
+        "The user prefers dark mode in every application.",
+        "The user's car is a 2019 Subaru Outback, due for an oil change at 60k miles.",
+        "The user pays for a Spotify Family plan shared with three relatives.",
+        "The user opened a pull request titled 'add search route' on GitHub.",
+        "The user joined a video call with the memory team in Microsoft Teams.",
+        "The user is reading the PyInstaller documentation page on single-file builds."
+      ]
+    },
+    {
+      "obs_id": "f006",
+      "latency_s": 19.222,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user prefers dark mode in every application.",
+        "The user's car is a 2019 Subaru Outback, due for an oil change at 60k miles.",
+        "The user pays for a Spotify Family plan shared with three relatives.",
+        "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+        "The user opened a pull request titled 'add search route' on GitHub.",
+        "The user is reviewing the onboarding document in a browser tab.",
+        "The user is reading the PyInstaller documentation page on single-file builds.",
+        "The user watched a tutorial about Electron on YouTube."
+      ]
+    },
+    {
+      "obs_id": "f007",
+      "latency_s": 18.745,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user's car is a 2019 Subaru Outback due for an oil change at 60k miles.",
+        "The user is reading 'The Three-Body Problem' by Liu Cixin.",
+        "The user pays for a Spotify Family plan shared with three relatives.",
+        "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+        "The user is reviewing the onboarding document in a browser tab.",
+        "The user joined a video call with the memory team in Microsoft Teams.",
+        "The user wrote a Slack message to #design-review about Qdrant tuning.",
+        "The user is reading the PyInstaller documentation page on single-file builds.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Chicago for the October trip."
+      ]
+    },
+    {
+      "obs_id": "f008",
+      "latency_s": 3.358,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user added a webcam to their Amazon cart."
+      ]
+    },
+    {
+      "obs_id": "f009",
+      "latency_s": 2.824,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user compared prices for noise-cancelling headphones across two retailer sites."
+      ]
+    },
+    {
+      "obs_id": "f010",
+      "latency_s": 2.848,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user reviewed their Ally checking account balance."
+      ]
+    },
+    {
+      "obs_id": "f011",
+      "latency_s": 16.882,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User opened a pull request titled 'add search route' on GitHub.",
+        "User is reviewing the onboarding document in a browser tab.",
+        "User joined a video call with the memory team in Microsoft Teams.",
+        "User wrote a Slack message to #design-review about Qdrant tuning.",
+        "User is reading the PyInstaller documentation page on single-file builds.",
+        "User watched a tutorial about Electron on YouTube.",
+        "User searched for hotels in Chicago for the October trip.",
+        "User added a webcam to their Amazon cart.",
+        "User compared prices for noise-cancelling headphones across two retailer sites.",
+        "User reviewed their Ally checking account balance.",
+        "User scheduled a car service appointment for October."
+      ]
+    },
+    {
+      "obs_id": "f012",
+      "latency_s": 2.937,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user browsed recipes for thai curry on a cooking blog."
+      ]
+    },
+    {
+      "obs_id": "f013",
+      "latency_s": 3.057,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "User replied to an email from the recruiter about the new embedder."
+      ]
+    },
+    {
+      "obs_id": "f014",
+      "latency_s": 17.274,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user wrote a Slack message to #design-review about Qdrant tuning.",
+        "The user is reading the PyInstaller documentation page on single-file builds.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Chicago for the October trip.",
+        "The user added a webcam to their Amazon cart.",
+        "The user compared prices for noise-cancelling headphones across two retailer sites.",
+        "The user reviewed their Ally checking account balance.",
+        "The user scheduled a car service appointment for October.",
+        "The user browsed recipes for thai curry on a cooking blog.",
+        "The user replied to an email from the recruiter about the new embedder.",
+        "The user is debugging a memory leak in routes.py inside their IDE."
+      ]
+    },
+    {
+      "obs_id": "f015",
+      "latency_s": 3.382,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user opened a pull request titled 'fix health gate backoff' on GitHub."
+      ]
+    },
+    {
+      "obs_id": "f016",
+      "latency_s": 17.135,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Chicago for the October trip.",
+        "User added a webcam to their Amazon cart.",
+        "The user compared prices for noise-cancelling headphones across two retailer sites.",
+        "The user reviewed their Ally checking account balance.",
+        "User scheduled a car service appointment for October.",
+        "The user browsed recipes for thai curry on a cooking blog.",
+        "User replied to an email from the recruiter about the new embedder.",
+        "The user is debugging a memory leak in routes.py inside their IDE.",
+        "User opened a pull request titled 'fix health gate backoff' on GitHub.",
+        "The user is reviewing the privacy document in a browser tab."
+      ]
+    },
+    {
+      "obs_id": "f017",
+      "latency_s": 2.918,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user joined a video call with the infra team in Microsoft Teams."
+      ]
+    },
+    {
+      "obs_id": "f018",
+      "latency_s": 12.358,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User added a webcam to their Amazon cart.",
+        "The user compared prices for noise-cancelling headphones across two retailer sites.",
+        "The user reviewed their Ally checking account balance.",
+        "User scheduled a car service appointment for October.",
+        "The user browsed recipes for thai curry on a cooking blog.",
+        "The user wrote a Slack message to #incidents about the new embedder."
+      ]
+    },
+    {
+      "obs_id": "f019",
+      "latency_s": 17.75,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user compared prices for noise-cancelling headphones across two retailer sites.",
+        "The user reviewed their Ally checking account balance.",
+        "User scheduled a car service appointment for October.",
+        "The user browsed recipes for thai curry on a cooking blog.",
+        "User replied to an email from the recruiter about the new embedder.",
+        "The user is debugging a memory leak in routes.py inside their IDE.",
+        "User opened a pull request titled 'fix health gate backoff' on GitHub.",
+        "The user is reviewing the privacy document in a browser tab.",
+        "User joined a video call with the infra team in Microsoft Teams.",
+        "The user wrote a Slack message to #incidents about the new embedder.",
+        "The user is reading the PyInstaller documentation page on vector search."
+      ]
+    },
+    {
+      "obs_id": "f020",
+      "latency_s": 17.616,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user reviewed their Ally checking account balance.",
+        "User scheduled a car service appointment for October.",
+        "User replied to an email from the recruiter about the new embedder.",
+        "The user is debugging a memory leak in routes.py inside their IDE.",
+        "User opened a pull request titled 'fix health gate backoff' on GitHub.",
+        "The user is reviewing the privacy document in a browser tab.",
+        "User joined a video call with the infra team in Microsoft Teams.",
+        "The user wrote a Slack message to #incidents about the new embedder.",
+        "The user is reading the PyInstaller documentation page on vector search."
+      ]
+    },
+    {
+      "obs_id": "f021",
+      "latency_s": 17.84,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user scheduled a car service appointment for October.",
+        "The user browsed recipes for thai curry on a cooking blog.",
+        "The user replied to an email from the recruiter about the new embedder.",
+        "The user is debugging a memory leak in routes.py inside their IDE.",
+        "The user opened a pull request titled 'fix health gate backoff' on GitHub.",
+        "The user is reviewing the privacy document in a browser tab.",
+        "The user joined a video call with the infra team in Microsoft Teams.",
+        "The user wrote a Slack message to #incidents about the new embedder.",
+        "The user is reading the PyInstaller documentation page on vector search.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Denver for the August trip."
+      ]
+    },
+    {
+      "obs_id": "f022",
+      "latency_s": 3.131,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user added a standing desk mat to their Amazon cart."
+      ]
+    },
+    {
+      "obs_id": "f023",
+      "latency_s": 17.792,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user replied to an email from the recruiter about the new embedder.",
+        "The user is debugging a memory leak in routes.py inside their IDE.",
+        "The user opened a pull request titled 'fix health gate backoff' on GitHub.",
+        "The user is reviewing the privacy document in a browser tab.",
+        "The user joined a video call with the infra team in Microsoft Teams.",
+        "The user wrote a Slack message to #incidents about the new embedder.",
+        "The user is reading the PyInstaller documentation page on vector search.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Denver for the August trip.",
+        "The user added a standing desk mat to their Amazon cart.",
+        "The user compared prices for a webcam across two retailer sites."
+      ]
+    },
+    {
+      "obs_id": "f024",
+      "latency_s": 17.624,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user is debugging a memory leak in routes.py inside their IDE.",
+        "User opened a pull request titled 'fix health gate backoff' on GitHub.",
+        "The user is reviewing the privacy document in a browser tab.",
+        "User joined a video call with the infra team in Microsoft Teams.",
+        "The user wrote a Slack message to #incidents about the new embedder.",
+        "The user is reading the PyInstaller documentation page on vector search.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Denver for the August trip.",
+        "The user added a standing desk mat to their Amazon cart.",
+        "The user compared prices for a webcam across two retailer sites.",
+        "The user reviewed their Chase checking account balance."
+      ]
+    },
+    {
+      "obs_id": "f025",
+      "latency_s": 17.06,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User opened a pull request titled 'fix health gate backoff' on GitHub.",
+        "User is reviewing the privacy document in a browser tab.",
+        "User joined a video call with the infra team in Microsoft Teams.",
+        "User wrote a Slack message to #incidents about the new embedder.",
+        "User is reading the PyInstaller documentation page on vector search.",
+        "User watched a tutorial about Electron on YouTube.",
+        "User searched for hotels in Denver for the August trip.",
+        "User added a standing desk mat to their Amazon cart.",
+        "User compared prices for a webcam across two retailer sites.",
+        "User reviewed their Chase checking account balance.",
+        "User scheduled a haircut appointment for August."
+      ]
+    },
+    {
+      "obs_id": "f026",
+      "latency_s": 17.484,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user is reviewing the privacy document in a browser tab.",
+        "The user joined a video call with the infra team in Microsoft Teams.",
+        "The user wrote a Slack message to #incidents about the new embedder.",
+        "The user is reading the PyInstaller documentation page on vector search.",
+        "The user searched for hotels in Denver for the August trip.",
+        "The user added a standing desk mat to their Amazon cart.",
+        "The user compared prices for a webcam across two retailer sites.",
+        "The user reviewed their Chase checking account balance.",
+        "The user scheduled a haircut appointment for August.",
+        "The user browsed recipes for sourdough bread on a cooking blog."
+      ]
+    },
+    {
+      "obs_id": "f027",
+      "latency_s": 18.623,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User joined a video call with the infra team in Microsoft Teams.",
+        "The user is reading the PyInstaller documentation page on vector search.",
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Denver for the August trip.",
+        "The user added a standing desk mat to their Amazon cart.",
+        "The user compared prices for a webcam across two retailer sites.",
+        "The user reviewed their Chase checking account balance.",
+        "User scheduled a haircut appointment for August.",
+        "The user browsed recipes for sourdough bread on a cooking blog.",
+        "User replied to an email from Dana about a flaky test."
+      ]
+    },
+    {
+      "obs_id": "f028",
+      "latency_s": 17.479,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user wrote a Slack message to #incidents about the new embedder.",
+        "The user is reading the PyInstaller documentation page on vector search.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Denver for the August trip.",
+        "The user added a standing desk mat to their Amazon cart.",
+        "The user compared prices for a webcam across two retailer sites.",
+        "The user reviewed their Chase checking account balance.",
+        "The user scheduled a haircut appointment for August.",
+        "The user browsed recipes for sourdough bread on a cooking blog.",
+        "The user replied to an email from Dana about a flaky test.",
+        "The user is debugging a timeout in mem0_factory.py inside their IDE."
+      ]
+    },
+    {
+      "obs_id": "f029",
+      "latency_s": 3.308,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "The user opened a pull request titled 'remote engine mode' on GitHub."
+      ]
+    },
+    {
+      "obs_id": "f030",
+      "latency_s": 16.817,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User watched a tutorial about Electron on YouTube.",
+        "User searched for hotels in Denver for the August trip.",
+        "User added a standing desk mat to their Amazon cart.",
+        "User compared prices for a webcam across two retailer sites.",
+        "User reviewed their Chase checking account balance.",
+        "User scheduled a haircut appointment for August.",
+        "User browsed recipes for sourdough bread on a cooking blog.",
+        "User replied to an email from Dana about a flaky test.",
+        "User is debugging a timeout in mem0_factory.py inside their IDE.",
+        "User opened a pull request titled 'remote engine mode' on GitHub.",
+        "The user is reviewing the architecture document in a browser tab."
+      ]
+    },
+    {
+      "obs_id": "f031",
+      "latency_s": 17.434,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user searched for hotels in Denver for the August trip.",
+        "User added a standing desk mat to their Amazon cart.",
+        "The user compared prices for a webcam across two retailer sites.",
+        "The user reviewed their Chase checking account balance.",
+        "User scheduled a haircut appointment for August.",
+        "The user browsed recipes for sourdough bread on a cooking blog.",
+        "User replied to an email from Dana about a flaky test.",
+        "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+        "User opened a pull request titled 'remote engine mode' on GitHub.",
+        "The user is reviewing the architecture document in a browser tab.",
+        "User joined a video call with the design team in Microsoft Teams."
+      ]
+    },
+    {
+      "obs_id": "f032",
+      "latency_s": 12.334,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User added a standing desk mat to their Amazon cart.",
+        "The user compared prices for a webcam across two retailer sites.",
+        "The user reviewed their Chase checking account balance.",
+        "User scheduled a haircut appointment for August.",
+        "The user browsed recipes for sourdough bread on a cooking blog.",
+        "The user wrote a Slack message to #random about a flaky test."
+      ]
+    },
+    {
+      "obs_id": "f033",
+      "latency_s": 17.683,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user compared prices for a webcam across two retailer sites.",
+        "The user reviewed their Chase checking account balance.",
+        "The user scheduled a haircut appointment for August.",
+        "The user browsed recipes for sourdough bread on a cooking blog.",
+        "The user replied to an email from Dana about a flaky test.",
+        "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+        "The user opened a pull request titled 'remote engine mode' on GitHub.",
+        "The user is reviewing the architecture document in a browser tab.",
+        "The user joined a video call with the design team in Microsoft Teams.",
+        "The user wrote a Slack message to #random about a flaky test.",
+        "The user is reading the PyInstaller documentation page on hooks."
+      ]
+    },
+    {
+      "obs_id": "f034",
+      "latency_s": 1.953,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f035",
+      "latency_s": 17.576,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user scheduled a haircut appointment for August.",
+        "The user browsed recipes for sourdough bread on a cooking blog.",
+        "The user replied to an email from Dana about a flaky test.",
+        "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+        "The user opened a pull request titled 'remote engine mode' on GitHub.",
+        "The user is reviewing the architecture document in a browser tab.",
+        "The user joined a video call with the design team in Microsoft Teams.",
+        "The user wrote a Slack message to #random about a flaky test.",
+        "The user is reading the PyInstaller documentation page on hooks.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Portland for the October trip."
+      ]
+    },
+    {
+      "obs_id": "f036",
+      "latency_s": 3.173,
+      "events": [
+        "ADD"
+      ],
+      "memories": [
+        "User added a USB-C hub to their Amazon cart."
+      ]
+    },
+    {
+      "obs_id": "f037",
+      "latency_s": 17.133,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User replied to an email from Dana about a flaky test.",
+        "User is debugging a timeout in mem0_factory.py inside their IDE.",
+        "User opened a pull request titled 'remote engine mode' on GitHub.",
+        "User is reviewing the architecture document in a browser tab.",
+        "User joined a video call with the design team in Microsoft Teams.",
+        "User wrote a Slack message to #random about a flaky test.",
+        "User is reading the PyInstaller documentation page on hooks.",
+        "User watched a tutorial about Electron on YouTube.",
+        "User searched for hotels in Portland for the October trip.",
+        "User added a USB-C hub to their Amazon cart.",
+        "User compared prices for a standing desk mat across two retailer sites."
+      ]
+    },
+    {
+      "obs_id": "f038",
+      "latency_s": 17.481,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+        "User opened a pull request titled 'remote engine mode' on GitHub.",
+        "The user is reviewing the architecture document in a browser tab.",
+        "User joined a video call with the design team in Microsoft Teams.",
+        "The user wrote a Slack message to #random about a flaky test.",
+        "The user is reading the PyInstaller documentation page on hooks.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Portland for the October trip.",
+        "The user added a USB-C hub to their Amazon cart.",
+        "The user compared prices for a standing desk mat across two retailer sites.",
+        "The user reviewed their local credit union checking account balance."
+      ]
+    },
+    {
+      "obs_id": "f039",
+      "latency_s": 16.016,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User opened a pull request titled 'remote engine mode' on GitHub.",
+        "User is reviewing the architecture document in a browser tab.",
+        "User joined a video call with the design team in Microsoft Teams.",
+        "The user wrote a Slack message to #random about a flaky test.",
+        "User is reading the PyInstaller documentation page on hooks.",
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Portland for the October trip.",
+        "User added a USB-C hub to their Amazon cart.",
+        "The user compared prices for a standing desk mat across two retailer sites.",
+        "User reviewed their local credit union checking account balance."
+      ]
+    },
+    {
+      "obs_id": "f040",
+      "latency_s": 17.41,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user is reviewing the architecture document in a browser tab.",
+        "The user joined a video call with the design team in Microsoft Teams.",
+        "The user wrote a Slack message to #random about a flaky test.",
+        "The user is reading the PyInstaller documentation page on hooks.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Portland for the October trip.",
+        "The user added a USB-C hub to their Amazon cart.",
+        "The user compared prices for a standing desk mat across two retailer sites.",
+        "The user reviewed their local credit union checking account balance.",
+        "User scheduled a car service appointment for October.",
+        "The user browsed recipes for ramen on a cooking blog."
+      ]
+    },
+    {
+      "obs_id": "f041",
+      "latency_s": 17.26,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User joined a video call with the design team in Microsoft Teams.",
+        "The user wrote a Slack message to #random about a flaky test.",
+        "The user is reading the PyInstaller documentation page on hooks.",
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Portland for the October trip.",
+        "User added a USB-C hub to their Amazon cart.",
+        "The user compared prices for a standing desk mat across two retailer sites.",
+        "The user reviewed their local credit union checking account balance.",
+        "User scheduled a car service appointment for October.",
+        "The user browsed recipes for ramen on a cooking blog.",
+        "User replied to an email from Marcus about the release date."
+      ]
+    },
+    {
+      "obs_id": "f042",
+      "latency_s": 16.017,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user wrote a Slack message to #random about a flaky test.",
+        "The user is reading the PyInstaller documentation page on hooks.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Portland for the October trip.",
+        "The user added a USB-C hub to their Amazon cart.",
+        "The user compared prices for a standing desk mat across two retailer sites.",
+        "The user reviewed their local credit union checking account balance.",
+        "The user scheduled a car service appointment for October.",
+        "The user browsed recipes for ramen on a cooking blog.",
+        "The user replied to an email from Marcus about the release date."
+      ]
+    },
+    {
+      "obs_id": "f043",
+      "latency_s": 14.979,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Portland for the October trip.",
+        "The user added a USB-C hub to their Amazon cart.",
+        "The user compared prices for a standing desk mat across two retailer sites.",
+        "The user reviewed their local credit union checking account balance.",
+        "The user scheduled a car service appointment for October.",
+        "The user browsed recipes for ramen on a cooking blog.",
+        "The user replied to an email from Marcus about the release date.",
+        "The user opened a pull request titled 'wire DI container' on GitHub."
+      ]
+    },
+    {
+      "obs_id": "f044",
+      "latency_s": 17.102,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User watched a tutorial about Electron on YouTube.",
+        "User searched for hotels in Portland for the October trip.",
+        "User added a USB-C hub to their Amazon cart.",
+        "User compared prices for a standing desk mat across two retailer sites.",
+        "User reviewed their local credit union checking account balance.",
+        "User scheduled a car service appointment for October.",
+        "User browsed recipes for ramen on a cooking blog.",
+        "User replied to an email from Marcus about the release date.",
+        "User is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+        "User opened a pull request titled 'wire DI container' on GitHub.",
+        "User is reviewing the release notes document in a browser tab."
+      ]
+    },
+    {
+      "obs_id": "f045",
+      "latency_s": 17.606,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user searched for hotels in Portland for the October trip.",
+        "User added a USB-C hub to their Amazon cart.",
+        "The user compared prices for a standing desk mat across two retailer sites.",
+        "The user reviewed their local credit union checking account balance.",
+        "User scheduled a car service appointment for October.",
+        "The user browsed recipes for ramen on a cooking blog.",
+        "User replied to an email from Marcus about the release date.",
+        "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+        "User opened a pull request titled 'wire DI container' on GitHub.",
+        "The user is reviewing the release notes document in a browser tab.",
+        "User joined a video call with the platform team in Microsoft Teams."
+      ]
+    },
+    {
+      "obs_id": "f046",
+      "latency_s": 12.488,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User added a USB-C hub to their Amazon cart.",
+        "The user compared prices for a standing desk mat across two retailer sites.",
+        "The user reviewed their local credit union checking account balance.",
+        "User scheduled a car service appointment for October.",
+        "The user browsed recipes for ramen on a cooking blog.",
+        "The user wrote a Slack message to #lore-eng about the release date."
+      ]
+    },
+    {
+      "obs_id": "f047",
+      "latency_s": 1.922,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f048",
+      "latency_s": 1.807,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f049",
+      "latency_s": 17.518,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user scheduled a car service appointment for October.",
+        "The user browsed recipes for ramen on a cooking blog.",
+        "The user replied to an email from Marcus about the release date.",
+        "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+        "The user opened a pull request titled 'wire DI container' on GitHub.",
+        "The user is reviewing the release notes document in a browser tab.",
+        "The user joined a video call with the platform team in Microsoft Teams.",
+        "The user wrote a Slack message to #lore-eng about the release date.",
+        "The user is reading the PyInstaller documentation page on single-file builds.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Boston for the August trip."
+      ]
+    },
+    {
+      "obs_id": "f050",
+      "latency_s": 17.348,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User browsed recipes for ramen on a cooking blog.",
+        "User replied to an email from Marcus about the release date.",
+        "User is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+        "User opened a pull request titled 'wire DI container' on GitHub.",
+        "User is reviewing the release notes document in a browser tab.",
+        "User joined a video call with the platform team in Microsoft Teams.",
+        "User wrote a Slack message to #lore-eng about the release date.",
+        "User is reading the PyInstaller documentation page on single-file builds.",
+        "User watched a tutorial about Electron on YouTube.",
+        "User searched for hotels in Boston for the August trip.",
+        "User added a mechanical keyboard to their Amazon cart."
+      ]
+    },
+    {
+      "obs_id": "f051",
+      "latency_s": 17.356,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User replied to an email from Marcus about the release date.",
+        "User is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+        "User opened a pull request titled 'wire DI container' on GitHub.",
+        "User is reviewing the release notes document in a browser tab.",
+        "User joined a video call with the platform team in Microsoft Teams.",
+        "User wrote a Slack message to #lore-eng about the release date.",
+        "User is reading the PyInstaller documentation page on single-file builds.",
+        "User watched a tutorial about Electron on YouTube.",
+        "User searched for hotels in Boston for the August trip.",
+        "User added a mechanical keyboard to their Amazon cart.",
+        "User compared prices for a USB-C hub across two retailer sites."
+      ]
+    },
+    {
+      "obs_id": "f052",
+      "latency_s": 16.811,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+        "User opened a pull request titled 'wire DI container' on GitHub.",
+        "The user is reviewing the release notes document in a browser tab.",
+        "User joined a video call with the platform team in Microsoft Teams.",
+        "The user wrote a Slack message to #lore-eng about the release date.",
+        "The user is reading the PyInstaller documentation page on single-file builds.",
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Boston for the August trip.",
+        "User added a mechanical keyboard to their Amazon cart.",
+        "The user compared prices for a USB-C hub across two retailer sites."
+      ]
+    },
+    {
+      "obs_id": "f053",
+      "latency_s": 16.002,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User opened a pull request titled 'wire DI container' on GitHub.",
+        "The user is reviewing the release notes document in a browser tab.",
+        "User joined a video call with the platform team in Microsoft Teams.",
+        "The user wrote a Slack message to #lore-eng about the release date.",
+        "The user is reading the PyInstaller documentation page on single-file builds.",
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Boston for the August trip.",
+        "User added a mechanical keyboard to their Amazon cart.",
+        "The user compared prices for a USB-C hub across two retailer sites.",
+        "The user reviewed their Ally checking account balance."
+      ]
+    },
+    {
+      "obs_id": "f054",
+      "latency_s": 17.273,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user is reviewing release notes in a browser tab.",
+        "The user joined a video call with the platform team in Microsoft Teams.",
+        "The user wrote a Slack message to #lore-eng about the release date.",
+        "The user is reading PyInstaller documentation on single-file builds.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Boston for the August trip.",
+        "The user added a mechanical keyboard to their Amazon cart.",
+        "The user compared prices for a USB-C hub across two retailer sites.",
+        "The user reviewed their Ally checking account balance.",
+        "The user scheduled a haircut appointment for August.",
+        "The user browsed recipes for risotto on a cooking blog."
+      ]
+    },
+    {
+      "obs_id": "f055",
+      "latency_s": 17.27,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User joined a video call with the platform team in Microsoft Teams.",
+        "The user wrote a Slack message to #lore-eng about the release date.",
+        "The user is reading the PyInstaller documentation page on single-file builds.",
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Boston for the August trip.",
+        "The user added a mechanical keyboard to their Amazon cart.",
+        "The user compared prices for a USB-C hub across two retailer sites.",
+        "The user reviewed their Ally checking account balance.",
+        "User scheduled a haircut appointment for August.",
+        "The user browsed recipes for risotto on a cooking blog.",
+        "User replied to an email from Priya about the spike results."
+      ]
+    },
+    {
+      "obs_id": "f056",
+      "latency_s": 1.946,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f057",
+      "latency_s": 17.177,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user is reading the PyInstaller documentation page on single-file builds.",
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Boston for the August trip.",
+        "User added a mechanical keyboard to their Amazon cart.",
+        "The user compared prices for a USB-C hub across two retailer sites.",
+        "The user reviewed their Ally checking account balance.",
+        "User scheduled a haircut appointment for August.",
+        "The user browsed recipes for risotto on a cooking blog.",
+        "User replied to an email from Priya about the spike results.",
+        "The user is debugging a memory leak in routes.py inside their IDE.",
+        "User opened a pull request titled 'pin mem0 version' on GitHub."
+      ]
+    },
+    {
+      "obs_id": "f058",
+      "latency_s": 17.367,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Boston for the August trip.",
+        "The user added a mechanical keyboard to their Amazon cart.",
+        "The user compared prices for a USB-C hub across two retailer sites.",
+        "The user reviewed their Ally checking account balance.",
+        "The user scheduled a haircut appointment for August.",
+        "The user browsed recipes for risotto on a cooking blog.",
+        "The user replied to an email from Priya about the spike results.",
+        "The user is debugging a memory leak in routes.py inside their IDE.",
+        "The user opened a pull request titled 'pin mem0 version' on GitHub.",
+        "The user is reviewing the API reference document in a browser tab."
+      ]
+    },
+    {
+      "obs_id": "f059",
+      "latency_s": 17.392,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user searched for hotels in Boston for the August trip.",
+        "User added a mechanical keyboard to their Amazon cart.",
+        "The user compared prices for a USB-C hub across two retailer sites.",
+        "The user reviewed their Ally checking account balance.",
+        "User scheduled a haircut appointment for August.",
+        "The user browsed recipes for risotto on a cooking blog.",
+        "User replied to an email from Priya about the spike results.",
+        "The user is debugging a memory leak in routes.py inside their IDE.",
+        "User opened a pull request titled 'pin mem0 version' on GitHub.",
+        "The user is reviewing the API reference document in a browser tab.",
+        "User joined a video call with the capture team in Microsoft Teams."
+      ]
+    },
+    {
+      "obs_id": "f060",
+      "latency_s": 12.291,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User added a mechanical keyboard to their Amazon cart.",
+        "The user compared prices for a USB-C hub across two retailer sites.",
+        "The user reviewed their Ally checking account balance.",
+        "User scheduled a haircut appointment for August.",
+        "The user browsed recipes for risotto on a cooking blog.",
+        "The user wrote a Slack message to #dev about the spike results."
+      ]
+    },
+    {
+      "obs_id": "f061",
+      "latency_s": 1.97,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f062",
+      "latency_s": 1.805,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f063",
+      "latency_s": 16.333,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user scheduled a haircut appointment for August.",
+        "The user browsed recipes for risotto on a cooking blog.",
+        "The user replied to an email from Priya about the spike results.",
+        "The user is debugging a memory leak in routes.py inside their IDE.",
+        "The user opened a pull request titled 'pin mem0 version' on GitHub.",
+        "The user is reviewing the API reference document in a browser tab.",
+        "The user joined a video call with the capture team in Microsoft Teams.",
+        "The user wrote a Slack message to #dev about the spike results.",
+        "The user is reading the PyInstaller documentation page on vector search.",
+        "The user watched a tutorial about Electron on YouTube."
+      ]
+    },
+    {
+      "obs_id": "f064",
+      "latency_s": 17.75,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user browsed recipes for risotto on a cooking blog.",
+        "User replied to an email from Priya about the spike results.",
+        "The user is debugging a memory leak in routes.py inside their IDE.",
+        "User opened a pull request titled 'pin mem0 version' on GitHub.",
+        "The user is reviewing the API reference document in a browser tab.",
+        "User joined a video call with the capture team in Microsoft Teams.",
+        "The user wrote a Slack message to #dev about the spike results.",
+        "The user is reading the PyInstaller documentation page on vector search.",
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Vancouver for the October trip.",
+        "User added a noise-cancelling headphones to their Amazon cart."
+      ]
+    },
+    {
+      "obs_id": "f065",
+      "latency_s": 17.758,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user replied to an email from Priya about the spike results.",
+        "The user is debugging a memory leak in routes.py inside their IDE.",
+        "The user opened a pull request titled 'pin mem0 version' on GitHub.",
+        "The user is reviewing the API reference document in a browser tab.",
+        "The user joined a video call with the capture team in Microsoft Teams.",
+        "The user wrote a Slack message to #dev about the spike results.",
+        "The user is reading the PyInstaller documentation page on vector search.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Vancouver for the October trip.",
+        "The user added noise-cancelling headphones to their Amazon cart.",
+        "The user compared prices for a mechanical keyboard across two retailer sites."
+      ]
+    },
+    {
+      "obs_id": "f066",
+      "latency_s": 17.607,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user is debugging a memory leak in routes.py inside their IDE.",
+        "User opened a pull request titled 'pin mem0 version' on GitHub.",
+        "The user is reviewing the API reference document in a browser tab.",
+        "User joined a video call with the capture team in Microsoft Teams.",
+        "The user wrote a Slack message to #dev about the spike results.",
+        "The user is reading the PyInstaller documentation page on vector search.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Vancouver for the October trip.",
+        "User added a noise-cancelling headphones to their Amazon cart.",
+        "The user compared prices for a mechanical keyboard across two retailer sites."
+      ]
+    },
+    {
+      "obs_id": "f067",
+      "latency_s": 1.916,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f068",
+      "latency_s": 15.888,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user is reviewing the API reference document in a browser tab.",
+        "The user joined a video call with the capture team in Microsoft Teams.",
+        "The user wrote a Slack message to #dev about the spike results.",
+        "The user is reading the PyInstaller documentation page on vector search.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Vancouver for the October trip.",
+        "The user added noise-cancelling headphones to their Amazon cart.",
+        "The user compared prices for a mechanical keyboard across two retailer sites.",
+        "The user reviewed their Chase checking account balance.",
+        "The user scheduled a car service appointment for October."
+      ]
+    },
+    {
+      "obs_id": "f069",
+      "latency_s": 17.157,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User joined a video call with the capture team in Microsoft Teams.",
+        "The user wrote a Slack message to #dev about the spike results.",
+        "The user is reading the PyInstaller documentation page on vector search.",
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Vancouver for the October trip.",
+        "The user added a noise-cancelling headphones to their Amazon cart.",
+        "The user compared prices for a mechanical keyboard across two retailer sites.",
+        "The user reviewed their Chase checking account balance.",
+        "User scheduled a car service appointment for October.",
+        "The user browsed recipes for tacos on a cooking blog.",
+        "User replied to an email from a vendor about Qdrant tuning."
+      ]
+    },
+    {
+      "obs_id": "f070",
+      "latency_s": 15.978,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user wrote a Slack message to #dev about the spike results.",
+        "The user is reading the PyInstaller documentation page on vector search.",
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Vancouver for the October trip.",
+        "The user added a noise-cancelling headphones to their Amazon cart.",
+        "The user compared prices for a mechanical keyboard across two retailer sites.",
+        "The user reviewed their Chase checking account balance.",
+        "User scheduled a car service appointment for October.",
+        "The user browsed recipes for tacos on a cooking blog.",
+        "User replied to an email from a vendor about Qdrant tuning."
+      ]
+    },
+    {
+      "obs_id": "f071",
+      "latency_s": 15.987,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user is reading the PyInstaller documentation page on vector search.",
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Vancouver for the October trip.",
+        "User added a noise-cancelling headphones to their Amazon cart.",
+        "The user compared prices for a mechanical keyboard across two retailer sites.",
+        "The user reviewed their Chase checking account balance.",
+        "User scheduled a car service appointment for October.",
+        "The user browsed recipes for tacos on a cooking blog.",
+        "User replied to an email from a vendor about Qdrant tuning.",
+        "The user is debugging a timeout in mem0_factory.py inside their IDE."
+      ]
+    },
+    {
+      "obs_id": "f072",
+      "latency_s": 16.085,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Vancouver for the October trip.",
+        "User added a noise-cancelling headphones to their Amazon cart.",
+        "The user compared prices for a mechanical keyboard across two retailer sites.",
+        "The user reviewed their Chase checking account balance.",
+        "User scheduled a car service appointment for October.",
+        "The user browsed recipes for tacos on a cooking blog.",
+        "User replied to an email from a vendor about Qdrant tuning.",
+        "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+        "User opened a pull request titled 'add search route' on GitHub."
+      ]
+    },
+    {
+      "obs_id": "f073",
+      "latency_s": 1.958,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f074",
+      "latency_s": 16.184,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User added a noise-cancelling headphones to their Amazon cart.",
+        "The user compared prices for a mechanical keyboard across two retailer sites.",
+        "The user reviewed their Chase checking account balance.",
+        "User scheduled a car service appointment for October.",
+        "The user browsed recipes for tacos on a cooking blog.",
+        "The user replied to an email from a vendor about Qdrant tuning.",
+        "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+        "User opened a pull request titled 'add search route' on GitHub.",
+        "The user is reviewing the onboarding document in a browser tab.",
+        "User joined a video call with the memory team in Microsoft Teams."
+      ]
+    },
+    {
+      "obs_id": "f075",
+      "latency_s": 1.91,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f076",
+      "latency_s": 1.801,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f077",
+      "latency_s": 17.602,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user scheduled a car service appointment for October.",
+        "The user browsed recipes for tacos on a cooking blog.",
+        "The user replied to an email from a vendor about Qdrant tuning.",
+        "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+        "The user opened a pull request titled 'add search route' on GitHub.",
+        "The user is reviewing the onboarding document in a browser tab.",
+        "The user joined a video call with the memory team in Microsoft Teams.",
+        "The user wrote a Slack message to #design-review about Qdrant tuning.",
+        "The user is reading the PyInstaller documentation page on hooks.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Chicago for the August trip."
+      ]
+    },
+    {
+      "obs_id": "f078",
+      "latency_s": 1.98,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f079",
+      "latency_s": 1.798,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f080",
+      "latency_s": 17.526,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+        "User opened a pull request titled 'add search route' on GitHub.",
+        "The user is reviewing the onboarding document in a browser tab.",
+        "User joined a video call with the memory team in Microsoft Teams.",
+        "The user wrote a Slack message to #design-review about Qdrant tuning.",
+        "The user is reading the PyInstaller documentation page on hooks.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Chicago for the August trip.",
+        "The user added a webcam to their Amazon cart.",
+        "The user compared prices for a noise-cancelling headphones across two retailer sites."
+      ]
+    },
+    {
+      "obs_id": "f081",
+      "latency_s": 1.979,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f082",
+      "latency_s": 1.806,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f083",
+      "latency_s": 1.803,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f084",
+      "latency_s": 1.804,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f085",
+      "latency_s": 15.903,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user is reading the PyInstaller documentation page on hooks.",
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Chicago for the August trip.",
+        "User added a webcam to their Amazon cart.",
+        "The user compared prices for noise-cancelling headphones across two retailer sites.",
+        "The user reviewed their local credit union checking account balance.",
+        "User scheduled a haircut appointment for August.",
+        "The user browsed recipes for thai curry on a cooking blog.",
+        "User replied to an email from the recruiter about the new embedder.",
+        "The user is debugging a null reference exception in MemorydClient.cs inside their IDE."
+      ]
+    },
+    {
+      "obs_id": "f086",
+      "latency_s": 16.235,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Chicago for the August trip.",
+        "User added a webcam to their Amazon cart.",
+        "The user compared prices for noise-cancelling headphones across two retailer sites.",
+        "The user reviewed their local credit union checking account balance.",
+        "User scheduled a haircut appointment for August.",
+        "The user browsed recipes for thai curry on a cooking blog.",
+        "User replied to an email from the recruiter about the new embedder.",
+        "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+        "User opened a pull request titled 'fix health gate backoff' on GitHub."
+      ]
+    },
+    {
+      "obs_id": "f087",
+      "latency_s": 17.517,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user searched for hotels in Chicago for the August trip.",
+        "User added a webcam to their Amazon cart.",
+        "The user compared prices for noise-cancelling headphones across two retailer sites.",
+        "The user reviewed their local credit union checking account balance.",
+        "User scheduled a haircut appointment for August.",
+        "The user browsed recipes for thai curry on a cooking blog.",
+        "User replied to an email from the recruiter about the new embedder.",
+        "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+        "User opened a pull request titled 'fix health gate backoff' on GitHub.",
+        "The user is reviewing the privacy document in a browser tab."
+      ]
+    },
+    {
+      "obs_id": "f088",
+      "latency_s": 2.017,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f089",
+      "latency_s": 1.804,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f090",
+      "latency_s": 1.808,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f091",
+      "latency_s": 16.584,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user scheduled a haircut appointment for August.",
+        "The user browsed recipes for thai curry on a cooking blog.",
+        "The user replied to an email from the recruiter about the new embedder.",
+        "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+        "The user opened a pull request titled 'fix health gate backoff' on GitHub.",
+        "The user is reviewing the privacy document in a browser tab.",
+        "The user joined a video call with the infra team in Microsoft Teams.",
+        "The user wrote a Slack message to #incidents about the new embedder.",
+        "The user is reading the PyInstaller documentation page on single-file builds.",
+        "The user watched a tutorial about Electron on YouTube."
+      ]
+    },
+    {
+      "obs_id": "f092",
+      "latency_s": 1.959,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f093",
+      "latency_s": 1.808,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f094",
+      "latency_s": 1.801,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f095",
+      "latency_s": 15.974,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User opened a pull request titled 'fix health gate backoff' on GitHub.",
+        "The user is reviewing the privacy document in a browser tab.",
+        "User joined a video call with the infra team in Microsoft Teams.",
+        "The user wrote a Slack message to #incidents about the new embedder.",
+        "The user is reading the PyInstaller documentation page on single-file builds.",
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Denver for the October trip.",
+        "User added a standing desk mat to their Amazon cart.",
+        "The user compared prices for a webcam across two retailer sites.",
+        "The user reviewed their Ally checking account balance."
+      ]
+    },
+    {
+      "obs_id": "f096",
+      "latency_s": 2.024,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f097",
+      "latency_s": 17.032,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User joined a video call with the infra team in Microsoft Teams.",
+        "The user wrote a Slack message to #incidents about the new embedder.",
+        "The user is reading the PyInstaller documentation page on single-file builds.",
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Denver for the October trip.",
+        "User added a standing desk mat to their Amazon cart.",
+        "The user compared prices for a webcam across two retailer sites.",
+        "The user reviewed their Ally checking account balance.",
+        "User scheduled a car service appointment for October.",
+        "The user browsed recipes for sourdough bread on a cooking blog."
+      ]
+    },
+    {
+      "obs_id": "f098",
+      "latency_s": 1.975,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f099",
+      "latency_s": 15.812,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user is reading the PyInstaller documentation page on single-file builds.",
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Denver for the October trip.",
+        "User added a standing desk mat to their Amazon cart.",
+        "The user compared prices for a webcam across two retailer sites.",
+        "User reviewed their Ally checking account balance.",
+        "User scheduled a car service appointment for October.",
+        "The user browsed recipes for sourdough bread on a cooking blog.",
+        "User replied to an email from Dana about a flaky test.",
+        "The user is debugging a memory leak in routes.py inside their IDE."
+      ]
+    },
+    {
+      "obs_id": "f100",
+      "latency_s": 16.138,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Denver for the October trip.",
+        "The user added a standing desk mat to their Amazon cart.",
+        "The user compared prices for a webcam across two retailer sites.",
+        "The user reviewed their Ally checking account balance.",
+        "The user scheduled a car service appointment for October.",
+        "The user browsed recipes for sourdough bread on a cooking blog.",
+        "The user replied to an email from Dana about a flaky test.",
+        "The user is debugging a memory leak in routes.py inside their IDE.",
+        "The user opened a pull request titled 'remote engine mode' on GitHub."
+      ]
+    },
+    {
+      "obs_id": "f101",
+      "latency_s": 16.076,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user searched for hotels in Denver for the October trip.",
+        "User added a standing desk mat to their Amazon cart.",
+        "The user compared prices for a webcam across two retailer sites.",
+        "The user reviewed their Ally checking account balance.",
+        "User scheduled a car service appointment for October.",
+        "The user browsed recipes for sourdough bread on a cooking blog.",
+        "User replied to an email from Dana about a flaky test.",
+        "The user is debugging a memory leak in routes.py inside their IDE.",
+        "User opened a pull request titled 'remote engine mode' on GitHub.",
+        "The user is reviewing the architecture document in a browser tab."
+      ]
+    },
+    {
+      "obs_id": "f102",
+      "latency_s": 16.137,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User added a standing desk mat to their Amazon cart.",
+        "The user compared prices for a webcam across two retailer sites.",
+        "The user reviewed their Ally checking account balance.",
+        "User scheduled a car service appointment for October.",
+        "The user browsed recipes for sourdough bread on a cooking blog.",
+        "User replied to an email from Dana about a flaky test.",
+        "The user is debugging a memory leak in routes.py inside their IDE.",
+        "User opened a pull request titled 'remote engine mode' on GitHub.",
+        "The user is reviewing the architecture document in a browser tab.",
+        "User joined a video call with the design team in Microsoft Teams."
+      ]
+    },
+    {
+      "obs_id": "f103",
+      "latency_s": 2.016,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f104",
+      "latency_s": 1.805,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f105",
+      "latency_s": 18.369,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user scheduled a car service appointment for October.",
+        "The user browsed recipes for sourdough bread on a cooking blog.",
+        "The user replied to an email from Dana about a flaky test.",
+        "The user is debugging a memory leak in routes.py inside their IDE.",
+        "The user opened a pull request titled 'remote engine mode' on GitHub.",
+        "The user is reviewing the architecture document in a browser tab.",
+        "The user joined a video call with the design team in Microsoft Teams.",
+        "The user wrote a Slack message to #random about a flaky test.",
+        "The user is reading the PyInstaller documentation page on vector search.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Portland for the August trip."
+      ]
+    },
+    {
+      "obs_id": "f106",
+      "latency_s": 2.005,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f107",
+      "latency_s": 16.04,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User replied to an email from Dana about a flaky test.",
+        "The user is debugging a memory leak in routes.py inside their IDE.",
+        "User opened a pull request titled 'remote engine mode' on GitHub.",
+        "The user is reviewing the architecture document in a browser tab.",
+        "User joined a video call with the design team in Microsoft Teams.",
+        "The user wrote a Slack message to #random about a flaky test.",
+        "The user is reading the PyInstaller documentation page on vector search.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Portland for the August trip.",
+        "The user added a USB-C hub to their Amazon cart."
+      ]
+    },
+    {
+      "obs_id": "f108",
+      "latency_s": 17.153,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user is debugging a memory leak in routes.py inside their IDE.",
+        "User opened a pull request titled 'remote engine mode' on GitHub.",
+        "The user is reviewing the architecture document in a browser tab.",
+        "User joined a video call with the design team in Microsoft Teams.",
+        "The user wrote a Slack message to #random about a flaky test.",
+        "The user is reading the PyInstaller documentation page on vector search.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Portland for the August trip.",
+        "The user added a USB-C hub to their Amazon cart.",
+        "The user compared prices for a standing desk mat across two retailer sites."
+      ]
+    },
+    {
+      "obs_id": "f109",
+      "latency_s": 15.691,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User opened a pull request titled 'remote engine mode' on GitHub.",
+        "User is reviewing the architecture document in a browser tab.",
+        "User joined a video call with the design team in Microsoft Teams.",
+        "User wrote a Slack message to #random about a flaky test.",
+        "User is reading the PyInstaller documentation page on vector search.",
+        "User watched a tutorial about Electron on YouTube.",
+        "User searched for hotels in Portland for the August trip.",
+        "User added a USB-C hub to their Amazon cart.",
+        "User compared prices for a standing desk mat across two retailer sites.",
+        "User reviewed their Chase checking account balance."
+      ]
+    },
+    {
+      "obs_id": "f110",
+      "latency_s": 1.943,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f111",
+      "latency_s": 16.682,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User joined a video call with the design team in Microsoft Teams.",
+        "The user wrote a Slack message to #random about a flaky test.",
+        "The user is reading the PyInstaller documentation page on vector search.",
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Portland for the August trip.",
+        "User added a USB-C hub to their Amazon cart.",
+        "The user compared prices for a standing desk mat across two retailer sites.",
+        "The user reviewed their Chase checking account balance.",
+        "User scheduled a haircut appointment for August.",
+        "The user browsed recipes for ramen on a cooking blog."
+      ]
+    },
+    {
+      "obs_id": "f112",
+      "latency_s": 15.653,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user wrote a Slack message to #random about a flaky test.",
+        "The user is reading the PyInstaller documentation page on vector search.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "User searched for hotels in Portland for the August trip.",
+        "The user added a USB-C hub to their Amazon cart.",
+        "The user compared prices for a standing desk mat across two retailer sites.",
+        "The user reviewed their Chase checking account balance.",
+        "User scheduled a haircut appointment for August.",
+        "The user browsed recipes for ramen on a cooking blog.",
+        "User replied to an email from Marcus about the release date."
+      ]
+    },
+    {
+      "obs_id": "f113",
+      "latency_s": 15.927,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user is reading the PyInstaller documentation page on vector search.",
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Portland for the August trip.",
+        "User added a USB-C hub to their Amazon cart.",
+        "The user compared prices for a standing desk mat across two retailer sites.",
+        "User reviewed their Chase checking account balance.",
+        "User scheduled a haircut appointment for August.",
+        "The user browsed recipes for ramen on a cooking blog.",
+        "User replied to an email from Marcus about the release date.",
+        "The user is debugging a timeout in mem0_factory.py inside their IDE."
+      ]
+    },
+    {
+      "obs_id": "f114",
+      "latency_s": 1.913,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f115",
+      "latency_s": 15.258,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user searched for hotels in Portland for the August trip.",
+        "User added a USB-C hub to their Amazon cart.",
+        "The user compared prices for a standing desk mat across two retailer sites.",
+        "The user reviewed their Chase checking account balance.",
+        "User scheduled a haircut appointment for August.",
+        "The user browsed recipes for ramen on a cooking blog.",
+        "User replied to an email from Marcus about the release date.",
+        "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+        "User opened a pull request titled 'wire DI container' on GitHub.",
+        "The user is reviewing the release notes document in a browser tab."
+      ]
+    },
+    {
+      "obs_id": "f116",
+      "latency_s": 1.841,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f117",
+      "latency_s": 1.662,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f118",
+      "latency_s": 1.662,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f119",
+      "latency_s": 15.525,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user scheduled a haircut appointment for August.",
+        "The user browsed recipes for ramen on a cooking blog.",
+        "The user replied to an email from Marcus about the release date.",
+        "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+        "The user opened a pull request titled 'wire DI container' on GitHub.",
+        "The user is reviewing the release notes document in a browser tab.",
+        "The user joined a video call with the platform team in Microsoft Teams.",
+        "The user wrote a Slack message to #lore-eng about the release date.",
+        "The user is reading the PyInstaller documentation page on hooks.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Boston for the October trip."
+      ]
+    },
+    {
+      "obs_id": "f120",
+      "latency_s": 1.873,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f121",
+      "latency_s": 1.665,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f122",
+      "latency_s": 1.662,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f123",
+      "latency_s": 1.659,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f124",
+      "latency_s": 1.66,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f125",
+      "latency_s": 14.193,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User joined a video call with the platform team in Microsoft Teams.",
+        "The user wrote a Slack message to #lore-eng about the release date.",
+        "The user is reading the PyInstaller documentation page on hooks.",
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Boston for the October trip.",
+        "The user added a mechanical keyboard to their Amazon cart.",
+        "The user compared prices for a USB-C hub across two retailer sites.",
+        "The user reviewed their local credit union checking account balance.",
+        "User scheduled a car service appointment for October.",
+        "The user browsed recipes for risotto on a cooking blog."
+      ]
+    },
+    {
+      "obs_id": "f126",
+      "latency_s": 1.799,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f127",
+      "latency_s": 14.092,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user is reading the PyInstaller documentation page on hooks.",
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Boston for the October trip.",
+        "User added a mechanical keyboard to their Amazon cart.",
+        "The user compared prices for a USB-C hub across two retailer sites.",
+        "The user reviewed their local credit union checking account balance.",
+        "User scheduled a car service appointment for October.",
+        "The user browsed recipes for risotto on a cooking blog.",
+        "User replied to an email from Priya about the spike results.",
+        "The user is debugging a null reference exception in MemorydClient.cs inside their IDE."
+      ]
+    },
+    {
+      "obs_id": "f128",
+      "latency_s": 14.204,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User watched a tutorial about Electron on YouTube.",
+        "User searched for hotels in Boston for the October trip.",
+        "User added a mechanical keyboard to their Amazon cart.",
+        "User compared prices for a USB-C hub across two retailer sites.",
+        "User reviewed their local credit union checking account balance.",
+        "User scheduled a car service appointment for October.",
+        "User browsed recipes for risotto on a cooking blog.",
+        "User replied to an email from Priya about the spike results.",
+        "User is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+        "User opened a pull request titled 'pin mem0 version' on GitHub."
+      ]
+    },
+    {
+      "obs_id": "f129",
+      "latency_s": 15.732,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user searched for hotels in Boston for the October trip.",
+        "User added a mechanical keyboard to their Amazon cart.",
+        "The user compared prices for a USB-C hub across two retailer sites.",
+        "The user reviewed their local credit union checking account balance.",
+        "User scheduled a car service appointment for October.",
+        "The user browsed recipes for risotto on a cooking blog.",
+        "User replied to an email from Priya about the spike results.",
+        "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+        "User opened a pull request titled 'pin mem0 version' on GitHub.",
+        "The user is reviewing the API reference document in a browser tab."
+      ]
+    },
+    {
+      "obs_id": "f130",
+      "latency_s": 1.829,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f131",
+      "latency_s": 1.663,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f132",
+      "latency_s": 1.656,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f133",
+      "latency_s": 14.714,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user scheduled a car service appointment for October.",
+        "The user browsed recipes for risotto on a cooking blog.",
+        "The user replied to an email from Priya about the spike results.",
+        "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+        "The user opened a pull request titled 'pin mem0 version' on GitHub.",
+        "The user is reviewing the API reference document in a browser tab.",
+        "The user joined a video call with the capture team in Microsoft Teams.",
+        "The user wrote a Slack message to #dev about the spike results.",
+        "The user is reading the PyInstaller documentation page on single-file builds.",
+        "The user watched a tutorial about Electron on YouTube."
+      ]
+    },
+    {
+      "obs_id": "f134",
+      "latency_s": 1.861,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f135",
+      "latency_s": 1.659,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f136",
+      "latency_s": 14.66,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+        "User opened a pull request titled 'pin mem0 version' on GitHub.",
+        "The user is reviewing the API reference document in a browser tab.",
+        "User joined a video call with the capture team in Microsoft Teams.",
+        "The user wrote a Slack message to #dev about the spike results.",
+        "The user is reading the PyInstaller documentation page on single-file builds.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Vancouver for the August trip.",
+        "The user added a noise-cancelling headphones to their Amazon cart.",
+        "The user compared prices for a mechanical keyboard across two retailer sites."
+      ]
+    },
+    {
+      "obs_id": "f137",
+      "latency_s": 14.537,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User opened a pull request titled 'pin mem0 version' on GitHub.",
+        "The user is reviewing the API reference document in a browser tab.",
+        "User joined a video call with the capture team in Microsoft Teams.",
+        "The user wrote a Slack message to #dev about the spike results.",
+        "The user is reading the PyInstaller documentation page on single-file builds.",
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Vancouver for the August trip.",
+        "User added a noise-cancelling headphones to their Amazon cart.",
+        "The user compared prices for a mechanical keyboard across two retailer sites.",
+        "The user reviewed their Ally checking account balance."
+      ]
+    },
+    {
+      "obs_id": "f138",
+      "latency_s": 1.836,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f139",
+      "latency_s": 15.04,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User joined a video call with the capture team in Microsoft Teams.",
+        "The user wrote a Slack message to #dev about the spike results.",
+        "The user is reading the PyInstaller documentation page on single-file builds.",
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Vancouver for the August trip.",
+        "User added noise-cancelling headphones to their Amazon cart.",
+        "The user compared prices for a mechanical keyboard across two retailer sites.",
+        "The user reviewed their Ally checking account balance.",
+        "User scheduled a haircut appointment for August.",
+        "The user browsed recipes for tacos on a cooking blog."
+      ]
+    },
+    {
+      "obs_id": "f140",
+      "latency_s": 1.849,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f141",
+      "latency_s": 14.358,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user is reading the PyInstaller documentation page on single-file builds.",
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Vancouver for the August trip.",
+        "User added a noise-cancelling headphones to their Amazon cart.",
+        "The user compared prices for a mechanical keyboard across two retailer sites.",
+        "The user reviewed their Ally checking account balance.",
+        "User scheduled a haircut appointment for August.",
+        "The user browsed recipes for tacos on a cooking blog.",
+        "User replied to an email from a vendor about Qdrant tuning.",
+        "The user is debugging a memory leak in routes.py inside their IDE."
+      ]
+    },
+    {
+      "obs_id": "f142",
+      "latency_s": 14.482,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Vancouver for the August trip.",
+        "User added a noise-cancelling headphones to their Amazon cart.",
+        "The user compared prices for a mechanical keyboard across two retailer sites.",
+        "The user reviewed their Ally checking account balance.",
+        "User scheduled a haircut appointment for August.",
+        "The user browsed recipes for tacos on a cooking blog.",
+        "User replied to an email from a vendor about Qdrant tuning.",
+        "The user is debugging a memory leak in routes.py inside their IDE.",
+        "User opened a pull request titled 'add search route' on GitHub."
+      ]
+    },
+    {
+      "obs_id": "f143",
+      "latency_s": 1.845,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f144",
+      "latency_s": 14.393,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user added a noise-cancelling headphones to their Amazon cart.",
+        "The user compared prices for a mechanical keyboard across two retailer sites.",
+        "The user reviewed their Ally checking account balance.",
+        "The user scheduled a haircut appointment for August.",
+        "The user browsed recipes for tacos on a cooking blog.",
+        "The user is debugging a memory leak in routes.py inside their IDE.",
+        "The user opened a pull request titled 'add search route' on GitHub.",
+        "The user is reviewing the onboarding document in a browser tab.",
+        "The user joined a video call with the memory team in Microsoft Teams."
+      ]
+    },
+    {
+      "obs_id": "f145",
+      "latency_s": 1.824,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f146",
+      "latency_s": 1.653,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f147",
+      "latency_s": 14.473,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user scheduled a haircut appointment for August.",
+        "The user browsed recipes for tacos on a cooking blog.",
+        "The user replied to an email from a vendor about Qdrant tuning.",
+        "The user is debugging a memory leak in routes.py inside their IDE.",
+        "The user opened a pull request titled 'add search route' on GitHub.",
+        "The user is reviewing the onboarding document in a browser tab.",
+        "The user joined a video call with the memory team in Microsoft Teams.",
+        "The user wrote a Slack message to #design-review about Qdrant tuning.",
+        "The user is reading the PyInstaller documentation page on vector search.",
+        "The user watched a tutorial about Electron on YouTube."
+      ]
+    },
+    {
+      "obs_id": "f148",
+      "latency_s": 1.825,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f149",
+      "latency_s": 1.657,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f150",
+      "latency_s": 15.563,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user is debugging a memory leak in routes.py inside their IDE.",
+        "User opened a pull request titled 'add search route' on GitHub.",
+        "The user is reviewing the onboarding document in a browser tab.",
+        "User joined a video call with the memory team in Microsoft Teams.",
+        "The user wrote a Slack message to #design-review about Qdrant tuning.",
+        "The user is reading the PyInstaller documentation page on vector search.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Chicago for the October trip.",
+        "User added a webcam to their Amazon cart.",
+        "The user compared prices for a noise-cancelling headphones across two retailer sites."
+      ]
+    },
+    {
+      "obs_id": "f151",
+      "latency_s": 14.66,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user opened a pull request titled 'add search route' on GitHub.",
+        "The user is reviewing the onboarding document in a browser tab.",
+        "The user joined a video call with the memory team in Microsoft Teams.",
+        "The user wrote a Slack message to #design-review about Qdrant tuning.",
+        "The user is reading the PyInstaller documentation page on vector search.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Chicago for the October trip.",
+        "The user added a webcam to their Amazon cart.",
+        "The user compared prices for noise-cancelling headphones across two retailer sites.",
+        "The user reviewed their Chase checking account balance."
+      ]
+    },
+    {
+      "obs_id": "f152",
+      "latency_s": 1.813,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f153",
+      "latency_s": 15.265,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User joined a video call with the memory team in Microsoft Teams.",
+        "The user wrote a Slack message to #design-review about Qdrant tuning.",
+        "The user is reading the PyInstaller documentation page on vector search.",
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Chicago for the October trip.",
+        "User added a webcam to their Amazon cart.",
+        "The user compared prices for a noise-cancelling headphones across two retailer sites.",
+        "The user reviewed their Chase checking account balance.",
+        "User scheduled a car service appointment for October.",
+        "The user browsed recipes for thai curry on a cooking blog."
+      ]
+    },
+    {
+      "obs_id": "f154",
+      "latency_s": 1.827,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f155",
+      "latency_s": 1.657,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f156",
+      "latency_s": 1.655,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f157",
+      "latency_s": 1.665,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f158",
+      "latency_s": 1.659,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f159",
+      "latency_s": 14.627,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user compared prices for noise-cancelling headphones across two retailer sites.",
+        "The user reviewed their Chase checking account balance.",
+        "The user scheduled a car service appointment for October.",
+        "The user browsed recipes for thai curry on a cooking blog.",
+        "The user replied to an email from the recruiter about the new embedder.",
+        "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+        "The user opened a pull request titled 'fix health gate backoff' on GitHub.",
+        "The user is reviewing the privacy document in a browser tab.",
+        "The user joined a video call with the infra team in Microsoft Teams.",
+        "The user wrote a Slack message to #incidents about the new embedder."
+      ]
+    },
+    {
+      "obs_id": "f160",
+      "latency_s": 1.849,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f161",
+      "latency_s": 14.655,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user scheduled a car service appointment for October.",
+        "The user browsed recipes for thai curry on a cooking blog.",
+        "The user replied to an email from the recruiter about the new embedder.",
+        "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+        "The user opened a pull request titled 'fix health gate backoff' on GitHub.",
+        "The user is reviewing the privacy document in a browser tab.",
+        "The user joined a video call with the infra team in Microsoft Teams.",
+        "The user wrote a Slack message to #incidents about the new embedder.",
+        "The user is reading the PyInstaller documentation page on hooks.",
+        "The user watched a tutorial about Electron on YouTube."
+      ]
+    },
+    {
+      "obs_id": "f162",
+      "latency_s": 1.832,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f163",
+      "latency_s": 1.658,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f164",
+      "latency_s": 1.656,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f165",
+      "latency_s": 14.414,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user opened a pull request titled 'fix health gate backoff' on GitHub.",
+        "The user is reviewing the privacy document in a browser tab.",
+        "The user joined a video call with the infra team in Microsoft Teams.",
+        "The user wrote a Slack message to #incidents about the new embedder.",
+        "The user is reading the PyInstaller documentation page on hooks.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Denver for the August trip.",
+        "The user added a standing desk mat to their Amazon cart.",
+        "The user compared prices for a webcam across two retailer sites.",
+        "The user reviewed their local credit union checking account balance."
+      ]
+    },
+    {
+      "obs_id": "f166",
+      "latency_s": 1.809,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f167",
+      "latency_s": 15.293,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User joined a video call with the infra team in Microsoft Teams.",
+        "The user wrote a Slack message to #incidents about the new embedder.",
+        "The user is reading the PyInstaller documentation page on hooks.",
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Denver for the August trip.",
+        "User added a standing desk mat to their Amazon cart.",
+        "The user compared prices for a webcam across two retailer sites.",
+        "The user reviewed their local credit union checking account balance.",
+        "User scheduled a haircut appointment for August.",
+        "The user browsed recipes for sourdough bread on a cooking blog."
+      ]
+    },
+    {
+      "obs_id": "f168",
+      "latency_s": 1.876,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f169",
+      "latency_s": 14.121,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user is reading the PyInstaller documentation page on hooks.",
+        "User watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Denver for the August trip.",
+        "User added a standing desk mat to their Amazon cart.",
+        "The user compared prices for a webcam across two retailer sites.",
+        "The user reviewed their local credit union checking account balance.",
+        "User scheduled a haircut appointment for August.",
+        "The user browsed recipes for sourdough bread on a cooking blog.",
+        "User replied to an email from Dana about a flaky test.",
+        "The user is debugging a null reference exception in MemorydClient.cs inside their IDE."
+      ]
+    },
+    {
+      "obs_id": "f170",
+      "latency_s": 14.32,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User watched a tutorial about Electron on YouTube.",
+        "User searched for hotels in Denver for the August trip.",
+        "User added a standing desk mat to their Amazon cart.",
+        "User compared prices for a webcam across two retailer sites.",
+        "User reviewed their local credit union checking account balance.",
+        "User scheduled a haircut appointment for August.",
+        "User browsed recipes for sourdough bread on a cooking blog.",
+        "User replied to an email from Dana about a flaky test.",
+        "User is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+        "User opened a pull request titled 'remote engine mode' on GitHub."
+      ]
+    },
+    {
+      "obs_id": "f171",
+      "latency_s": 14.487,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user searched for hotels in Denver for the August trip.",
+        "User added a standing desk mat to their Amazon cart.",
+        "The user compared prices for a webcam across two retailer sites.",
+        "The user reviewed their local credit union checking account balance.",
+        "User scheduled a haircut appointment for August.",
+        "The user browsed recipes for sourdough bread on a cooking blog.",
+        "User replied to an email from Dana about a flaky test.",
+        "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+        "User opened a pull request titled 'remote engine mode' on GitHub.",
+        "The user is reviewing the architecture document in a browser tab."
+      ]
+    },
+    {
+      "obs_id": "f172",
+      "latency_s": 14.361,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "User added a standing desk mat to their Amazon cart.",
+        "User compared prices for a webcam across two retailer sites.",
+        "User reviewed their local credit union checking account balance.",
+        "User scheduled a haircut appointment for August.",
+        "User browsed recipes for sourdough bread on a cooking blog.",
+        "User replied to an email from Dana about a flaky test.",
+        "User is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+        "User opened a pull request titled 'remote engine mode' on GitHub.",
+        "User is reviewing the architecture document in a browser tab.",
+        "User joined a video call with the design team in Microsoft Teams."
+      ]
+    },
+    {
+      "obs_id": "f173",
+      "latency_s": 1.841,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f174",
+      "latency_s": 1.656,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f175",
+      "latency_s": 14.614,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user scheduled a haircut appointment for August.",
+        "The user browsed recipes for sourdough bread on a cooking blog.",
+        "The user replied to an email from Dana about a flaky test.",
+        "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+        "The user opened a pull request titled 'remote engine mode' on GitHub.",
+        "The user is reviewing the architecture document in a browser tab.",
+        "The user joined a video call with the design team in Microsoft Teams.",
+        "The user wrote a Slack message to #random about a flaky test.",
+        "The user is reading the PyInstaller documentation page on single-file builds.",
+        "The user watched a tutorial about Electron on YouTube."
+      ]
+    },
+    {
+      "obs_id": "f176",
+      "latency_s": 1.766,
+      "events": [],
+      "memories": []
+    },
+    {
+      "obs_id": "f177",
+      "latency_s": 13.598,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+        "The user opened a pull request titled 'remote engine mode' on GitHub.",
+        "The user is reviewing the architecture document in a browser tab.",
+        "The user joined a video call with the design team in Microsoft Teams.",
+        "The user wrote a Slack message to #random about a flaky test.",
+        "The user is reading the PyInstaller documentation page on single-file builds.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Portland for the October trip.",
+        "The user added a USB-C hub to their Amazon cart."
+      ]
+    },
+    {
+      "obs_id": "f178",
+      "latency_s": 14.671,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+        "User opened a pull request titled 'remote engine mode' on GitHub.",
+        "The user is reviewing the architecture document in a browser tab.",
+        "User joined a video call with the design team in Microsoft Teams.",
+        "The user wrote a Slack message to #random about a flaky test.",
+        "The user is reading the PyInstaller documentation page on single-file builds.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Portland for the October trip.",
+        "The user added a USB-C hub to their Amazon cart.",
+        "The user compared prices for a standing desk mat across two retailer sites."
+      ]
+    },
+    {
+      "obs_id": "f179",
+      "latency_s": 14.604,
+      "events": [
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD",
+        "ADD"
+      ],
+      "memories": [
+        "The user opened a pull request titled 'remote engine mode' on GitHub.",
+        "The user is reviewing the architecture document in a browser tab.",
+        "The user joined a video call with the design team in Microsoft Teams.",
+        "The user wrote a Slack message to #random about a flaky test.",
+        "The user is reading the PyInstaller documentation page on single-file builds.",
+        "The user watched a tutorial about Electron on YouTube.",
+        "The user searched for hotels in Portland for the October trip.",
+        "The user added a USB-C hub to their Amazon cart.",
+        "The user compared prices for a standing desk mat across two retailer sites.",
+        "The user reviewed their Ally checking account balance."
+      ]
+    }
+  ],
+  "search_records": [
+    {
+      "query": "What editor does the user use?",
+      "latency_s": 0.055,
+      "hit": true,
+      "expect_keywords": [
+        "neovim"
+      ],
+      "top": [
+        "The user's main code editor is Visual Studio Code.",
+        "The user has switched their primary editor from VS Code to Neovim.",
+        "The user is reading 'The Three-Body Problem' by Liu Cixin."
+      ]
+    },
+    {
+      "query": "Where does the user live?",
+      "latency_s": 0.055,
+      "hit": false,
+      "expect_keywords": [
+        "austin"
+      ],
+      "top": [
+        "The user lives in Seattle.",
+        "The user lives in Seattle, Washington.",
+        "The user is reading 'The Three-Body Problem' by Liu Cixin."
+      ]
+    },
+    {
+      "query": "Does the user have any allergies?",
+      "latency_s": 0.056,
+      "hit": true,
+      "expect_keywords": [
+        "penicillin"
+      ],
+      "top": [
+        "The user is allergic to penicillin.",
+        "The user is allergic to penicillin.",
+        "The user is allergic to penicillin."
+      ]
+    },
+    {
+      "query": "What are the user's dietary restrictions?",
+      "latency_s": 0.056,
+      "hit": true,
+      "expect_keywords": [
+        "pescatarian",
+        "fish"
+      ],
+      "top": [
+        "The user is vegetarian.",
+        "The user selected the vegetarian option when ordering lunch.",
+        "The user selected the vegetarian option when ordering lunch."
+      ]
+    },
+    {
+      "query": "Who is the user's manager?",
+      "latency_s": 0.055,
+      "hit": true,
+      "expect_keywords": [
+        "priya"
+      ],
+      "top": [
+        "The user's manager is named Priya Natarajan.",
+        "The user is reading 'The Three-Body Problem' by Liu Cixin.",
+        "The user is reading 'The Three-Body Problem' by Liu Cixin."
+      ]
+    },
+    {
+      "query": "What flights has the user booked?",
+      "latency_s": 0.058,
+      "hit": true,
+      "expect_keywords": [
+        "tokyo",
+        "united"
+      ],
+      "top": [
+        "The user booked a flight to Tokyo departing March 14 on United Airlines.",
+        "The user booked a flight to Tokyo departing March 14 on United Airlines.",
+        "The user booked a flight to Tokyo departing March 14 on United Airlines."
+      ]
+    },
+    {
+      "query": "What instrument is the user learning?",
+      "latency_s": 0.061,
+      "hit": true,
+      "expect_keywords": [
+        "cello"
+      ],
+      "top": [
+        "The user is learning to play the cello, practicing about 30 minutes a day.",
+        "The user is learning to play the cello, practicing about 30 minutes a day.",
+        "The user is learning to play the cello, practicing about 30 minutes a day."
+      ]
+    },
+    {
+      "query": "What car does the user drive?",
+      "latency_s": 0.058,
+      "hit": true,
+      "expect_keywords": [
+        "subaru",
+        "outback"
+      ],
+      "top": [
+        "The user's car is a 2019 Subaru Outback.",
+        "The user scheduled a car service appointment for October.",
+        "The user scheduled a car service appointment for October."
+      ]
+    },
+    {
+      "query": "When is the memory service spec due?",
+      "latency_s": 0.056,
+      "hit": true,
+      "expect_keywords": [
+        "june 20",
+        "june"
+      ],
+      "top": [
+        "User noted the 002 memory-service review deadline is June 20.",
+        "The Memory Service spec (002) is due for review by June 20.",
+        "The Memory Service spec (002) is due for review by June 20."
+      ]
+    },
+    {
+      "query": "What book is the user reading?",
+      "latency_s": 0.058,
+      "hit": true,
+      "expect_keywords": [
+        "three-body",
+        "liu cixin"
+      ],
+      "top": [
+        "The user is reading 'The Three-Body Problem' by Liu Cixin.",
+        "The user is reading 'The Three-Body Problem' by Liu Cixin.",
+        "The user is reading the PyInstaller documentation page on hooks."
+      ]
+    }
+  ],
+  "final_memories": [
+    "The user searched for hotels in Boston for the August trip.",
+    "User added a standing desk mat to their Amazon cart.",
+    "User added a USB-C hub to their Amazon cart.",
+    "The user compared prices for a standing desk mat across two retailer sites.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "User searched for hotels in Denver for the August trip.",
+    "The user compared prices for a webcam across two retailer sites.",
+    "The user browsed recipes for tacos on a cooking blog.",
+    "The user scheduled a car service appointment for October.",
+    "User is reading the PyInstaller documentation page on vector search.",
+    "The user reviewed their Ally checking account balance.",
+    "The user joined a video call with the capture team in Microsoft Teams.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "The user's car is a 2019 Subaru Outback due for an oil change at 60k miles.",
+    "The user opened a pull request titled 'fix health gate backoff' on GitHub.",
+    "The user reviewed their Ally checking account balance.",
+    "The user replied to an email from the recruiter about the new embedder.",
+    "The user replied to an email from Dana about a flaky test.",
+    "The user is reading the PyInstaller documentation page on hooks.",
+    "The user joined a video call with the design team in Microsoft Teams.",
+    "The user browsed recipes for ramen on a cooking blog.",
+    "User compared prices for a USB-C hub across two retailer sites.",
+    "The user compared prices for a standing desk mat across two retailer sites.",
+    "The user prefers dark mode in every application.",
+    "The user wrote a Slack message to #dev about the spike results.",
+    "The user reviewed their local credit union checking account balance.",
+    "The user is reading the PyInstaller documentation page on vector search.",
+    "The user reviewed their Chase checking account balance.",
+    "The user is reading the PyInstaller documentation page on vector search.",
+    "The user opened a pull request titled 'add search route' on GitHub.",
+    "User watched a tutorial about Electron on YouTube.",
+    "User joined a video call with the platform team in Microsoft Teams.",
+    "User replied to an email from Priya about the spike results.",
+    "The user opened a pull request titled 'add search route' on GitHub.",
+    "The user added a webcam to their Amazon cart.",
+    "User compared prices for a webcam across two retailer sites.",
+    "The user browsed recipes for tacos on a cooking blog.",
+    "The user is reading the PyInstaller documentation page on single-file builds.",
+    "The user opened a pull request titled 'pin mem0 version' on GitHub.",
+    "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+    "The user scheduled a haircut appointment for August.",
+    "The user searched for hotels in Boston for the August trip.",
+    "The user is reviewing the onboarding document in a browser tab.",
+    "The user joined a video call with the design team in Microsoft Teams.",
+    "User replied to an email from the recruiter about the new embedder.",
+    "The user is reading the PyInstaller documentation page on single-file builds.",
+    "The user added a standing desk mat to their Amazon cart.",
+    "User reviewed their local credit union checking account balance.",
+    "User compared prices for noise-cancelling headphones across two retailer sites.",
+    "User opened a pull request titled 'remote engine mode' on GitHub.",
+    "User scheduled a car service appointment for October.",
+    "The user joined a video call with the memory team in Microsoft Teams.",
+    "User scheduled a haircut appointment for August.",
+    "The user searched for hotels in Denver for the August trip.",
+    "User added a webcam to their Amazon cart.",
+    "User is reading the PyInstaller documentation page on hooks.",
+    "The user compared prices for noise-cancelling headphones across two retailer sites.",
+    "User is reviewing the privacy document in a browser tab.",
+    "The user is reviewing the release notes document in a browser tab.",
+    "The user is reviewing the API reference document in a browser tab.",
+    "The user compared prices for a webcam across two retailer sites.",
+    "The user is reading the PyInstaller documentation page on hooks.",
+    "The user searched for hotels in Vancouver for the October trip.",
+    "The user is reviewing the privacy document in a browser tab.",
+    "User watched a tutorial about Electron on YouTube.",
+    "The user reviewed their Ally checking account balance.",
+    "The user added a USB-C hub to their Amazon cart.",
+    "User searched for hotels in Denver for the August trip.",
+    "The user compared prices for a USB-C hub across two retailer sites.",
+    "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+    "The user compared prices for a mechanical keyboard across two retailer sites.",
+    "User replied to an email from Dana about a flaky test.",
+    "The user reviewed their local credit union checking account balance.",
+    "User watched a tutorial about Electron on YouTube.",
+    "User scheduled a haircut appointment for August.",
+    "The user reviewed their local credit union checking account balance.",
+    "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+    "User opened a pull request titled 'fix health gate backoff' on GitHub.",
+    "User added a standing desk mat to their Amazon cart.",
+    "The user compared prices for a mechanical keyboard across two retailer sites.",
+    "User joined a video call with the design team in Microsoft Teams.",
+    "User watched a tutorial about Electron on YouTube.",
+    "The user wrote a Slack message to #lore-eng about the release date.",
+    "User joined a video call with the platform team in Microsoft Teams.",
+    "The user is reviewing the onboarding document in a browser tab.",
+    "The user pays for a Spotify Family plan shared with three relatives.",
+    "The user is reading the PyInstaller documentation page on single-file builds.",
+    "User reviewed their local credit union checking account balance.",
+    "User scheduled a car service appointment for October.",
+    "The user replied to an email from Dana about a flaky test.",
+    "The user searched for hotels in Denver for the October trip.",
+    "The user compared prices for noise-cancelling headphones across two retailer sites.",
+    "The user is reviewing the architecture document in a browser tab.",
+    "The user is reviewing the architecture document in a browser tab.",
+    "The user is reviewing the privacy document in a browser tab.",
+    "The user is reviewing the architecture document in a browser tab.",
+    "The user opened a pull request titled 'pin mem0 version' on GitHub.",
+    "The user browsed recipes for risotto on a cooking blog.",
+    "The user pays for a Spotify Family plan shared with three relatives.",
+    "The user browsed recipes for tacos on a cooking blog.",
+    "The user reviewed their Ally checking account balance.",
+    "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+    "The user is reviewing the architecture document in a browser tab.",
+    "User added a USB-C hub to their Amazon cart.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "User searched for hotels in Portland for the August trip.",
+    "The user joined a video call with the infra team in Microsoft Teams.",
+    "The user browsed recipes for ramen on a cooking blog.",
+    "The user joined a video call with the design team in Microsoft Teams.",
+    "User joined a video call with the platform team in Microsoft Teams.",
+    "The user searched for hotels in Portland for the August trip.",
+    "User replied to an email from Priya about the spike results.",
+    "User added a mechanical keyboard to their Amazon cart.",
+    "The user is reviewing the privacy document in a browser tab.",
+    "The user reviewed their local credit union checking account balance.",
+    "The user wrote a Slack message to #random about a flaky test.",
+    "The user is reading the PyInstaller documentation page on hooks.",
+    "The user compared prices for a USB-C hub across two retailer sites.",
+    "The user wrote a Slack message to #incidents about the new embedder.",
+    "The user compared prices for a mechanical keyboard across two retailer sites.",
+    "The user compared prices for a USB-C hub across two retailer sites.",
+    "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+    "The user joined a video call with the memory team in Microsoft Teams.",
+    "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+    "The user is reading PyInstaller documentation on single-file builds.",
+    "The user is reading the PyInstaller documentation page on vector search.",
+    "The user searched for hotels in Boston for the August trip.",
+    "The user reviewed their Ally checking account balance.",
+    "The user compared prices for a USB-C hub across two retailer sites.",
+    "The user scheduled a car service appointment for October.",
+    "The user added a USB-C hub to their Amazon cart.",
+    "The user added noise-cancelling headphones to their Amazon cart.",
+    "User opened a pull request titled 'remote engine mode' on GitHub.",
+    "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+    "The user wrote a Slack message to #incidents about the new embedder.",
+    "User compared prices for a webcam across two retailer sites.",
+    "User added noise-cancelling headphones to their Amazon cart.",
+    "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+    "The user is learning to play the cello, practicing about 30 minutes a day.",
+    "The user browsed recipes for sourdough bread on a cooking blog.",
+    "User added a mechanical keyboard to their Amazon cart.",
+    "User added a noise-cancelling headphones to their Amazon cart.",
+    "The user opened a pull request titled 'add search route' on GitHub.",
+    "The user reviewed their Chase checking account balance.",
+    "The user is reading the PyInstaller documentation page on vector search.",
+    "The user reviewed their local credit union checking account balance.",
+    "User watched a tutorial about Electron on YouTube.",
+    "User scheduled a haircut appointment for August.",
+    "User is reading the PyInstaller documentation page on hooks.",
+    "The user wrote a Slack message to #design-review about Qdrant tuning.",
+    "User replied to an email from a vendor about Qdrant tuning.",
+    "The user scheduled a haircut appointment for August.",
+    "The user joined a video call with the infra team in Microsoft Teams.",
+    "User scheduled a car service appointment for October.",
+    "The user wrote a Slack message to #random about a flaky test.",
+    "User joined a video call with the infra team in Microsoft Teams.",
+    "The user joined a video call with the infra team in Microsoft Teams.",
+    "User replied to an email from the recruiter about the new embedder.",
+    "User added a webcam to their Amazon cart.",
+    "User wrote a Slack message to #random about a flaky test.",
+    "The user reviewed their local credit union checking account balance.",
+    "User replied to an email from the recruiter about the new embedder.",
+    "User replied to an email from Marcus about the release date.",
+    "The user searched for hotels in Portland for the August trip.",
+    "User replied to an email from Dana about a flaky test.",
+    "The user reviewed their local credit union checking account balance.",
+    "The user is reviewing the release notes document in a browser tab.",
+    "The user is reading the PyInstaller documentation page on single-file builds.",
+    "User replied to an email from Dana about a flaky test.",
+    "User searched for hotels in Boston for the October trip.",
+    "The user compared prices for a standing desk mat across two retailer sites.",
+    "The user browsed recipes for thai curry on a cooking blog.",
+    "The user is debugging a memory leak in routes.py inside their IDE.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "The user searched for hotels in Vancouver for the October trip.",
+    "The user searched for hotels in Vancouver for the October trip.",
+    "User opened a pull request titled 'fix health gate backoff' on GitHub.",
+    "The user wrote a Slack message to #random about a flaky test.",
+    "User replied to an email from Priya about the spike results.",
+    "User scheduled a haircut appointment for August.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "The user wrote a Slack message to #dev about the spike results.",
+    "The user compared prices for a webcam across two retailer sites.",
+    "The user opened a pull request titled 'remote engine mode' on GitHub.",
+    "User joined a video call with the design team in Microsoft Teams.",
+    "The user has started eating fish again and now describes themselves as pescatarian.",
+    "The user's car is a 2019 Subaru Outback, due for an oil change at 60k miles.",
+    "User scheduled a haircut appointment for August.",
+    "The user is reading the PyInstaller documentation page on vector search.",
+    "The user replied to an email from Dana about a flaky test.",
+    "The user added a USB-C hub to their Amazon cart.",
+    "The user reviewed their local credit union checking account balance.",
+    "The user browsed recipes for sourdough bread on a cooking blog.",
+    "User opened a pull request titled 'remote engine mode' on GitHub.",
+    "The user added a standing desk mat to their Amazon cart.",
+    "The user is reviewing the architecture document in a browser tab.",
+    "The user opened a pull request titled 'pin mem0 version' on GitHub.",
+    "The user compared prices for a USB-C hub across two retailer sites.",
+    "The user browsed recipes for thai curry on a cooking blog.",
+    "The user opened a pull request titled 'remote engine mode' on GitHub.",
+    "The user wrote a Slack message to #random about a flaky test.",
+    "The user wrote a Slack message to #lore-eng about the release date.",
+    "The user is debugging a memory leak in routes.py inside their IDE.",
+    "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+    "The user needs an oil change for their car at 60k miles.",
+    "The user compared prices for noise-cancelling headphones across two retailer sites.",
+    "User is debugging a timeout in mem0_factory.py inside their IDE.",
+    "The user reviewed their Chase checking account balance.",
+    "The user browsed recipes for sourdough bread on a cooking blog.",
+    "User opened a pull request titled 'pin mem0 version' on GitHub.",
+    "The user compared prices for a webcam across two retailer sites.",
+    "User wrote a Slack message to #lore-eng about the release date.",
+    "User compared prices for a webcam across two retailer sites.",
+    "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+    "The user is reviewing the architecture document in a browser tab.",
+    "The user replied to an email from the recruiter about the new embedder.",
+    "User replied to an email from Marcus about the release date.",
+    "The user replied to an email from Marcus about the release date.",
+    "The user is allergic to penicillin.",
+    "The user compared prices for a standing desk mat across two retailer sites.",
+    "User replied to an email from Marcus about the release date.",
+    "The user opened a pull request titled 'wire DI container' on GitHub.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "The user searched for hotels in Vancouver for the August trip.",
+    "The user is learning to play the cello, practicing about 30 minutes a day.",
+    "The user compared prices for a standing desk mat across two retailer sites.",
+    "The user is reading the PyInstaller documentation page on hooks.",
+    "User joined a video call with the capture team in Microsoft Teams.",
+    "The user searched for hotels in Portland for the August trip.",
+    "The user compared prices for a mechanical keyboard across two retailer sites.",
+    "The user scheduled a car service appointment for October.",
+    "The user is learning to play the cello, practicing about 30 minutes a day.",
+    "The user searched for hotels in Denver for the August trip.",
+    "The user is reading 'The Three-Body Problem' by Liu Cixin.",
+    "User scheduled a haircut appointment for August.",
+    "The user is reviewing the onboarding document in a browser tab.",
+    "The user reviewed their Chase checking account balance.",
+    "The user is reviewing the release notes document in a browser tab.",
+    "The user added noise-cancelling headphones to their Amazon cart.",
+    "User replied to an email from Marcus about the release date.",
+    "The user is reviewing the API reference document in a browser tab.",
+    "The user searched for hotels in Denver for the August trip.",
+    "User added a standing desk mat to their Amazon cart.",
+    "The user reviewed their Ally checking account balance.",
+    "The user is reading the PyInstaller documentation page on vector search.",
+    "The Memory Service spec (002) is due for review by June 20.",
+    "The user compared prices for a webcam across two retailer sites.",
+    "The user compared prices for a USB-C hub across two retailer sites.",
+    "The user reviewed their local credit union checking account balance.",
+    "The user browsed recipes for thai curry on a cooking blog.",
+    "User reviewed their local credit union checking account balance.",
+    "User added a USB-C hub to their Amazon cart.",
+    "User reviewed their Chase checking account balance.",
+    "The user wrote a Slack message to #lore-eng about the release date.",
+    "User scheduled a haircut appointment for August.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "The user reviewed their Ally checking account balance.",
+    "User added a webcam to their Amazon cart.",
+    "The user browsed recipes for risotto on a cooking blog.",
+    "The user browsed recipes for thai curry on a cooking blog.",
+    "The user reviewed their local credit union checking account balance.",
+    "The user is debugging a memory leak in routes.py inside their IDE.",
+    "User watched a tutorial about Electron on YouTube.",
+    "User compared prices for a webcam across two retailer sites.",
+    "The user scheduled a car service appointment for October.",
+    "User watched a tutorial about Electron on YouTube.",
+    "The user is reviewing the privacy document in a browser tab.",
+    "User added a webcam to their Amazon cart.",
+    "The user searched for hotels in Vancouver for the August trip.",
+    "The user added a USB-C hub to their Amazon cart.",
+    "The user reviewed their Chase checking account balance.",
+    "User added a mechanical keyboard to their Amazon cart.",
+    "The user reviewed their Chase checking account balance.",
+    "The user is debugging a memory leak in routes.py inside their IDE.",
+    "User opened a pull request titled 'add search route' on GitHub.",
+    "User is reviewing the architecture document in a browser tab.",
+    "The user reviewed their Ally checking account balance.",
+    "The user wrote a Slack message to #random about a flaky test.",
+    "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+    "User scheduled a haircut appointment for August.",
+    "The user searched for hotels in Portland for the October trip.",
+    "The user compared prices for noise-cancelling headphones across two retailer sites.",
+    "User watched a tutorial about Electron on YouTube.",
+    "The user is debugging a memory leak in routes.py inside their IDE.",
+    "The user searched for hotels in Vancouver for the October trip.",
+    "The user browsed recipes for sourdough bread on a cooking blog.",
+    "The user joined a video call with the platform team in Microsoft Teams.",
+    "The user scheduled a haircut appointment for August.",
+    "The user browsed recipes for sourdough bread on a cooking blog.",
+    "The user searched for hotels in Denver for the August trip.",
+    "User watched a tutorial about Electron on YouTube.",
+    "User added a noise-cancelling headphones to their Amazon cart.",
+    "User opened a pull request titled 'wire DI container' on GitHub.",
+    "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+    "The user compared prices for a webcam across two retailer sites.",
+    "User watched a tutorial about Electron on YouTube.",
+    "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+    "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+    "User added a noise-cancelling headphones to their Amazon cart.",
+    "User replied to an email from Marcus about the release date.",
+    "The user added a webcam to their Amazon cart.",
+    "The user is reviewing the API reference document in a browser tab.",
+    "User replied to an email from Dana about a flaky test.",
+    "User watched a tutorial about Electron on YouTube.",
+    "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+    "The user reviewed their local credit union checking account balance.",
+    "User opened a pull request titled 'remote engine mode' on GitHub.",
+    "The user's main code editor is Visual Studio Code.",
+    "The user searched for hotels in Chicago for the August trip.",
+    "The user reviewed their local credit union checking account balance.",
+    "The user is reading the PyInstaller documentation page on vector search.",
+    "The user is reading the PyInstaller documentation page on single-file builds.",
+    "The user wrote a Slack message to #random about a flaky test.",
+    "User joined a video call with the platform team in Microsoft Teams.",
+    "The user added a noise-cancelling headphones to their Amazon cart.",
+    "User scheduled a car service appointment for October.",
+    "User opened a pull request titled 'remote engine mode' on GitHub.",
+    "User scheduled a haircut appointment for August.",
+    "User joined a video call with the capture team in Microsoft Teams.",
+    "The user searched for hotels in Chicago for the October trip.",
+    "User joined a video call with the memory team in Microsoft Teams.",
+    "The user searched for hotels in Boston for the October trip.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "User scheduled a car service appointment for October.",
+    "The user is reading the PyInstaller documentation page on single-file builds.",
+    "The user compared prices for a USB-C hub across two retailer sites.",
+    "User scheduled a haircut appointment for August.",
+    "The user opened a pull request titled 'add search route' on GitHub.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "The user is reading the PyInstaller documentation page on hooks.",
+    "The user opened a pull request titled 'add search route' on GitHub.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "The user opened a pull request titled 'remote engine mode' on GitHub.",
+    "User opened a pull request titled 'remote engine mode' on GitHub.",
+    "The user wrote a Slack message to #design-review about Qdrant tuning.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "The user compared prices for a standing desk mat across two retailer sites.",
+    "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+    "The user compared prices for a USB-C hub across two retailer sites.",
+    "The user is reading the PyInstaller documentation page on vector search.",
+    "The user wrote a Slack message to #incidents about the new embedder.",
+    "The user is reviewing the privacy document in a browser tab.",
+    "User watched a tutorial about Electron on YouTube.",
+    "The user is debugging a memory leak in routes.py inside their IDE.",
+    "The user is reading the PyInstaller documentation page on single-file builds.",
+    "The user wrote a Slack message to #incidents about the new embedder.",
+    "The user prefers dark mode in every application.",
+    "User watched a tutorial about Electron on YouTube.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "The user reviewed their Ally checking account balance.",
+    "User scheduled a car service appointment for October.",
+    "User replied to an email from Dana about a flaky test.",
+    "The user reviewed their Ally checking account balance.",
+    "User watched a tutorial about Electron on YouTube.",
+    "The user browsed recipes for thai curry on a cooking blog.",
+    "The user added a USB-C hub to their Amazon cart.",
+    "User added a mechanical keyboard to their Amazon cart.",
+    "The user opened a pull request titled 'fix health gate backoff' on GitHub.",
+    "The user browsed recipes for risotto on a cooking blog.",
+    "User scheduled a car service appointment for October.",
+    "The user compared prices for noise-cancelling headphones across two retailer sites.",
+    "The user browsed recipes for sourdough bread on a cooking blog.",
+    "User added a mechanical keyboard to their Amazon cart.",
+    "The user is reading the PyInstaller documentation page on hooks.",
+    "The user browsed recipes for thai curry on a cooking blog.",
+    "The user searched for hotels in Vancouver for the October trip.",
+    "User scheduled a haircut appointment for August.",
+    "The user's car is a 2019 Subaru Outback, due for an oil change at 60k miles.",
+    "The user searched for hotels in Boston for the August trip.",
+    "The user prefers dark mode in every application.",
+    "The user compared prices for a mechanical keyboard across two retailer sites.",
+    "The user is reading the PyInstaller documentation page on hooks.",
+    "The user is vegetarian.",
+    "The user browsed recipes for thai curry on a cooking blog.",
+    "User added a mechanical keyboard to their Amazon cart.",
+    "User is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+    "The user is reviewing the privacy document in a browser tab.",
+    "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+    "The user is reviewing the API reference document in a browser tab.",
+    "User replied to an email from Priya about the spike results.",
+    "The user wrote a Slack message to #design-review about Qdrant tuning.",
+    "User joined a video call with the capture team in Microsoft Teams.",
+    "The user joined a video call with the infra team in Microsoft Teams.",
+    "The user searched for hotels in Vancouver for the October trip.",
+    "User opened a pull request titled 'wire DI container' on GitHub.",
+    "User opened a pull request titled 'fix health gate backoff' on GitHub.",
+    "User joined a video call with the capture team in Microsoft Teams.",
+    "The user reviewed their Ally checking account balance.",
+    "The user searched for hotels in Denver for the August trip.",
+    "User spends most of their coding time inside VS Code.",
+    "User reviewed their Ally checking account balance.",
+    "The user is reviewing release notes in a browser tab.",
+    "The user reviewed their Ally checking account balance.",
+    "User opened a pull request titled 'pin mem0 version' on GitHub.",
+    "User joined a video call with the capture team in Microsoft Teams.",
+    "The user joined a video call with the design team in Microsoft Teams.",
+    "The user pays for a Spotify Family plan shared with three relatives.",
+    "The user opened a pull request titled 'remote engine mode' on GitHub.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "The user compared prices for a standing desk mat across two retailer sites.",
+    "The user wrote a Slack message to #random about a flaky test.",
+    "User added a standing desk mat to their Amazon cart.",
+    "The user searched for hotels in Portland for the October trip.",
+    "The user browsed recipes for sourdough bread on a cooking blog.",
+    "The user compared prices for a mechanical keyboard across two retailer sites.",
+    "The user replied to an email from Priya about the spike results.",
+    "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+    "User replied to an email from Marcus about the release date.",
+    "The user wrote a Slack message to #dev about the spike results.",
+    "The user opened a pull request titled 'fix health gate backoff' on GitHub.",
+    "The user is reading the PyInstaller documentation page on hooks.",
+    "The user compared prices for a mechanical keyboard across two retailer sites.",
+    "The user wrote a Slack message to #random about a flaky test.",
+    "User joined a video call with the memory team in Microsoft Teams.",
+    "The user joined a video call with the design team in Microsoft Teams.",
+    "The user wrote a Slack message to #dev about the spike results.",
+    "The user compared prices for a standing desk mat across two retailer sites.",
+    "The user browsed recipes for ramen on a cooking blog.",
+    "The user pays for a Spotify Family plan shared with three relatives.",
+    "User replied to an email from Priya about the spike results.",
+    "The user replied to an email from Priya about the spike results.",
+    "The user's car is a 2019 Subaru Outback, due for an oil change at 60k miles.",
+    "The user joined a video call with the memory team in Microsoft Teams.",
+    "User joined a video call with the design team in Microsoft Teams.",
+    "User is reading the PyInstaller documentation page on single-file builds.",
+    "The user is reading the PyInstaller documentation page on vector search.",
+    "The user opened a pull request titled 'fix health gate backoff' on GitHub.",
+    "The user browsed recipes for thai curry on a cooking blog.",
+    "The user reviewed their Chase checking account balance.",
+    "The user searched for hotels in Chicago for the August trip.",
+    "The user is reviewing the architecture document in a browser tab.",
+    "The user is learning to play the cello, practicing about 30 minutes a day.",
+    "User scheduled a car service appointment for October.",
+    "The user is reading the PyInstaller documentation page on single-file builds.",
+    "User watched a tutorial about Electron on YouTube.",
+    "The user is relocating to Austin, Texas next month.",
+    "The user joined a video call with the infra team in Microsoft Teams.",
+    "The user is reviewing the API reference document in a browser tab.",
+    "User opened a pull request titled 'wire DI container' on GitHub.",
+    "The user is reviewing the privacy document in a browser tab.",
+    "The user joined a video call with the design team in Microsoft Teams.",
+    "The user added a mechanical keyboard to their Amazon cart.",
+    "User scheduled a haircut appointment for August.",
+    "The user browsed recipes for sourdough bread on a cooking blog.",
+    "The user is reading the PyInstaller documentation page on vector search.",
+    "User watched a tutorial about Electron on YouTube.",
+    "User scheduled a car service appointment for October.",
+    "The user is reviewing the privacy document in a browser tab.",
+    "User opened a pull request titled 'fix health gate backoff' on GitHub.",
+    "The user scheduled a haircut appointment for August.",
+    "User watched a tutorial about Electron on YouTube.",
+    "The user added a noise-cancelling headphones to their Amazon cart.",
+    "The user wrote a Slack message to #incidents about the new embedder.",
+    "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+    "User replied to an email from the recruiter about the new embedder.",
+    "The user searched for hotels in Chicago for the October trip.",
+    "User watched a tutorial about Electron on YouTube.",
+    "User replied to an email from Dana about a flaky test.",
+    "User scheduled a haircut appointment for August.",
+    "The user reviewed their Chase checking account balance.",
+    "User opened a pull request titled 'remote engine mode' on GitHub.",
+    "User scheduled a haircut appointment for August.",
+    "User added a standing desk mat to their Amazon cart.",
+    "User watched a tutorial about Electron on YouTube.",
+    "The user browsed recipes for thai curry on a cooking blog.",
+    "The user is debugging a memory leak in routes.py inside their IDE.",
+    "The user searched for hotels in Chicago for the October trip.",
+    "User added a noise-cancelling headphones to their Amazon cart.",
+    "User searched for hotels in Portland for the October trip.",
+    "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+    "The user searched for hotels in Denver for the October trip.",
+    "The user browsed recipes for sourdough bread on a cooking blog.",
+    "The user compared prices for a mechanical keyboard across two retailer sites.",
+    "The user is reading the PyInstaller documentation page on single-file builds.",
+    "User watched a tutorial about Electron on YouTube.",
+    "The user reviewed their local credit union checking account balance.",
+    "The user reviewed their Chase checking account balance.",
+    "User scheduled a car service appointment for October.",
+    "User browsed recipes for ramen on a cooking blog.",
+    "The user wrote a Slack message to #incidents about the new embedder.",
+    "The user added a USB-C hub to their Amazon cart.",
+    "The user is reading the PyInstaller documentation page on vector search.",
+    "The user is learning to play the cello, practicing about 30 minutes a day.",
+    "User joined a video call with the capture team in Microsoft Teams.",
+    "The user joined a video call with the capture team in Microsoft Teams.",
+    "User opened a pull request titled 'add search route' on GitHub.",
+    "The user searched for hotels in Portland for the October trip.",
+    "The user booked a flight to Tokyo departing March 14 on United Airlines.",
+    "User replied to an email from Priya about the spike results.",
+    "The user is debugging a memory leak in routes.py inside their IDE.",
+    "The user is reading the PyInstaller documentation page on hooks.",
+    "The user searched for hotels in Chicago for the August trip.",
+    "User joined a video call with the design team in Microsoft Teams.",
+    "User is reviewing the architecture document in a browser tab.",
+    "The user opened a pull request titled 'wire DI container' on GitHub.",
+    "User compared prices for a standing desk mat across two retailer sites.",
+    "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+    "User added a webcam to their Amazon cart.",
+    "The user is reading the PyInstaller documentation page on vector search.",
+    "User joined a video call with the design team in Microsoft Teams.",
+    "The user browsed recipes for risotto on a cooking blog.",
+    "The user reviewed their local credit union checking account balance.",
+    "User browsed recipes for ramen on a cooking blog.",
+    "The user added a webcam to their Amazon cart.",
+    "User added a USB-C hub to their Amazon cart.",
+    "The user browsed recipes for risotto on a cooking blog.",
+    "The user's manager is named Priya Natarajan.",
+    "The user browsed recipes for ramen on a cooking blog.",
+    "The user reviewed their Ally checking account balance.",
+    "User compared prices for a standing desk mat across two retailer sites.",
+    "The user wrote a Slack message to #dev about the spike results.",
+    "The user has started eating fish again and now describes themselves as pescatarian.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "User scheduled a car service appointment for October.",
+    "The user's car is a 2019 Subaru Outback, due for an oil change at 60k miles.",
+    "The user is reviewing the onboarding document in a browser tab.",
+    "The user is reading the PyInstaller documentation page on hooks.",
+    "The user prefers dark mode in every application.",
+    "The user browsed recipes for sourdough bread on a cooking blog.",
+    "The user is reading the PyInstaller documentation page on single-file builds.",
+    "User joined a video call with the infra team in Microsoft Teams.",
+    "The user is reading the PyInstaller documentation page on single-file builds.",
+    "User is reading the PyInstaller documentation page on single-file builds.",
+    "User joined a video call with the design team in Microsoft Teams.",
+    "The user searched for hotels in Boston for the October trip.",
+    "The user is reviewing the onboarding document in a browser tab.",
+    "User replied to an email from Dana about a flaky test.",
+    "The user opened a pull request titled 'fix health gate backoff' on GitHub.",
+    "User opened a pull request titled 'fix health gate backoff' on GitHub.",
+    "The user wrote a Slack message to #design-review about Qdrant tuning.",
+    "User added a USB-C hub to their Amazon cart.",
+    "The user searched for hotels in Chicago for the October trip.",
+    "The user wrote a Slack message to #random about a flaky test.",
+    "The user is debugging a memory leak in routes.py inside their IDE.",
+    "User scheduled a car service appointment for October.",
+    "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+    "User scheduled a car service appointment for October.",
+    "The user reviewed their Ally checking account balance.",
+    "The user is debugging a memory leak in routes.py inside their IDE.",
+    "The user added a standing desk mat to their Amazon cart.",
+    "The user wrote a Slack message to #random about a flaky test.",
+    "The user added a USB-C hub to their Amazon cart.",
+    "The user browsed recipes for thai curry on a cooking blog.",
+    "User replied to an email from a vendor about Qdrant tuning.",
+    "The user wrote a Slack message to #incidents about the new embedder.",
+    "The user scheduled a haircut appointment for August.",
+    "The user is debugging a memory leak in routes.py inside their IDE.",
+    "The user is debugging a memory leak in routes.py inside their IDE.",
+    "The user searched for hotels in Vancouver for the August trip.",
+    "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+    "The user replied to an email from the recruiter about the new embedder.",
+    "The user opened a pull request titled 'wire DI container' on GitHub.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "User added a webcam to their Amazon cart.",
+    "The user wrote a Slack message to #design-review about Qdrant tuning.",
+    "User joined a video call with the infra team in Microsoft Teams.",
+    "The user searched for hotels in Portland for the October trip.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "The user scheduled a haircut appointment for August.",
+    "The user is debugging a memory leak in routes.py inside their IDE.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "The user wrote a Slack message to #dev about the spike results.",
+    "User opened a pull request titled 'fix health gate backoff' on GitHub.",
+    "The user joined a video call with the platform team in Microsoft Teams.",
+    "The user compared prices for a mechanical keyboard across two retailer sites.",
+    "The user is reading the PyInstaller documentation page on single-file builds.",
+    "User watched a tutorial about Electron on YouTube.",
+    "User scheduled a haircut appointment for August.",
+    "User opened a pull request titled 'add search route' on GitHub.",
+    "The user joined a video call with the memory team in Microsoft Teams.",
+    "User scheduled a car service appointment for October.",
+    "The user compared prices for a noise-cancelling headphones across two retailer sites.",
+    "User is reviewing the release notes document in a browser tab.",
+    "The user is debugging a memory leak in routes.py inside their IDE.",
+    "The user compared prices for a webcam across two retailer sites.",
+    "The user compared prices for a mechanical keyboard across two retailer sites.",
+    "The user searched for hotels in Boston for the October trip.",
+    "The user opened a pull request titled 'add search route' on GitHub.",
+    "User opened a pull request titled 'remote engine mode' on GitHub.",
+    "The user is debugging a memory leak in routes.py inside their IDE.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "User watched a tutorial about Electron on YouTube.",
+    "The user scheduled a car service appointment for October.",
+    "User added a standing desk mat to their Amazon cart.",
+    "The user wrote a Slack message to #dev about the spike results.",
+    "The user is learning to play the cello, practicing about 30 minutes a day.",
+    "The user compared prices for noise-cancelling headphones across two retailer sites.",
+    "The user wrote a Slack message to #random about a flaky test.",
+    "The user browsed recipes for tacos on a cooking blog.",
+    "User scheduled a car service appointment for October.",
+    "The user is reviewing the release notes document in a browser tab.",
+    "The user browsed recipes for thai curry on a cooking blog.",
+    "The user is reviewing the API reference document in a browser tab.",
+    "The user is reading the PyInstaller documentation page on vector search.",
+    "User replied to an email from Dana about a flaky test.",
+    "The user searched for hotels in Vancouver for the August trip.",
+    "The user joined a video call with the capture team in Microsoft Teams.",
+    "The user is reading the PyInstaller documentation page on hooks.",
+    "The user scheduled a haircut appointment for August.",
+    "User added a mechanical keyboard to their Amazon cart.",
+    "User watched a tutorial about Electron on YouTube.",
+    "The user scheduled a car service appointment for October.",
+    "The user reviewed their Ally checking account balance.",
+    "The user replied to an email from Priya about the spike results.",
+    "User added a USB-C hub to their Amazon cart.",
+    "User replied to an email from Dana about a flaky test.",
+    "The user browsed recipes for sourdough bread on a cooking blog.",
+    "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+    "The user reviewed their Chase checking account balance.",
+    "User added a USB-C hub to their Amazon cart.",
+    "User joined a video call with the platform team in Microsoft Teams.",
+    "The user scheduled a car service appointment for October.",
+    "User replied to an email from Marcus about the release date.",
+    "User is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+    "User scheduled a haircut appointment for August.",
+    "User added a standing desk mat to their Amazon cart.",
+    "The user browsed recipes for ramen on a cooking blog.",
+    "User added a standing desk mat to their Amazon cart.",
+    "User is reviewing the architecture document in a browser tab.",
+    "The user reviewed their Ally checking account balance.",
+    "The user is reading the PyInstaller documentation page on hooks.",
+    "The user wrote a Slack message to #lore-eng about the release date.",
+    "The user wrote a Slack message to #dev about the spike results.",
+    "User opened a pull request titled 'add search route' on GitHub.",
+    "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+    "The user joined a video call with the infra team in Microsoft Teams.",
+    "User added a noise-cancelling headphones to their Amazon cart.",
+    "The user wrote a Slack message to #incidents about the new embedder.",
+    "The user replied to an email from a vendor about Qdrant tuning.",
+    "The user is reading the PyInstaller documentation page on single-file builds.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "User compared prices for a standing desk mat across two retailer sites.",
+    "The user browsed recipes for sourdough bread on a cooking blog.",
+    "User joined a video call with the memory team in Microsoft Teams.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "The user joined a video call with the memory team in Microsoft Teams.",
+    "The user compared prices for a webcam across two retailer sites.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "User is reviewing the release notes document in a browser tab.",
+    "User is reading the PyInstaller documentation page on vector search.",
+    "The user selected the vegetarian option when ordering lunch.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "The user is reviewing the architecture document in a browser tab.",
+    "User scheduled a car service appointment for October.",
+    "The user is reviewing the privacy document in a browser tab.",
+    "The user browsed recipes for tacos on a cooking blog.",
+    "The user wrote a Slack message to #random about a flaky test.",
+    "The user compared prices for a webcam across two retailer sites.",
+    "The user compared prices for a webcam across two retailer sites.",
+    "The user compared prices for a USB-C hub across two retailer sites.",
+    "The user reviewed their Chase checking account balance.",
+    "The user is reviewing the privacy document in a browser tab.",
+    "The user searched for hotels in Chicago for the October trip.",
+    "The user compared prices for a mechanical keyboard across two retailer sites.",
+    "User added a webcam to their Amazon cart.",
+    "User replied to an email from the recruiter about the new embedder.",
+    "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+    "User watched a tutorial about Electron on YouTube.",
+    "User replied to an email from Dana about a flaky test.",
+    "The user is reviewing the API reference document in a browser tab.",
+    "The user joined a video call with the memory team in Microsoft Teams.",
+    "The user opened a pull request titled 'fix health gate backoff' on GitHub.",
+    "The user replied to an email from the recruiter about the new embedder.",
+    "The user lives in Seattle.",
+    "The user joined a video call with the infra team in Microsoft Teams.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "The user browsed recipes for sourdough bread on a cooking blog.",
+    "The user joined a video call with the capture team in Microsoft Teams.",
+    "The user is reviewing the architecture document in a browser tab.",
+    "The user searched for hotels in Portland for the October trip.",
+    "The user searched for hotels in Portland for the October trip.",
+    "The user is reviewing the architecture document in a browser tab.",
+    "The user added a USB-C hub to their Amazon cart.",
+    "The user opened a pull request titled 'add search route' on GitHub.",
+    "The user replied to an email from a vendor about Qdrant tuning.",
+    "The user is reading the PyInstaller documentation page on hooks.",
+    "The user is reading the PyInstaller documentation page on vector search.",
+    "User joined a video call with the infra team in Microsoft Teams.",
+    "The user added a USB-C hub to their Amazon cart.",
+    "The user is reading the PyInstaller documentation page on vector search.",
+    "User scheduled a haircut appointment for August.",
+    "The user browsed recipes for risotto on a cooking blog.",
+    "The user added a standing desk mat to their Amazon cart.",
+    "User scheduled a car service appointment for October.",
+    "The user browsed recipes for risotto on a cooking blog.",
+    "The user is reviewing the privacy document in a browser tab.",
+    "The user searched for hotels in Denver for the August trip.",
+    "The user browsed recipes for sourdough bread on a cooking blog.",
+    "User searched for hotels in Portland for the October trip.",
+    "The user is reading the PyInstaller documentation page on single-file builds.",
+    "The user replied to an email from the recruiter about the new embedder.",
+    "The user browsed recipes for tacos on a cooking blog.",
+    "User opened a pull request titled 'fix health gate backoff' on GitHub.",
+    "The user wrote a Slack message to #dev about the spike results.",
+    "User scheduled a car service appointment for October.",
+    "The user wrote a Slack message to #incidents about the new embedder.",
+    "The user booked a flight to Tokyo departing March 14 on United Airlines.",
+    "The user's car is a 2019 Subaru Outback, due for an oil change at 60k miles.",
+    "The user searched for hotels in Portland for the October trip.",
+    "The user wrote a Slack message to #design-review about Qdrant tuning.",
+    "The user is debugging a memory leak in routes.py inside their IDE.",
+    "The user reviewed their Ally checking account balance.",
+    "User joined a video call with the design team in Microsoft Teams.",
+    "User is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "User wrote a Slack message to #random about a flaky test.",
+    "The user scheduled a car service appointment for October.",
+    "The user is reviewing the onboarding document in a browser tab.",
+    "User opened a pull request titled 'remote engine mode' on GitHub.",
+    "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+    "The user added a standing desk mat to their Amazon cart.",
+    "The user selected the vegetarian option when ordering lunch.",
+    "The user browsed recipes for ramen on a cooking blog.",
+    "The user's car is a 2019 Subaru Outback, due for an oil change at 60k miles.",
+    "The user is reviewing the onboarding document in a browser tab.",
+    "User opened a pull request titled 'remote engine mode' on GitHub.",
+    "User joined a video call with the platform team in Microsoft Teams.",
+    "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+    "User joined a video call with the design team in Microsoft Teams.",
+    "The user is reading the PyInstaller documentation page on hooks.",
+    "The user is reading the PyInstaller documentation page on single-file builds.",
+    "The user is reviewing the API reference document in a browser tab.",
+    "User opened a pull request titled 'add search route' on GitHub.",
+    "The user is reviewing the release notes document in a browser tab.",
+    "The user is reading the PyInstaller documentation page on single-file builds.",
+    "The user compared prices for a webcam across two retailer sites.",
+    "The user browsed recipes for risotto on a cooking blog.",
+    "User browsed recipes for risotto on a cooking blog.",
+    "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+    "The user added a noise-cancelling headphones to their Amazon cart.",
+    "User searched for hotels in Denver for the August trip.",
+    "User replied to an email from Marcus about the release date.",
+    "The user searched for hotels in Denver for the August trip.",
+    "User added a mechanical keyboard to their Amazon cart.",
+    "The user is reading the PyInstaller documentation page on vector search.",
+    "The user browsed recipes for ramen on a cooking blog.",
+    "The user replied to an email from Marcus about the release date.",
+    "User replied to an email from Priya about the spike results.",
+    "The user reviewed their local credit union checking account balance.",
+    "The user added a standing desk mat to their Amazon cart.",
+    "The user joined a video call with the platform team in Microsoft Teams.",
+    "The user searched for hotels in Portland for the October trip.",
+    "The user searched for hotels in Boston for the August trip.",
+    "User watched a tutorial about Electron on YouTube.",
+    "The user browsed recipes for risotto on a cooking blog.",
+    "User added a standing desk mat to their Amazon cart.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "The user searched for hotels in Denver for the October trip.",
+    "The user browsed recipes for tacos on a cooking blog.",
+    "The user replied to an email from Priya about the spike results.",
+    "The user reviewed their Ally checking account balance.",
+    "The user compared prices for a webcam across two retailer sites.",
+    "User wrote a Slack message to #design-review about Qdrant tuning.",
+    "User searched for hotels in Portland for the August trip.",
+    "User is debugging a timeout in mem0_factory.py inside their IDE.",
+    "User is reviewing the architecture document in a browser tab.",
+    "The user booked a flight to Tokyo departing March 14 on United Airlines.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "User replied to an email from a vendor about Qdrant tuning.",
+    "The user opened a pull request titled 'pin mem0 version' on GitHub.",
+    "The user reviewed their Chase checking account balance.",
+    "The user pays for a Spotify Family plan shared with three relatives.",
+    "The user added a noise-cancelling headphones to their Amazon cart.",
+    "The user replied to an email from a vendor about Qdrant tuning.",
+    "The user compared prices for a standing desk mat across two retailer sites.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "The user is debugging a timeout in mem0_factory.py inside their IDE.",
+    "The user wrote a Slack message to #incidents about the new embedder.",
+    "The user searched for hotels in Chicago for the August trip.",
+    "User scheduled a car service appointment for October.",
+    "User scheduled a car service appointment for October.",
+    "User joined a video call with the design team in Microsoft Teams.",
+    "User joined a video call with the design team in Microsoft Teams.",
+    "The user is debugging a memory leak in routes.py inside their IDE.",
+    "User watched a tutorial about Electron on YouTube.",
+    "User is reading the PyInstaller documentation page on single-file builds.",
+    "The user compared prices for a noise-cancelling headphones across two retailer sites.",
+    "The user compared prices for a USB-C hub across two retailer sites.",
+    "The user replied to an email from Dana about a flaky test.",
+    "The user reviewed their Ally checking account balance.",
+    "User searched for hotels in Chicago for the October trip.",
+    "The user is debugging a memory leak in routes.py inside their IDE.",
+    "User added a noise-cancelling headphones to their Amazon cart.",
+    "The user is reading the PyInstaller documentation page on single-file builds.",
+    "The user searched for hotels in Portland for the October trip.",
+    "The user wrote a Slack message to #dev about the spike results.",
+    "The user added a mechanical keyboard to their Amazon cart.",
+    "The user reviewed their Chase checking account balance.",
+    "The user wrote a Slack message to #incidents about the new embedder.",
+    "User scheduled a car service appointment for October.",
+    "The user searched for hotels in Chicago for the August trip.",
+    "The user prefers dark mode in every application.",
+    "The user scheduled a car service appointment for October.",
+    "User reviewed their Chase checking account balance.",
+    "The user replied to an email from Dana about a flaky test.",
+    "The user replied to an email from the recruiter about the new embedder.",
+    "The user searched for hotels in Boston for the August trip.",
+    "The user searched for hotels in Boston for the October trip.",
+    "User added a standing desk mat to their Amazon cart.",
+    "The Memory Service spec (002) is due for review by June 20.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "The user prefers dark mode in every application.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "User added a USB-C hub to their Amazon cart.",
+    "The user browsed recipes for tacos on a cooking blog.",
+    "User scheduled a haircut appointment for August.",
+    "User noted the 002 memory-service review deadline is June 20.",
+    "User opened a pull request titled 'wire DI container' on GitHub.",
+    "User watched a tutorial about Electron on YouTube.",
+    "User scheduled a haircut appointment for August.",
+    "User added a mechanical keyboard to their Amazon cart.",
+    "The user wrote a Slack message to #incidents about the new embedder.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "The user is allergic to penicillin.",
+    "The user searched for hotels in Chicago for the October trip.",
+    "User searched for hotels in Boston for the August trip.",
+    "The user reviewed their Ally checking account balance.",
+    "The user searched for hotels in Denver for the October trip.",
+    "User selected the vegetarian option when ordering lunch.",
+    "The user is reading the PyInstaller documentation page on vector search.",
+    "User joined a video call with the memory team in Microsoft Teams.",
+    "User opened a pull request titled 'remote engine mode' on GitHub.",
+    "The user reviewed their Ally checking account balance.",
+    "User added a standing desk mat to their Amazon cart.",
+    "The user wrote a Slack message to #lore-eng about the release date.",
+    "The user is reading the PyInstaller documentation page on hooks.",
+    "The user is reading the PyInstaller documentation page on vector search.",
+    "The user compared prices for a webcam across two retailer sites.",
+    "The user scheduled a haircut appointment for August.",
+    "The user is reading the PyInstaller documentation page on vector search.",
+    "The user browsed recipes for sourdough bread on a cooking blog.",
+    "The user added a USB-C hub to their Amazon cart.",
+    "The user wrote a Slack message to #lore-eng about the release date.",
+    "User watched a tutorial about Electron on YouTube.",
+    "The user reviewed their Chase checking account balance.",
+    "The user lives in Seattle, Washington.",
+    "User reviewed their Ally checking account balance.",
+    "User watched a tutorial about Electron on YouTube.",
+    "The user is reviewing the architecture document in a browser tab.",
+    "The user joined a video call with the memory team in Microsoft Teams.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "User joined a video call with the capture team in Microsoft Teams.",
+    "The user is reading the PyInstaller documentation page on single-file builds.",
+    "User browsed recipes for sourdough bread on a cooking blog.",
+    "User opened a pull request titled 'pin mem0 version' on GitHub.",
+    "User joined a video call with the design team in Microsoft Teams.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "The user searched for hotels in Denver for the October trip.",
+    "The user searched for hotels in Denver for the August trip.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "The user's car is a 2019 Subaru Outback.",
+    "The user browsed recipes for ramen on a cooking blog.",
+    "User added a mechanical keyboard to their Amazon cart.",
+    "User is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+    "User opened a pull request titled 'pin mem0 version' on GitHub.",
+    "User replied to an email from Dana about a flaky test.",
+    "The user wrote a Slack message to #random about a flaky test.",
+    "The user browsed recipes for risotto on a cooking blog.",
+    "The user is reviewing the architecture document in a browser tab.",
+    "The user is reading the PyInstaller documentation page on hooks.",
+    "User watched a tutorial about Electron on YouTube.",
+    "User replied to an email from a vendor about Qdrant tuning.",
+    "User replied to an email from a vendor about Qdrant tuning.",
+    "User compared prices for a USB-C hub across two retailer sites.",
+    "User opened a pull request titled 'pin mem0 version' on GitHub.",
+    "User scheduled a haircut appointment for August.",
+    "The user compared prices for a webcam across two retailer sites.",
+    "The user is debugging a memory leak in routes.py inside their IDE.",
+    "User scheduled a car service appointment for October.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "The user compared prices for a standing desk mat across two retailer sites.",
+    "The user searched for hotels in Boston for the August trip.",
+    "The user reviewed their Chase checking account balance.",
+    "The user browsed recipes for ramen on a cooking blog.",
+    "The user compared prices for a standing desk mat across two retailer sites.",
+    "The user compared prices for a standing desk mat across two retailer sites.",
+    "The user compared prices for a mechanical keyboard across two retailer sites.",
+    "The user scheduled a car service appointment for October.",
+    "The user wrote a Slack message to #design-review about Qdrant tuning.",
+    "The user is reading the PyInstaller documentation page on vector search.",
+    "The user replied to an email from Dana about a flaky test.",
+    "The user is reviewing the onboarding document in a browser tab.",
+    "User added a webcam to their Amazon cart.",
+    "User scheduled a haircut appointment for August.",
+    "The user is debugging a memory leak in routes.py inside their IDE.",
+    "User joined a video call with the platform team in Microsoft Teams.",
+    "The user is reviewing the privacy document in a browser tab.",
+    "The user browsed recipes for thai curry on a cooking blog.",
+    "The user is reading the PyInstaller documentation page on vector search.",
+    "The user reviewed their Chase checking account balance.",
+    "User watched a tutorial about Electron on YouTube.",
+    "User reviewed their local credit union checking account balance.",
+    "The user is reviewing the API reference document in a browser tab.",
+    "The user is reviewing the architecture document in a browser tab.",
+    "User scheduled a car service appointment for October.",
+    "The user browsed recipes for sourdough bread on a cooking blog.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "The user scheduled a car service appointment for October.",
+    "The user prefers dark mode in every application.",
+    "The user is allergic to penicillin.",
+    "The user is debugging a memory leak in routes.py inside their IDE.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "User watched a tutorial about Electron on YouTube.",
+    "The user searched for hotels in Denver for the August trip.",
+    "User opened a pull request titled 'wire DI container' on GitHub.",
+    "User added a standing desk mat to their Amazon cart.",
+    "The user compared prices for a standing desk mat across two retailer sites.",
+    "User watched a tutorial about Electron on YouTube.",
+    "The user browsed recipes for risotto on a cooking blog.",
+    "The user wrote a Slack message to #incidents about the new embedder.",
+    "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+    "The user has switched their primary editor from VS Code to Neovim.",
+    "The user scheduled a car service appointment for October.",
+    "The user is reading the PyInstaller documentation page on vector search.",
+    "User watched a tutorial about Electron on YouTube.",
+    "User opened a pull request titled 'pin mem0 version' on GitHub.",
+    "User opened a pull request titled 'fix health gate backoff' on GitHub.",
+    "User added a standing desk mat to their Amazon cart.",
+    "The user added a webcam to their Amazon cart.",
+    "The user watched a tutorial about Electron on YouTube.",
+    "The user opened a pull request titled 'remote engine mode' on GitHub.",
+    "User wrote a Slack message to #incidents about the new embedder.",
+    "The user is reading the PyInstaller documentation page on vector search.",
+    "The user is reviewing the onboarding document in a browser tab.",
+    "User watched a tutorial about Electron on YouTube.",
+    "The user wrote a Slack message to #lore-eng about the release date.",
+    "The user is learning to play the cello, practicing about 30 minutes a day.",
+    "The user joined a video call with the design team in Microsoft Teams.",
+    "The user added a standing desk mat to their Amazon cart.",
+    "The user searched for hotels in Portland for the August trip.",
+    "The user is reviewing the architecture document in a browser tab.",
+    "User added a USB-C hub to their Amazon cart.",
+    "The user is reading the PyInstaller documentation page on vector search.",
+    "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+    "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+    "The user is reviewing the privacy document in a browser tab.",
+    "The user is learning to play the cello, practicing about 30 minutes a day.",
+    "User joined a video call with the infra team in Microsoft Teams.",
+    "The Memory Service spec (002) is due for review by June 20, 2026.",
+    "The user wrote a Slack message to #incidents about the new embedder.",
+    "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+    "The user browsed recipes for tacos on a cooking blog.",
+    "User joined a video call with the memory team in Microsoft Teams.",
+    "User opened a pull request titled 'remote engine mode' on GitHub.",
+    "The user searched for hotels in Portland for the August trip.",
+    "The user searched for hotels in Vancouver for the October trip.",
+    "The user compared prices for a webcam across two retailer sites.",
+    "The user is reading the PyInstaller documentation page on single-file builds.",
+    "The user is reviewing the API reference document in a browser tab.",
+    "The user reviewed their Ally checking account balance.",
+    "User opened a pull request titled 'wire DI container' on GitHub.",
+    "User reviewed their Chase checking account balance.",
+    "The user searched for hotels in Vancouver for the October trip.",
+    "The user wrote a Slack message to #random about a flaky test.",
+    "The user scheduled a haircut appointment for August.",
+    "The user is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+    "User added a USB-C hub to their Amazon cart.",
+    "The user's car is a 2019 Subaru Outback, due for an oil change at 60k miles.",
+    "The user reviewed their Ally checking account balance.",
+    "User replied to an email from the recruiter about the new embedder.",
+    "The user is reading the PyInstaller documentation page on vector search.",
+    "The user is reading the PyInstaller documentation page on vector search.",
+    "User scheduled a haircut appointment for August.",
+    "User opened a pull request titled 'pin mem0 version' on GitHub.",
+    "The user reviewed their local credit union checking account balance.",
+    "The user browsed recipes for tacos on a cooking blog.",
+    "The user wrote a Slack message to #design-review about Qdrant tuning.",
+    "The user wrote a Slack message to #incidents about the new embedder.",
+    "The user reviewed their local credit union checking account balance.",
+    "The user opened a pull request titled 'add search route' on GitHub.",
+    "The user searched for hotels in Boston for the August trip.",
+    "User is reviewing the onboarding document in a browser tab.",
+    "User joined a video call with the design team in Microsoft Teams.",
+    "The user pays for a Spotify Family plan shared with three relatives.",
+    "User scheduled a car service appointment for October.",
+    "The user wrote a Slack message to #random about a flaky test.",
+    "The user compared prices for noise-cancelling headphones across two retailer sites.",
+    "The user compared prices for a mechanical keyboard across two retailer sites.",
+    "User watched a tutorial about Electron on YouTube.",
+    "The user is debugging a memory leak in routes.py inside their IDE.",
+    "User is debugging a null reference exception in MemorydClient.cs inside their IDE.",
+    "The user browsed recipes for risotto on a cooking blog.",
+    "The user compared prices for a webcam across two retailer sites.",
+    "User added a noise-cancelling headphones to their Amazon cart.",
+    "The user is reading 'The Three-Body Problem' by Liu Cixin.",
+    "User joined a video call with the infra team in Microsoft Teams.",
+    "The user added a mechanical keyboard to their Amazon cart.",
+    "The user wrote a Slack message to #dev about the spike results.",
+    "The user is reading the PyInstaller documentation page on single-file builds.",
+    "The user compared prices for a USB-C hub across two retailer sites.",
+    "The user searched for hotels in Portland for the October trip.",
+    "The user is debugging a memory leak in routes.py inside their IDE.",
+    "The user is debugging a memory leak in routes.py inside their IDE.",
+    "User wrote a Slack message to #lore-eng about the release date.",
+    "The user wrote a Slack message to #lore-eng about the release date.",
+    "The user browsed recipes for sourdough bread on a cooking blog.",
+    "The user replied to an email from Marcus about the release date.",
+    "User opened a pull request titled 'wire DI container' on GitHub.",
+    "User reviewed their Chase checking account balance.",
+    "The user wrote a Slack message to #design-review about Qdrant tuning."
+  ]
+}

@@ -73,6 +73,15 @@ Run `no-mistakes init`; commit its config. Document the gate workflow in
 **Done when:** a trivial change is driven through `no-mistakes` to `checks-passed`
 on a feature branch, proving the gate end-to-end.
 
+> **Deviation (recorded at implementation):** GitHub gates branch protection and
+> rulesets behind GitHub Pro or a public repo; `loreos` is currently a **free
+> private** repo, so neither the protection API nor rulesets can be applied
+> (both return HTTP 403). **Branch protection is deferred to spec 011 (launch)**,
+> which makes the repo public and enables required status checks at that point.
+> In the meantime the four checks are **soft-enforced by process**: every change
+> ships through `no-mistakes`, whose CI step runs the same workflow and must be
+> green before the work is considered done. See spec 011 for the follow-up.
+
 ---
 
 ## Definition of done for spec 001

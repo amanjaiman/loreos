@@ -28,6 +28,11 @@ README.md                 # demo GIF + 3-step quickstart
 - **agent**: `dotnet publish -c Release` (self-contained `win-x64`).
 - **memoryd**: PyInstaller per `memoryd.spec` → single exe; the agent's supervisor
   (002) launches the packaged exe in production and `python -m lore_memoryd` in dev.
+  Exclude `torch`, `transformers`, and `scipy`/`sklearn` (not used at runtime with the
+  Ollama/local embedder) to keep the exe ~175 MB rather than ~358 MB
+  (spec 002 spike Finding 4). Consider `--onedir` over `--onefile` if cold-start
+  latency (temp-dir extraction on first launch) is too large for the supervisor's
+  health-gate budget.
 - **app**: electron-forge make (Squirrel installer) bundles the published agent, the
   memoryd exe, and puts `lore` (CLI) on PATH.
 - **signing**: code-sign the agent, CLI, memoryd exe, and installer to limit AV
@@ -65,7 +70,10 @@ credential storage (004), and diff actual network egress against `privacy.md`. R
 
 Polish issue/PR templates; seed 5–10 good-first-issues across components; write the
 launch checklist (Show HN, r/LocalLLaMA, mem0 community/Discord as "an ambient
-capture agent for mem0", MCP server directories, skill/plugin marketplaces).
+capture agent for mem0", MCP server directories, skill/plugin marketplaces). When
+the repo is made public, enable branch protection on the default branch requiring the
+four CI checks (`csharp`, `python`, `app`, `secrets`) — this completes the deferred
+spec 001 / T009 work (GitHub blocks branch protection on free private repos).
 
 ## Decisions
 
