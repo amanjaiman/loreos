@@ -9,8 +9,10 @@ pinned mem0 dependency arrive with spec 002.
 ## Develop
 
 ```sh
-pip install -e "memoryd[dev]"
-ruff check memoryd
-mypy memoryd          # config in pyproject.toml
-pytest memoryd
+cd memoryd
+pip install -e ".[dev]"
+ruff check .
+ruff format --check .
+mypy
+pytest
 ```
