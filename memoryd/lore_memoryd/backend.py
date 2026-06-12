@@ -98,6 +98,9 @@ class Mem0Backend:
         # mem0's get_all has no offset, so fetch through the requested window and
         # slice. Pagination lets the agent enumerate a whole store (MemorydClient
         # loops pages); a single huge top_k could otherwise hit an engine cap.
+        # Trade-off: each page call fetches top_k = offset + limit items, so a full
+        # enumeration over N items costs O(N²) in vector-store round-trips. Acceptable
+        # at personal-assistant scale; a native cursor would eliminate this.
         raw = self._mem.get_all(filters={"user_id": user_id}, top_k=offset + limit)
         window = _results(raw)[offset : offset + limit]
         return [_to_item(d) for d in window]

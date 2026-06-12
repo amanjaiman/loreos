@@ -188,7 +188,9 @@ public sealed class MemorydClient : IMemoryService
             return;
         }
 
-        string body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        string raw = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        const int BodyCap = 4096;
+        string body = raw.Length > BodyCap ? raw[..BodyCap] + " …[truncated]" : raw;
         throw new MemorydException(operation, (int)response.StatusCode, body);
     }
 

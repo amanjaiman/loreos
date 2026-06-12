@@ -22,7 +22,10 @@ public interface IMemoryService
         int limit = 10,
         CancellationToken cancellationToken = default);
 
-    /// <summary>The most recent memories for a user.</summary>
+    /// <summary>Recent memories for a user, in the order the memory engine returns
+    /// them. The engine does not guarantee recency sorting; results typically reflect
+    /// insertion order but may vary by backend. Strict recency ordering is deferred
+    /// until spec 005+ consumers (context injection) require it.</summary>
     Task<IReadOnlyList<MemoryRecord>> GetRecentAsync(
         string userId = "default",
         int count = 20,
