@@ -17,6 +17,7 @@
 *.yaml  text
 *.toml  text
 
+*.pdf   binary
 *.png   binary
 *.jpg   binary
 *.gif   binary

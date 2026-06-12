@@ -58,7 +58,7 @@ dotnet_style_prefer_auto_properties = true:suggestion
 csharp_style_expression_bodied_methods = when_on_single_line:suggestion
 csharp_style_expression_bodied_properties = true:suggestion
 
-# --- naming: standard .NET conventions at suggestion strength ---
+# --- naming: interface prefix enforced at warning strength (build error via TreatWarningsAsErrors) ---
 dotnet_naming_rule.interfaces_begin_with_i.severity = warning
 dotnet_naming_rule.interfaces_begin_with_i.symbols = interfaces
 dotnet_naming_rule.interfaces_begin_with_i.style = begins_with_i
@@ -73,3 +73,4 @@ dotnet_diagnostic.CA1303.severity = none
 dotnet_diagnostic.CA1014.severity = none
 # CA1848/CA2254: LoggerMessage delegates — revisit when logging arrives (003+).
 dotnet_diagnostic.CA1848.severity = suggestion
+dotnet_diagnostic.CA2254.severity = suggestion
