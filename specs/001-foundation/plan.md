@@ -16,7 +16,7 @@ specs 002–011 inherit a known-good, self-policing baseline.
 
 ```
 loreos/
-├── global.json                 # pin .NET SDK 8.0.x
+├── global.json                 # pin .NET SDK 8.0.204; rollForward latestPatch
 ├── Lore.sln                    # solution: agent, cli, agent.tests
 ├── Directory.Build.props       # shared C# props: analyzers, TreatWarningsAsErrors, nullable
 ├── .editorconfig               # formatting + analyzer severities (C#, TS, py)

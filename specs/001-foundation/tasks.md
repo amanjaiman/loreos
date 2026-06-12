@@ -11,7 +11,7 @@ Legend: `[deps: …]` lists prerequisite task IDs.
 ---
 
 ### T001 — Solution skeleton + shared C# build props  `[deps: —]`
-Create `Lore.sln`, `global.json` (pin .NET 8.0.x), and `Directory.Build.props`
+Create `Lore.sln`, `global.json` (pin .NET SDK 8.0.204, rollForward latestPatch), and `Directory.Build.props`
 (`LangVersion=latest`, nullable enable, implicit usings, `TreatWarningsAsErrors`,
 NET analyzers, `AnalysisLevel=8.0`, `AnalysisMode=All`, `EnforceCodeStyleInBuild=true`). Add
 empty `agent` (`net8.0-windows`, `UseWPF=true`), `cli` (`net8.0`), and
