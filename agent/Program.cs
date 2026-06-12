@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text;
 
 namespace Lore.Agent;
 
