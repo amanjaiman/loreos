@@ -151,6 +151,11 @@ gate. See [`tasks.md`](tasks.md).
   `trailingComma: "all"` and `format` / `format:check` scripts; `.prettierignore`
   covers `.webpack/` and `out/` build output. Enforces consistent style before any
   spec-010 code lands.
+- **`endOfLine: auto` in Prettier config (T008).** The scaffold originally wrote
+  `"endOfLine": "crlf"`. This passed on the Windows working tree but failed the
+  Linux CI runner because `.gitattributes` normalizes files to LF on checkout, so
+  Prettier saw LF-terminated files and reported a mismatch. Changed to `"auto"` so
+  Prettier defers to the line ending git delivers on each platform.
 - **`renderer.ts` renamed `renderer.tsx`.** The renderer entry uses JSX; TypeScript
   requires the `.tsx` extension. Forge `entryPoints` updated accordingly.
 - **DevTools auto-open removed.** The template calls `mainWindow.webContents.openDevTools()`
@@ -164,3 +169,8 @@ gate. See [`tasks.md`](tasks.md).
 - **31 npm audit vulnerabilities in dev tooling.** These are known Electron Forge
   template dependencies (dev-only, no runtime path). Not addressed in T004; tracked
   as template noise. Spec 011 (packaging) owns dependency hardening.
+- **gitleaks pinned to v8.30.1 with checksum verification (T008).** Installing via
+  the GitHub Releases tarball (not `apt` or `brew`) pins an exact version and
+  verifies the SHA-256 checksum before unpacking. This satisfies the supply-chain
+  posture in constitution §4.1 and makes the runner behavior deterministic across
+  runner image upgrades.
