@@ -71,7 +71,8 @@ Branch protection requires all four. CI completes in <10 min (skeletons are tiny
 
 ## Tooling configuration
 
-- **C#:** `Directory.Build.props` sets `<Nullable>enable</Nullable>`,
+- **C#:** `Directory.Build.props` sets `<LangVersion>latest</LangVersion>`,
+  `<Nullable>enable</Nullable>`, `<ImplicitUsings>enable</ImplicitUsings>`,
   `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>`,
   `<EnableNETAnalyzers>true</EnableNETAnalyzers>`, `<AnalysisLevel>8.0</AnalysisLevel>`,
   `<AnalysisMode>All</AnalysisMode>`, `<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>`
