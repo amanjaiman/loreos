@@ -23,12 +23,17 @@ Pin mem0 + Qdrant in `pyproject.toml`. Wire mem0 in app lifespan.
 **Done when:** routes work against a local mem0 with a test config; `ruff`, `mypy`,
 `pytest` green.
 
-### T003 — mem0 factory + local embedder default  `[deps: T002]`
+### T003 — mem0 factory + local embedder default + reconciliation  `[deps: T002]`
 Implement `mem0_factory.py`: build mem0's `config` (LLM, embedder, on-disk Qdrant)
-from a provider config. Implement the `follow_provider` embedder with a local
-default when the provider has no first-party embeddings.
+from a provider config, with `history_db_path` under the Lore data dir (never mem0's
+global `~/.mem0`). Implement the `follow_provider` embedder with a local default
+(Ollama `nomic-embed-text`, 768-dim) when the provider has no first-party embeddings.
+Implement `reconcile.py` (spike Option C): after `add`, near-neighbor search → LLM
+supersede/duplicate/unrelated judgment → mem0 `update()`/`delete()`, since mem0
+2.0.x's `add()` is additive-only (spike Finding 1).
 **Done when:** a provider config with no embedding capability still yields working
-search via the local embedder; covered by a test.
+search via the local embedder; a contradicting fact converges to one current memory
+via reconciliation; both covered by tests.
 
 ### T004 — `IMemoryService` + `MemorydClient` + models  `[deps: T002]`
 Define `IMemoryService` (Remember/Search/GetRecent/GetAll/Get/Update/Delete) and
@@ -53,8 +58,10 @@ code change; covered by a test using a stand-in server.
 
 ### T007 — Contract tests + CI job  `[deps: T002, T004]`
 Add contract tests asserting mem0's add/search/update/delete behaviors against the
-pinned version, and a CI job that runs them. Assert the dedup/update behavior from
-acceptance criterion 3 explicitly.
+pinned version, and a CI job that runs them. Assert acceptance criterion 3 explicitly:
+adding a contradicting fact leaves **one** memory reflecting the new truth, via
+`memoryd`'s reconciliation pass (spike Option C) — not mem0's native `add()`, which
+is additive-only on the pinned 2.0.x.
 **Done when:** the contract suite is green in CI against the pinned mem0; bumping
 mem0 is a deliberate, test-guarded change.
 

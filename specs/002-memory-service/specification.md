@@ -71,8 +71,10 @@ before the production service is built.
 2. The agent spawns `memoryd`, waits for `/health` to go green before first use,
    and restarts it if it dies; killing memoryd mid-run is recovered automatically.
 3. `add` followed by `search` for the same topic returns the stored memory; adding
-   a contradicting fact updates rather than duplicates (mem0's UPDATE behavior is
-   exercised and asserted).
+   a contradicting fact updates rather than duplicates — the store converges to one
+   current memory. (mem0 2.0.x's `add()` is additive-only, so this is enforced by
+   `memoryd`'s reconciliation pass; see [`plan.md`](plan.md) Decisions and
+   [`spike-findings.md`](spike-findings.md) Finding 1.)
 4. With only an Anthropic-style key configured (no embedding key), memoryd still
    produces embeddings via the **local default** — no surprise embedding calls.
 5. Switching `memory.engine` from `embedded` to `remote` (pointing at a test mem0

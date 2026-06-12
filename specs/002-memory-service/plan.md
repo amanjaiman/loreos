@@ -22,6 +22,7 @@ memoryd/
 │   ├── app.py                     # FastAPI app + lifespan (init mem0 from config)
 │   ├── routes.py                  # /memories CRUD, /search, /health, /config
 │   ├── mem0_factory.py            # build mem0 Memory() from a provider config
+│   ├── reconcile.py               # post-add conflict reconciliation (spike Option C)
 │   └── models.py                  # pydantic request/response models
 └── tests/                         # contract tests against pinned mem0
 ```
@@ -32,7 +33,7 @@ memoryd/
 |---|---|
 | `GET /health` | readiness (`{"status":"ok"}`) |
 | `POST /config` | (re)initialize mem0 with a provider config |
-| `POST /memories` | add: `{text, user_id, metadata}` → mem0 add (extract/dedup/update) |
+| `POST /memories` | add: `{text, user_id, metadata}` → mem0 add **+ reconciliation pass** (extract/dedup, then near-neighbor supersede/duplicate resolution — see Decisions) |
 | `POST /memories/search` | `{query, user_id, limit, filters}` → ranked results |
 | `GET /memories` | get_all for a user (paged) |
 | `GET /memories/{id}` · `PATCH /memories/{id}` · `DELETE /memories/{id}` | single-item ops |
@@ -91,6 +92,12 @@ provider UI.
 
 ## The spike (do this first)
 
+> **Status: complete — GO** on mem0 and on PyInstaller packaging. See
+> [`spike-findings.md`](spike-findings.md). The corpus was synthetic (no v1 `lore.db`
+> on hand) and the clean-VM packaging check is deferred to the installer spec; both
+> are recorded as caveats. The one design-affecting result (additive `add()`) is
+> captured in Decisions above.
+
 A throwaway branch, time-boxed, producing `spike-findings.md` in this folder:
 
 1. Export ~200 distilled observations from a v1 `lore.db` (a small read-only
@@ -113,6 +120,21 @@ contract tests + CI job. See [`tasks.md`](tasks.md).
 - **Sidecar over in-process** (Option A from the project plan): full mem0 parity,
   isolates the fast-moving dependency, gives a reusable local seam.
 - **Pinned mem0 + contract tests** are mandatory, not optional — this is the churn
-  firewall.
+  firewall. Spike pinned **`mem0ai==2.0.5`**.
 - **Local embedder default** protects users from accidental embedding spend and
-  keeps "bring your own key" honest.
+  keeps "bring your own key" honest. Spike validated **Ollama `nomic-embed-text`
+  (768-dim)**: 10/10 ground-truth search hits, p50 49 ms.
+- **`memoryd`-side conflict reconciliation** (spike T001, ratified Option C). mem0
+  2.0.x's default `add()` is **additive + exact-hash dedup only** — it does *not*
+  emit LLM UPDATE/DELETE, so contradictory/near-duplicate facts accumulate (~5× store
+  bloat observed at 200 obs). To satisfy acceptance criterion 3 on the maintained
+  mem0 line, `memoryd` runs an explicit reconciliation pass after `add`: near-neighbor
+  search → LLM "supersedes / duplicate / unrelated" judgment → mem0 `update()` /
+  `delete()` so the store converges to one current fact. See
+  [`spike-findings.md`](spike-findings.md) Finding 1.
+- **`history_db_path` under the Lore data dir**, never mem0's global `~/.mem0`
+  default — the global default leaks per-`user_id` "Last k Messages" across instances
+  and poisons extraction (spike Finding 2).
+- **Minimum capable extraction model.** Memory quality is strongly LLM-bound: a 2B
+  model confabulates; a 7B-class (or hosted frontier) model extracts cleanly
+  (spike Finding 2). Documented for the provider/onboarding surfaces.
