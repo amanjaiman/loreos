@@ -78,7 +78,12 @@ Branch protection requires all four. CI completes in <10 min (skeletons are tiny
   `<EnableNETAnalyzers>true</EnableNETAnalyzers>`, `<AnalysisLevel>8.0</AnalysisLevel>`,
   `<AnalysisMode>All</AnalysisMode>`, `<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>`
   (pinned to 8.0 so the analyzer ruleset is deterministic across SDK patch versions).
-  `.editorconfig` carries the agreed severities (the one place to tune noise).
+  `.editorconfig` is the single place to tune analyzer noise — never `<NoWarn>` in
+  project files. Agreed baseline (see Decisions below): file-scoped namespaces and
+  required braces at `warning` (become build errors via `EnforceCodeStyleInBuild` +
+  `TreatWarningsAsErrors`); interface prefix naming at `warning`; CA1303 and CA1014
+  disabled; CA1848 and CA2254 downgraded to `suggestion` until logging arrives in
+  spec 003.
 - **Python:** `ruff` (lint + format) and `mypy --strict` configured in
   `pyproject.toml`; `pytest` with `-q`.
 - **App:** `eslint` (typescript-eslint recommended), `prettier`, `tsc --noEmit`.
@@ -120,3 +125,19 @@ gate. See [`tasks.md`](tasks.md).
 - **`UseWPF=true` set now.** Avoids a disruptive csproj change mid-capture-spec.
 - **C# on Windows runners, everything else on Linux.** Matches the Windows-first
   reality without paying Windows-runner cost on Python/app/secret jobs.
+- **Analyzer severities live in `.editorconfig`, never `<NoWarn>`.** Keeps the
+  agreed noise baseline in one visible, reviewable place rather than scattered
+  across project files.
+- **File-scoped namespaces and required braces at `warning`.** Both become build
+  errors via `EnforceCodeStyleInBuild` + `TreatWarningsAsErrors`, enforcing
+  consistent style without a separate linter pass.
+- **Interface prefix naming at `warning`.** Same escalation path as above;
+  `IFoo` convention is non-negotiable for this codebase.
+- **CA1303 (localized strings) disabled.** Lore is deliberately not localized;
+  the rule adds noise with no benefit.
+- **CA1014 (CLSCompliant) disabled.** This is an application, not a redistributable
+  library; CLS compliance is irrelevant.
+- **CA1848 and CA2254 (LoggerMessage / structured logging) downgraded to
+  `suggestion`.** The logging infrastructure does not exist yet; elevating these to
+  errors before spec 003 would fail every placeholder that touches ILogger. Revisit
+  when logging arrives.
