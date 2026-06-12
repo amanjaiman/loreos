@@ -21,9 +21,10 @@ memoryd/
 ├── lore_memoryd/
 │   ├── app.py                     # FastAPI app + lifespan (init mem0 from config)
 │   ├── routes.py                  # /memories CRUD, /search, /health, /config
+│   ├── backend.py                 # MemoryBackend Protocol + Mem0Backend adapter (typed seam)
 │   ├── mem0_factory.py            # build mem0 Memory() from a provider config
-│   ├── reconcile.py               # post-add conflict reconciliation (spike Option C)
-│   └── models.py                  # pydantic request/response models
+│   ├── reconcile.py               # post-add conflict reconciliation (spike Option C, T003)
+│   └── models.py                  # pydantic request/response models (HTTP wire contract)
 └── tests/                         # contract tests against pinned mem0
 ```
 

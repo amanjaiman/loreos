@@ -1,0 +1,4 @@
+# Historical false-positive suppressions — fake values used in unit-test fixtures.
+# These fingerprints match synthetic strings in test_routes.py that are NOT real secrets.
+ff4a89dcf6b3fffef8e438cef7f833ecc7b86162:memoryd/tests/test_routes.py:generic-api-key:80
+6a9ee45f9b8cb0b9d8ff221cf4ab6444d4fcc4d0:memoryd/tests/test_routes.py:generic-api-key:98

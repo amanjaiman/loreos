@@ -3,8 +3,22 @@
 The Lore memory sidecar: a FastAPI wrapper around [mem0](https://github.com/mem0ai/mem0),
 spawned and health-checked by the Lore agent. Binds to `127.0.0.1` only.
 
-Spec 001 ships the importable package and `GET /health`; memory routes and the
-pinned mem0 dependency arrive with spec 002.
+## Routes
+
+| Method · Path | Purpose |
+|---|---|
+| `GET /health` | liveness (`{"status":"ok"}`) |
+| `POST /config` | (re)initialize mem0 from a provider config |
+| `POST /memories` | add (extract + store) |
+| `POST /memories/search` | ranked semantic search |
+| `GET /memories` | list a user's memories |
+| `GET·PATCH·DELETE /memories/{id}` | single-item ops |
+
+mem0 + Qdrant are **pinned** (`mem0ai==2.0.5`); the engine is built by
+[`mem0_factory.py`](lore_memoryd/mem0_factory.py) and reached only through the
+typed [`backend.py`](lore_memoryd/backend.py) seam. The embedder defaults to a
+local model (Ollama `nomic-embed-text`) when the provider has no first-party
+embeddings — see [`../specs/002-memory-service/`](../specs/002-memory-service/).
 
 ## Develop
 
@@ -15,4 +29,12 @@ ruff check .
 ruff format --check .
 mypy
 pytest
+```
+
+The default suite uses an in-memory fake backend, so it needs no mem0/Ollama and
+runs in CI. To exercise the routes against a **real** mem0 + Qdrant + Ollama
+(`nomic-embed-text` and a chat model pulled, `ollama serve` running):
+
+```sh
+LORE_TEST_OLLAMA=1 pytest tests/test_integration_ollama.py
 ```

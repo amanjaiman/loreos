@@ -25,20 +25,24 @@ no-go, `plan.md` is amended to the fallback before any further task starts.
 *(Spike code is not merged into the product; the report is the deliverable.)*
 
 ### T002 — memoryd skeleton → real routes  `[deps: T001]`
+
+> **Status: complete.** Routes, pydantic models, `mem0_factory.py`, and the typed
+> `backend.py` seam all landed here. The `follow_provider` embedder refinement and
+> `reconcile.py` are the remaining T003 deliverables.
+
 Grow the foundation `memoryd` from `/health`-only into the full route set
 (`/config`, `/memories` add/search/get_all/get/update/delete) with pydantic models.
 Pin mem0 + Qdrant in `pyproject.toml`. Wire mem0 in app lifespan.
 **Done when:** routes work against a local mem0 with a test config; `ruff`, `mypy`,
 `pytest` green.
 
-### T003 — mem0 factory + local embedder default + reconciliation  `[deps: T002]`
-Implement `mem0_factory.py`: build mem0's `config` (LLM, embedder, on-disk Qdrant)
-from a provider config, with `history_db_path` under the Lore data dir (never mem0's
-global `~/.mem0`). Implement the `follow_provider` embedder with a local default
-(Ollama `nomic-embed-text`, 768-dim) when the provider has no first-party embeddings.
-Implement `reconcile.py` (spike Option C): after `add`, near-neighbor search → LLM
-supersede/duplicate/unrelated judgment → mem0 `update()`/`delete()`, since mem0
-2.0.x's `add()` is additive-only (spike Finding 1).
+### T003 — follow_provider embedder + reconciliation  `[deps: T002]`
+Complete the `follow_provider` embedder policy in `mem0_factory.py`: prefer the
+provider's own first-party embeddings (e.g. OpenAI) before falling back to the local
+Ollama default (`nomic-embed-text`, 768-dim). Implement `reconcile.py` (spike Option
+C): after `add`, near-neighbor search → LLM supersede/duplicate/unrelated judgment →
+mem0 `update()`/`delete()`, since mem0 2.0.x's `add()` is additive-only (spike
+Finding 1).
 **Done when:** a provider config with no embedding capability still yields working
 search via the local embedder; a contradicting fact converges to one current memory
 via reconciliation; both covered by tests.
