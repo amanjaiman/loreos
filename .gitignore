@@ -1,4 +1,4 @@
-# .NET build artifacts (Node/Electron entries arrive with their components)
+# .NET
 bin/
 obj/
 *.user
@@ -11,6 +11,18 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+
+# Node / Electron
+node_modules/
+.webpack/
+out/
+dist/
+*.log
+.eslintcache
+
+# OS noise
+.DS_Store
+Thumbs.db
 
 # Local working documents — PLAN.html references the legacy project URL,
 # which constitution §4.1 bans from the repo.
