@@ -9,11 +9,13 @@ T003 hooks the post-add reconciliation pass into `Mem0Backend.add`.
 
 from __future__ import annotations
 
+import contextlib
 from typing import Any, Protocol
 
 from mem0 import Memory
 
 from .models import AddedMemory, MemoryItem
+from .reconcile import Reconciler
 
 
 class MemoryBackend(Protocol):
@@ -56,12 +58,13 @@ def _to_item(d: dict[str, Any]) -> MemoryItem:
 class Mem0Backend:
     """`MemoryBackend` over a mem0 ``Memory``."""
 
-    def __init__(self, memory: Memory) -> None:
+    def __init__(self, memory: Memory, reconciler: Reconciler | None = None) -> None:
         self._mem = memory
+        self._reconciler = reconciler
 
     def add(self, text: str, user_id: str, metadata: dict[str, Any] | None) -> list[AddedMemory]:
         raw = self._mem.add(text, user_id=user_id, metadata=metadata)
-        return [
+        added = [
             AddedMemory(
                 id=str(d.get("id", "")),
                 memory=str(d.get("memory", "")),
@@ -69,6 +72,11 @@ class Mem0Backend:
             )
             for d in _results(raw)
         ]
+        # Option C: mem0's add is additive-only, so converge duplicates/contradictions
+        # against existing memories before returning (spike T001 Finding 1).
+        if self._reconciler is not None:
+            return self._reconciler.reconcile(added, user_id)
+        return added
 
     def search(
         self, query: str, user_id: str, limit: int, filters: dict[str, Any] | None
@@ -96,3 +104,14 @@ class Mem0Backend:
             return False
         self._mem.delete(memory_id)
         return True
+
+    def close(self) -> None:
+        """Release the on-disk Qdrant lock so a later /config can rebuild on the
+        same data dir. Best-effort: local Qdrant holds an exclusive file lock, so
+        the old engine must let go before a new one opens the same path."""
+        client = getattr(getattr(self._mem, "vector_store", None), "client", None)
+        close = getattr(client, "close", None)
+        if callable(close):
+            # best-effort teardown; never fail a reconfigure on it
+            with contextlib.suppress(Exception):
+                close()

@@ -42,6 +42,30 @@ def test_follow_provider_uses_local_embedder_default() -> None:
     assert cfg["vector_store"]["config"]["embedding_model_dims"] == 768
 
 
+def test_follow_provider_uses_openai_first_party_embeddings() -> None:
+    # When the provider IS OpenAI-shaped, follow_provider should embed with the
+    # provider's own model rather than the local fallback (T003 policy).
+    cfg = ConfigRequest.model_validate(
+        {
+            "provider": {
+                "type": "openai",
+                "model": "gpt-4o",
+                "api_key": "sk-test",
+                "base_url": "http://proxy",
+            },
+            "embedder": {"type": "follow_provider"},
+            "data_dir": "/data/lore",
+            "collection_name": "lore",
+        }
+    )
+    result = build_mem0_config(cfg)
+    assert result["embedder"]["provider"] == "openai"
+    assert result["embedder"]["config"]["model"] == "text-embedding-3-small"
+    assert result["embedder"]["config"]["api_key"] == "sk-test"
+    assert result["embedder"]["config"]["openai_base_url"] == "http://proxy"
+    assert result["vector_store"]["config"]["embedding_model_dims"] == 1536
+
+
 def test_unsupported_provider_raises() -> None:
     with pytest.raises(ValueError, match="Unsupported provider"):
         build_mem0_config(_cfg(type="mystery-llm"))

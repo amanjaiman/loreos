@@ -20,13 +20,16 @@ from fastapi import FastAPI
 from .backend import Mem0Backend, MemoryBackend
 from .mem0_factory import build_memory
 from .models import ConfigRequest
+from .reconcile import Reconciler, make_llm_judge
 from .routes import router
 
 BackendFactory = Callable[[ConfigRequest], MemoryBackend]
 
 
 def _default_factory(cfg: ConfigRequest) -> MemoryBackend:
-    return Mem0Backend(build_memory(cfg))
+    memory = build_memory(cfg)
+    reconciler = Reconciler(memory, make_llm_judge(memory))
+    return Mem0Backend(memory, reconciler)
 
 
 def create_app(backend_factory: BackendFactory | None = None) -> FastAPI:

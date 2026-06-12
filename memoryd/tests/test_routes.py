@@ -99,3 +99,22 @@ def test_redact_masks_sk_token() -> None:
     assert result == "Incorrect API key: [REDACTED]"
     assert _redact("Bearer eyJhbGc.some.token") == "[REDACTED]"
     assert _redact("no secrets here") == "no secrets here"
+
+
+def test_reconfigure_closes_previous_engine(sample_config: dict[str, Any]) -> None:
+    # /config is idempotent: a second call must release the prior engine (freeing
+    # the on-disk Qdrant lock) before building the new one on the same data dir.
+    from conftest import FakeBackend
+
+    created: list[FakeBackend] = []
+
+    def factory(_cfg: ConfigRequest) -> FakeBackend:
+        backend = FakeBackend()
+        created.append(backend)
+        return backend
+
+    client = TestClient(create_app(backend_factory=factory))
+    assert client.post("/config", json=sample_config).status_code == 200
+    assert client.post("/config", json=sample_config).status_code == 200
+    assert created[0].closed is True  # first engine disposed
+    assert created[1].closed is False  # second engine live
