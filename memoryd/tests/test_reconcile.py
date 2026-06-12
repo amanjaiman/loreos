@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from lore_memoryd.backend import Mem0Backend
 from lore_memoryd.models import AddedMemory
 from lore_memoryd.reconcile import Reconciler, Verdict, _parse_verdict
 
@@ -90,3 +91,23 @@ def test_parse_verdict() -> None:
     assert _parse_verdict("The answer is SUPERSEDES.") == "supersedes"
     assert _parse_verdict("unrelated") == "unrelated"
     assert _parse_verdict("garbage") == "unrelated"  # safe default keeps both
+
+
+class _FakeMem0:
+    """Minimal stand-in for mem0.Memory used by Mem0Backend."""
+
+    def add(self, text: str, *, user_id: str, metadata: Any) -> dict[str, Any]:
+        return {"results": [{"id": "m1", "memory": text, "event": "ADD"}]}
+
+
+class _BrokenReconciler:
+    def reconcile(self, added: list[AddedMemory], user_id: str) -> list[AddedMemory]:
+        raise RuntimeError("LLM judge timed out")
+
+
+def test_reconciler_exception_returns_un_reconciled_memories() -> None:
+    backend = Mem0Backend(_FakeMem0(), _BrokenReconciler())  # type: ignore[arg-type]
+    result = backend.add("The user is in Austin.", user_id="u1", metadata=None)
+    assert len(result) == 1
+    assert result[0].id == "m1"
+    assert result[0].event == "ADD"

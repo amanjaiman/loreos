@@ -10,12 +10,15 @@ T003 hooks the post-add reconciliation pass into `Mem0Backend.add`.
 from __future__ import annotations
 
 import contextlib
+import logging
 from typing import Any, Protocol
 
 from mem0 import Memory
 
 from .models import AddedMemory, MemoryItem
 from .reconcile import Reconciler
+
+_log = logging.getLogger(__name__)
 
 
 class MemoryBackend(Protocol):
@@ -75,7 +78,13 @@ class Mem0Backend:
         # Option C: mem0's add is additive-only, so converge duplicates/contradictions
         # against existing memories before returning (spike T001 Finding 1).
         if self._reconciler is not None:
-            return self._reconciler.reconcile(added, user_id)
+            try:
+                return self._reconciler.reconcile(added, user_id)
+            except Exception as exc:
+                _log.warning(
+                    "reconciliation failed (%s); returning un-reconciled memories",
+                    type(exc).__name__,
+                )
         return added
 
     def search(
