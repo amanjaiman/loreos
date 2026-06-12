@@ -63,7 +63,7 @@ This is the only spec with no upstream dependency. Specs 002–011 depend on it.
 1. `dotnet build` at the repo root compiles the solution (agent, cli, agent.tests)
    with **zero warnings** under analyzers-as-errors.
 2. `dotnet test` runs and passes a placeholder test in `agent.tests`.
-3. `pip install -e memoryd && pytest memoryd` passes; `GET /health` on the memoryd
+3. `pip install -e "memoryd[dev]" && pytest memoryd` passes; `GET /health` on the memoryd
    app returns `200` with `{"status":"ok"}`.
 4. `npm --prefix app install && npm --prefix app run build` succeeds; `npm --prefix
    app start` opens a placeholder window.

@@ -89,7 +89,7 @@ pipeline owns the fix.
 |---|---|---|
 | `agent` | `dotnet build agent` | `dotnet test agent.tests` |
 | `cli` | `dotnet build cli` | *(no test project yet; arrives with spec 007)* |
-| `memoryd` | `pip install -e memoryd` | `pytest memoryd` |
+| `memoryd` | `pip install -e "memoryd[dev]"` | `pytest memoryd` |
 | `app` | `npm --prefix app install && npm --prefix app run build` | `npm --prefix app test` |
 
 Run the agent: `LoreAgent.exe` (agent mode, local API on :7842) or
