@@ -40,6 +40,12 @@ public sealed class MemorydSupervisor : BackgroundService
     /// this before their first call.</summary>
     public Task Ready => _ready.Task;
 
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        await base.StopAsync(cancellationToken).ConfigureAwait(false);
+        _ready.TrySetCanceled(CancellationToken.None);
+    }
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         if (!_options.IsEmbedded)
@@ -48,16 +54,16 @@ public sealed class MemorydSupervisor : BackgroundService
             return;
         }
 
-        Directory.CreateDirectory(_options.DataDir);
         while (!stoppingToken.IsCancellationRequested)
         {
             IManagedProcess? process = null;
+            Task? exited = null;
             try
             {
                 // Spawn inside the try: a launch failure (interpreter or exe missing)
                 // must be logged and retried, never crash the background service.
                 process = _runner.Start(BuildStartInfo());
-                Task exited = process.WaitForExitAsync(stoppingToken);
+                exited = process.WaitForExitAsync(stoppingToken);
 
                 // Race the health gate against process exit so a startup crash (port in
                 // use, import error) is detected immediately rather than after the full
@@ -107,6 +113,8 @@ public sealed class MemorydSupervisor : BackgroundService
                     TryKill(process);
                     process.Dispose();
                 }
+
+                await ObserveExitedAsync(exited).ConfigureAwait(false);
             }
 
             await DelaySafe(_options.RestartDelay, stoppingToken).ConfigureAwait(false);
@@ -198,8 +206,31 @@ public sealed class MemorydSupervisor : BackgroundService
         info.UseShellExecute = false;
         info.Environment["LORE_MEMORYD_HOST"] = _options.Host;
         info.Environment["LORE_MEMORYD_PORT"] = _options.Port.ToString(CultureInfo.InvariantCulture);
-        info.Environment["LORE_MEMORYD_DATA_DIR"] = _options.DataDir;
         return info;
+    }
+
+    private static async Task ObserveExitedAsync(Task? exited)
+    {
+        if (exited is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await exited.ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+#pragma warning disable CA1031
+        catch (Exception)
+#pragma warning restore CA1031
+        {
+        }
     }
 
     private void TryKill(IManagedProcess process)

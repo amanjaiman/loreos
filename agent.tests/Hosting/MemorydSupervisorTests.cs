@@ -176,4 +176,17 @@ public sealed class MemorydSupervisorTests : IDisposable
         Assert.False(supervisor.Ready.IsCompleted);
         await supervisor.StopAsync(CancellationToken.None);
     }
+
+    [Fact]
+    public async Task StopAsync_before_healthy_cancels_ready()
+    {
+        var runner = new FakeProcessRunner();
+        var probe = new FakeHealthProbe(() => false); // never becomes healthy
+        MemorydSupervisor supervisor = Create(FastOptions(), runner, probe);
+
+        await supervisor.StartAsync(CancellationToken.None);
+        await supervisor.StopAsync(CancellationToken.None);
+
+        Assert.True(supervisor.Ready.IsCanceled);
+    }
 }
