@@ -61,6 +61,12 @@ public sealed class MemorydOptions
                 throw new InvalidOperationException("memory.engine is 'remote' but memory.remote_url is not set");
             }
 
+            if (!string.IsNullOrEmpty(RemoteUrl.Query) || !string.IsNullOrEmpty(RemoteUrl.Fragment))
+            {
+                throw new InvalidOperationException(
+                    "memory.remote_url must be a base URL without a query string or fragment");
+            }
+
             string url = RemoteUrl.AbsoluteUri;
             return url.EndsWith('/') ? RemoteUrl : new Uri(url + "/");
         }

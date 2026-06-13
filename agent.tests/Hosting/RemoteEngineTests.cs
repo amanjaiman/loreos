@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
@@ -23,6 +24,13 @@ public sealed class RemoteEngineTests
     }
 
     [Fact]
+    public void Remote_base_address_throws_when_remote_url_has_a_query_string()
+    {
+        var opts = new MemorydOptions { Engine = "remote", RemoteUrl = new Uri("http://host/mem?token=x") };
+        Assert.Throws<InvalidOperationException>(() => opts.BaseAddress);
+    }
+
+    [Fact]
     public async Task Remote_engine_routes_the_client_to_the_remote_server_with_no_code_change()
     {
         using var remote = new StandInRemoteMemoryd();
@@ -43,7 +51,7 @@ public sealed class RemoteEngineTests
     private sealed class StandInRemoteMemoryd : IDisposable
     {
         private readonly HttpListener _listener = new();
-        private readonly List<string> _requests = [];
+        private readonly ConcurrentBag<string> _requests = [];
         private readonly Task _loop;
 
         public StandInRemoteMemoryd()
@@ -56,7 +64,7 @@ public sealed class RemoteEngineTests
 
         public Uri BaseUrl { get; }
 
-        public IReadOnlyList<string> Requests => _requests;
+        public IEnumerable<string> Requests => _requests;
 
         public void Dispose()
         {
@@ -66,6 +74,19 @@ public sealed class RemoteEngineTests
             }
 
             _listener.Close();
+
+            try
+            {
+                _loop.Wait(TimeSpan.FromSeconds(2));
+            }
+            catch (AggregateException)
+            {
+                // swallow: task exceptions are observed, stop/close already requested
+            }
+            catch (OperationCanceledException)
+            {
+                // swallow: task cancelled during shutdown
+            }
         }
 
         private async Task ServeAsync()
