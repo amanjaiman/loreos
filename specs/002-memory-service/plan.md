@@ -183,3 +183,11 @@ contract tests + CI job. See [`tasks.md`](tasks.md).
   lifecycle operation (the T005 supervisor calls it once memoryd is healthy), not a
   memory-ops call. Keeping it off the interface prevents callers from re-initializing
   the engine accidentally and keeps the seam narrow.
+- **Contract tests run pinned mem0 offline in CI** (T007). They exercise the real
+  `mem0.Memory` + on-disk Qdrant (add/get/search/update/delete, mem0's additive
+  behavior, and criterion-3 convergence via the reconciler) using deterministic
+  in-process stand-ins for the LLM and embedder — no Ollama, no network, no torch —
+  so a dedicated `contract` CI job guards them and a mem0 bump can't land without
+  deliberately updating them. The `python` job runs everything *except* the
+  `contract` marker; the `contract` job runs only it. Full real-stack behavior stays
+  in the opt-in Ollama integration tests.

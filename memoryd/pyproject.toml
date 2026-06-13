@@ -56,3 +56,6 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 addopts = "-q"
 testpaths = ["tests"]
+markers = [
+  "contract: pinned-mem0 behavior tests (spec 002 T007); CI runs them as a separate job",
+]
