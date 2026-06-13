@@ -52,9 +52,11 @@ integration surface is a translation layer, never a new copy of the logic.
 
    No other file makes outbound HTTP or P/Invoke calls. This is what makes the
    egress list in [`privacy.md`](privacy.md) closed and auditable.
-3. **The agent is the supervisor.** It spawns and health-checks the `memoryd`
-   sidecar (`GET /health`) and runs **headless** — the app is optional UI, never a
-   runtime dependency.
+3. **The agent is the supervisor.** In `engine: "embedded"` mode it spawns the
+   `memoryd` sidecar and health-gates it (`GET /health`); in `engine: "remote"`
+   mode it health-gates the user-configured endpoint without spawning anything.
+   The agent runs **headless** — the app is optional UI, never a runtime
+   dependency.
 4. **Localhost only, always.** No surface binds to an external interface. The MCP
    server speaks stdio or local Streamable HTTP. There is no remote listener and no
    Lore-operated server in the data path.
@@ -68,7 +70,7 @@ integration surface is a translation layer, never a new copy of the logic.
 |---|---|---|
 | `agent` | C# / .NET 8 (`net8.0-windows`) | Capture pipeline, MCP server, local API host, supervisor |
 | `cli` (`lore`) | C# / .NET 8 console | Thin client of the local API |
-| `memoryd` | Python 3.11+, FastAPI, mem0 | Bundled sidecar wrapping mem0; Qdrant on-disk vector store |
+| `memoryd` | Python 3.11+, FastAPI, mem0 | Bundled sidecar wrapping mem0; Qdrant on-disk vector store. Alternatively, a user-hosted instance targeted via `engine: "remote"`. |
 | `app` | Electron + React + TS | Onboarding, library, settings — talks only to the local API |
 
 ## Trust-critical path
