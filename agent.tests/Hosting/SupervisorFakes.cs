@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using Lore.Agent.Hosting;
 
@@ -41,6 +42,11 @@ internal sealed class FakeProcessRunner : IProcessRunner
 {
     private readonly object _gate = new();
     private readonly List<FakeManagedProcess> _started = [];
+    private int _attempts;
+
+    /// <summary>Number of initial Start calls that throw (simulating a launch
+    /// failure such as a missing interpreter) before one succeeds.</summary>
+    public int ThrowsBeforeSuccess { get; set; }
 
     public IReadOnlyList<FakeManagedProcess> Started
     {
@@ -55,6 +61,11 @@ internal sealed class FakeProcessRunner : IProcessRunner
 
     public IManagedProcess Start(ProcessStartInfo startInfo)
     {
+        if (Interlocked.Increment(ref _attempts) <= ThrowsBeforeSuccess)
+        {
+            throw new Win32Exception("simulated spawn failure");
+        }
+
         var process = new FakeManagedProcess();
         lock (_gate)
         {

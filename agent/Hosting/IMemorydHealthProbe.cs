@@ -49,5 +49,9 @@ public sealed class HttpMemorydHealthProbe : IMemorydHealthProbe
         {
             return false; // timed out this poll
         }
+        catch (JsonException)
+        {
+            return false; // a non-JSON body (e.g. a partial/startup response) is not healthy
+        }
     }
 }

@@ -56,9 +56,13 @@ public sealed class MemorydSupervisor : BackgroundService
         Directory.CreateDirectory(_options.DataDir);
         while (!stoppingToken.IsCancellationRequested)
         {
-            using IManagedProcess process = _runner.Start(BuildStartInfo());
+            IManagedProcess? process = null;
             try
             {
+                // Spawn inside the try: a launch failure (interpreter or exe missing)
+                // must be logged and retried, never crash the background service.
+                process = _runner.Start(BuildStartInfo());
+
                 if (await WaitForHealthyAsync(stoppingToken).ConfigureAwait(false))
                 {
                     _logger.LogInformation("memoryd is healthy at {BaseAddress}", _options.BaseAddress);
@@ -82,9 +86,17 @@ public sealed class MemorydSupervisor : BackgroundService
             {
                 break;
             }
+            catch (Exception ex) when (ex is Win32Exception or FileNotFoundException or InvalidOperationException)
+            {
+                _logger.LogError(ex, "failed to launch memoryd; retrying in {Delay}", _options.RestartDelay);
+            }
             finally
             {
-                TryKill(process);
+                if (process is not null)
+                {
+                    TryKill(process);
+                    process.Dispose();
+                }
             }
 
             await DelaySafe(_options.RestartDelay, stoppingToken).ConfigureAwait(false);

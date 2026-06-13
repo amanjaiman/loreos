@@ -112,6 +112,21 @@ public sealed class MemorydSupervisorTests : IDisposable
     }
 
     [Fact]
+    public async Task Spawn_failure_is_caught_and_retried()
+    {
+        var runner = new FakeProcessRunner { ThrowsBeforeSuccess = 1 }; // first launch throws
+        var probe = new FakeHealthProbe(() => true);
+        MemorydSupervisor supervisor = Create(FastOptions(), runner, probe);
+
+        await supervisor.StartAsync(CancellationToken.None);
+
+        // The service survives the launch failure and becomes ready on the retry.
+        await supervisor.Ready.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(supervisor.Ready.IsCompletedSuccessfully);
+        await supervisor.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
     public async Task Unhealthy_within_timeout_restarts_without_signalling_ready()
     {
         var runner = new FakeProcessRunner();
