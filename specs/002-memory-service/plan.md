@@ -49,10 +49,16 @@ key never incurs surprise embedding bills.
 ## C# seam
 
 ```
+agent/Hosting/
+├── IMemorydHealthProbe.cs  # Probe abstraction (real: GET /health; fake: controllable in tests)
+├── IProcessRunner.cs       # Process-launch abstraction (real: System.Diagnostics.Process)
+├── MemorydOptions.cs       # Typed config bound from the "memory" section
+├── MemorydSupervisor.cs    # BackgroundService: spawn, health-gate, restart, dispose
+└── ProcessRunner.cs        # Real IProcessRunner over System.Diagnostics.Process
+
 agent/Memory/
 ├── IMemoryService.cs       # Remember, Search, GetRecent, GetAll, Get, Update, Delete
 ├── MemorydClient.cs        # HttpClient impl; typed models; error mapping; ConfigureAsync (T005)
-├── MemorydSupervisor.cs    # BackgroundService: spawn, health-gate, restart, dispose
 ├── MemoryModels.cs         # MemoryRecord, AddedMemory; MemoryConfig / provider / embedder records
 └── MemorydException.cs     # Thrown on unexpected HTTP status; carries operation + status + body
 ```
@@ -93,8 +99,16 @@ their own:
 
 ```jsonc
 "memory": {
-  "engine": "embedded",        // "embedded" (bundled sidecar) | "remote"
-  "remote_url": "",            // used when engine = "remote"
+  "engine": "embedded",              // "embedded" (bundled sidecar) | "remote"
+  "remote_url": "",                  // used when engine = "remote"
+  "host": "127.0.0.1",              // loopback host the embedded sidecar binds to
+  "port": 7843,                      // port the embedded sidecar listens on
+  "data_dir": "%LOCALAPPDATA%/Lore", // Qdrant + history live here
+  "packaged_executable": "",         // path to PyInstaller single-file exe (production)
+  "python_executable": "python",     // interpreter used in dev (python -m lore_memoryd)
+  "health_gate_timeout": "00:00:30", // how long to wait for /health on startup
+  "health_poll_interval": "00:00:00.250", // interval between /health polls
+  "restart_delay": "00:00:01",       // pause before restarting after an unexpected exit
   "embedder": { "type": "follow_provider" }  // or an explicit local override
 }
 ```

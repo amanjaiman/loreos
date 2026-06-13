@@ -4,7 +4,8 @@ The Lore memory sidecar: a FastAPI wrapper around [mem0](https://github.com/mem0
 spawned and health-checked by the Lore agent. Binds to `127.0.0.1` only.
 
 Run it directly with `python -m lore_memoryd` (host/port from `LORE_MEMORYD_HOST` /
-`LORE_MEMORYD_PORT`); the agent's supervisor launches it the same way.
+`LORE_MEMORYD_PORT`, defaulting to `127.0.0.1` / `7843`); the agent's supervisor
+launches it the same way.
 
 ## Routes
 
