@@ -49,10 +49,16 @@ key never incurs surprise embedding bills.
 ## C# seam
 
 ```
+agent/Hosting/
+├── IMemorydHealthProbe.cs  # Probe abstraction (real: GET /health; fake: controllable in tests)
+├── IProcessRunner.cs       # Process-launch abstraction (real: System.Diagnostics.Process)
+├── MemorydOptions.cs       # Typed config bound from the "memory" section
+├── MemorydSupervisor.cs    # BackgroundService: spawn, health-gate, restart, dispose
+└── ProcessRunner.cs        # Real IProcessRunner over System.Diagnostics.Process
+
 agent/Memory/
 ├── IMemoryService.cs       # Remember, Search, GetRecent, GetAll, Get, Update, Delete
 ├── MemorydClient.cs        # HttpClient impl; typed models; error mapping; ConfigureAsync (T005)
-├── MemorydSupervisor.cs    # BackgroundService: spawn, health-gate, restart, dispose
 ├── MemoryModels.cs         # MemoryRecord, AddedMemory; MemoryConfig / provider / embedder records
 └── MemorydException.cs     # Thrown on unexpected HTTP status; carries operation + status + body
 ```
@@ -78,12 +84,31 @@ their own:
 > container are owned by this spec. 003 and 005 extend it; they do not create a
 > second host.
 
+> **T005 verification (acceptance criterion 2).** Supervisor logic — spawn,
+> health-gate with backoff, restart-on-crash, clean shutdown, remote no-spawn — is
+> covered by deterministic unit tests over a faked process runner + health probe.
+> A live run additionally confirmed the real ASP.NET host comes up on
+> `127.0.0.1:7842`, spawns memoryd, gates on its `/health`, and **auto-recovers in
+> ~1.6 s after memoryd is force-killed mid-run**. Dev launch note: the supervisor
+> runs `python -m lore_memoryd`, so in dev memoryd must be importable by the
+> `python` on PATH (or set `memory:PackagedExecutable` to the bundled PyInstaller
+> exe, the production path). The packaged exe removes the interpreter dependency
+> entirely.
+
 ## Config
 
 ```jsonc
 "memory": {
-  "engine": "embedded",        // "embedded" (bundled sidecar) | "remote"
-  "remote_url": "",            // used when engine = "remote"
+  "engine": "embedded",              // "embedded" (bundled sidecar) | "remote"
+  "remote_url": "",                  // used when engine = "remote"
+  "host": "127.0.0.1",              // loopback host the embedded sidecar binds to
+  "port": 7843,                      // port the embedded sidecar listens on
+  "data_dir": "%LOCALAPPDATA%/Lore", // Qdrant + history live here
+  "packaged_executable": "",         // path to PyInstaller single-file exe (production)
+  "python_executable": "python",     // interpreter used in dev (python -m lore_memoryd)
+  "health_gate_timeout": "00:00:30", // how long to wait for /health on startup
+  "health_poll_interval": "00:00:00.250", // interval between /health polls
+  "restart_delay": "00:00:01",       // pause before restarting after an unexpected exit
   "embedder": { "type": "follow_provider" }  // or an explicit local override
 }
 ```
