@@ -44,12 +44,7 @@ public sealed class MemorydSupervisor : BackgroundService
     {
         if (!_options.IsEmbedded)
         {
-            _logger.LogInformation("memory engine is remote ({Url}); not spawning a sidecar", _options.BaseAddress);
-            if (await WaitForHealthyAsync(stoppingToken).ConfigureAwait(false))
-            {
-                _ready.TrySetResult();
-            }
-
+            await SuperviseRemoteAsync(stoppingToken).ConfigureAwait(false);
             return;
         }
 
@@ -62,12 +57,22 @@ public sealed class MemorydSupervisor : BackgroundService
                 // Spawn inside the try: a launch failure (interpreter or exe missing)
                 // must be logged and retried, never crash the background service.
                 process = _runner.Start(BuildStartInfo());
+                Task exited = process.WaitForExitAsync(stoppingToken);
 
-                if (await WaitForHealthyAsync(stoppingToken).ConfigureAwait(false))
+                // Race the health gate against process exit so a startup crash (port in
+                // use, import error) is detected immediately rather than after the full
+                // health-gate timeout.
+                bool healthy = await WaitForHealthyAsync(stoppingToken, exited).ConfigureAwait(false);
+                if (stoppingToken.IsCancellationRequested)
+                {
+                    break;
+                }
+
+                if (healthy)
                 {
                     _logger.LogInformation("memoryd is healthy at {BaseAddress}", _options.BaseAddress);
                     _ready.TrySetResult();
-                    await process.WaitForExitAsync(stoppingToken).ConfigureAwait(false);
+                    await exited.ConfigureAwait(false);
                     if (stoppingToken.IsCancellationRequested)
                     {
                         break;
@@ -76,7 +81,12 @@ public sealed class MemorydSupervisor : BackgroundService
                     _logger.LogWarning(
                         "memoryd exited unexpectedly (code {ExitCode}); restarting", SafeExitCode(process));
                 }
-                else if (!stoppingToken.IsCancellationRequested)
+                else if (process.HasExited)
+                {
+                    _logger.LogWarning(
+                        "memoryd exited during startup (code {ExitCode}); restarting", SafeExitCode(process));
+                }
+                else
                 {
                     _logger.LogWarning(
                         "memoryd did not become healthy within {Timeout}; restarting", _options.HealthGateTimeout);
@@ -105,7 +115,34 @@ public sealed class MemorydSupervisor : BackgroundService
         _logger.LogInformation("memoryd supervisor stopped");
     }
 
-    private async Task<bool> WaitForHealthyAsync(CancellationToken stoppingToken)
+    private async Task SuperviseRemoteAsync(CancellationToken stoppingToken)
+    {
+        _logger.LogInformation("memory engine is remote ({Url}); not spawning a sidecar", _options.BaseAddress);
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            if (await WaitForHealthyAsync(stoppingToken).ConfigureAwait(false))
+            {
+                _logger.LogInformation("remote memoryd is healthy at {BaseAddress}", _options.BaseAddress);
+                _ready.TrySetResult();
+                return;
+            }
+
+            if (stoppingToken.IsCancellationRequested)
+            {
+                break;
+            }
+
+            // Don't return silently: keep retrying so a remote that comes up later still
+            // satisfies Ready, and never leave the gate unsignalled without a log.
+            _logger.LogWarning(
+                "remote memoryd at {Url} not healthy within {Timeout}; retrying",
+                _options.BaseAddress,
+                _options.HealthGateTimeout);
+            await DelaySafe(_options.RestartDelay, stoppingToken).ConfigureAwait(false);
+        }
+    }
+
+    private async Task<bool> WaitForHealthyAsync(CancellationToken stoppingToken, Task? exited = null)
     {
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
         timeoutCts.CancelAfter(_options.HealthGateTimeout);
@@ -114,12 +151,25 @@ public sealed class MemorydSupervisor : BackgroundService
         {
             while (!token.IsCancellationRequested)
             {
+                if (exited is { IsCompleted: true })
+                {
+                    return false; // the process died during the gate
+                }
+
                 if (await _health.IsHealthyAsync(token).ConfigureAwait(false))
                 {
                     return true;
                 }
 
-                await Task.Delay(_options.HealthPollInterval, token).ConfigureAwait(false);
+                Task delay = Task.Delay(_options.HealthPollInterval, token);
+                if (exited is null)
+                {
+                    await delay.ConfigureAwait(false);
+                }
+                else
+                {
+                    await Task.WhenAny(delay, exited).ConfigureAwait(false);
+                }
             }
         }
         catch (OperationCanceledException)
