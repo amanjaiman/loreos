@@ -45,8 +45,30 @@ public sealed class MemorydOptions
     /// <summary>Whether the agent spawns and supervises a child process.</summary>
     public bool IsEmbedded => !string.Equals(Engine, "remote", StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>The base address of memoryd, embedded or remote.</summary>
-    public Uri BaseAddress =>
-        IsEmbedded ? new Uri($"http://{Host}:{Port}/") : RemoteUrl ?? throw new InvalidOperationException(
-            "memory.engine is 'remote' but memory.remote_url is not set");
+    /// <summary>The base address of memoryd, embedded or remote. Always ends with a
+    /// trailing slash so the client's relative request URIs resolve correctly.</summary>
+    public Uri BaseAddress
+    {
+        get
+        {
+            if (IsEmbedded)
+            {
+                return new Uri($"http://{Host}:{Port}/");
+            }
+
+            if (RemoteUrl is null)
+            {
+                throw new InvalidOperationException("memory.engine is 'remote' but memory.remote_url is not set");
+            }
+
+            if (!string.IsNullOrEmpty(RemoteUrl.Query) || !string.IsNullOrEmpty(RemoteUrl.Fragment))
+            {
+                throw new InvalidOperationException(
+                    "memory.remote_url must be a base URL without a query string or fragment");
+            }
+
+            string url = RemoteUrl.AbsoluteUri;
+            return url.EndsWith('/') ? RemoteUrl : new Uri(url + "/");
+        }
+    }
 }

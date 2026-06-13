@@ -21,14 +21,16 @@ those seams.
 
 | # | Destination | Who configures it | Seam | When |
 |---|---|---|---|---|
-| — | *(none yet)* | — | — | — |
+| 1 | `memory.remote_url` (user-hosted mem0 server) | User (`config.json → memory.remote_url`) | `MemorydClient` | Only when `memory.engine: "remote"`; default `"embedded"` makes zero outbound calls |
 
-**At the current state of the repository there are zero outbound calls.** No
-provider exists yet (the model seam, `IInferenceBackend`, arrives with spec 004),
-and `memoryd` + mem0 run locally against an on-disk Qdrant store with no external
-service. As soon as a provider lands, the only permitted destination will be the
-**model endpoint the user explicitly configured** — and it will be enumerated in
-the table above, in the same PR that adds it.
+**With the default `memory.engine: "embedded"` there are zero outbound calls.**
+No model provider exists yet (the model seam, `IInferenceBackend`, arrives with
+spec 004), and `memoryd` + mem0 run locally against an on-disk Qdrant store. If
+you opt in to `engine: "remote"`, `MemorydClient` calls the `remote_url` you
+configure — a server you host, not a Lore-operated service. As soon as a model
+provider lands, the only permitted destination will be the **model endpoint the
+user explicitly configured** — enumerated in the table above, in the same PR that
+adds it.
 
 ### What is *never* an outbound call
 
@@ -38,12 +40,14 @@ the table above, in the same PR that adds it.
 - **No cloud sync, no account service, no hosted inference proxy.** These existed
   in the pre-open-source codebase and are deleted, not ported.
 - **No update check** unless and until added here explicitly.
-- **mem0 / Qdrant** are local. They are not in the egress list because they do not
-  leave the machine. **Note:** mem0 OSS ships anonymous PostHog telemetry
-  (`us.i.posthog.com`) *enabled by default*; `memoryd` force-disables it
-  (`MEM0_TELEMETRY=False`, set in `lore_memoryd/__init__.py` before mem0 loads) so
-  it never fires. This is verified by a test (`tests/test_telemetry_disabled.py`)
-  and is non-negotiable per constitution §1.2.
+- **mem0 / Qdrant in embedded mode** are local. The bundled `memoryd` sidecar
+  runs on loopback and does not leave the machine. **Note:** mem0 OSS ships
+  anonymous PostHog telemetry (`us.i.posthog.com`) *enabled by default*;
+  `memoryd` force-disables it (`MEM0_TELEMETRY=False`, set in
+  `lore_memoryd/__init__.py` before mem0 loads) so it never fires. This is
+  verified by a test (`tests/test_telemetry_disabled.py`) and is non-negotiable
+  per constitution §1.2. In `engine: "remote"` mode the outbound call to the
+  user-hosted mem0 server is listed in row 1 of the egress table above.
 
 ## Where your data lives
 
