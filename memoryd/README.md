@@ -34,11 +34,19 @@ pip install -e ".[dev]"
 ruff check .
 ruff format --check .
 mypy
-pytest
+pytest -m "not contract"
 ```
 
 The default suite uses an in-memory fake backend, so it needs no mem0/Ollama and
-runs in CI. To exercise the routes against a **real** mem0 + Qdrant + Ollama
+runs in CI. Contract tests (`-m contract`) pin mem0's storage behavior against the
+pinned version using deterministic in-process fakes — no Ollama, no network — and
+run as a separate `contract` CI job:
+
+```sh
+pytest -m contract -v
+```
+
+To exercise the routes against a **real** mem0 + Qdrant + Ollama
 (`nomic-embed-text` and a chat model pulled, `ollama serve` running):
 
 ```sh
