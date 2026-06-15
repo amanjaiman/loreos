@@ -18,6 +18,7 @@ from __future__ import annotations
 import hashlib
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 import pytest
 from mem0 import Memory
@@ -74,9 +75,10 @@ def memory(tmp_path: Path) -> Iterator[Memory]:
     yield mem
 
 
-def _items(result: object) -> list[dict[str, str]]:
+def _items(result: object) -> list[dict[str, Any]]:
     # mem0 returns either {"results": [...]} or a bare list; mirror backend._results.
-    return result.get("results", []) if isinstance(result, dict) else result  # type: ignore[return-value]
+    items = result.get("results", []) if isinstance(result, dict) else result
+    return [i for i in items if isinstance(i, dict)] if isinstance(items, list) else []
 
 
 def _add(memory: Memory, text: str) -> str:
@@ -106,6 +108,12 @@ def test_add_get_search_update_delete_roundtrip(memory: Memory) -> None:
 def test_native_add_is_additive(memory: Memory) -> None:
     # mem0 does not merge semantically-equivalent facts on its own — both persist.
     # This is the contract that justifies memoryd's reconciliation pass.
+    #
+    # Intentional offline-testing boundary: this test uses infer=False (via _add) to
+    # pin mem0's STORAGE-layer additive behavior without requiring an LLM in CI.
+    # The production Mem0Backend.add path runs with infer=True (LLM extraction enabled);
+    # its additive behavior is exercised by the opt-in Ollama integration test
+    # (tests/test_integration_ollama.py), which proves end-to-end convergence.
     _add(memory, "The user lives in Seattle")
     _add(memory, "The user lives in Seattle, Washington")
     assert len(_all_texts(memory)) == 2
