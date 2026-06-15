@@ -87,6 +87,13 @@ server (no sidecar spawned). Document the self-hosted multi-device setup in
 code change; covered by a test using a stand-in server.
 
 ### T007 — Contract tests + CI job  `[deps: T002, T004]`
+
+> **Status: complete.** `memoryd/tests/test_contract.py` exercises the real
+> `mem0.Memory` + on-disk Qdrant (add/get/search/update/delete, mem0's additive
+> behavior, and criterion-3 convergence via the reconciler) with deterministic
+> in-process fakes (no Ollama, no network). The `python` CI job runs
+> `pytest -m "not contract"`; the new `contract` CI job runs `pytest -m contract -v`.
+
 Add contract tests asserting mem0's add/search/update/delete behaviors against the
 pinned version, and a CI job that runs them. Assert acceptance criterion 3 explicitly:
 adding a contradicting fact leaves **one** memory reflecting the new truth, via
