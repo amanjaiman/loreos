@@ -74,16 +74,18 @@ def memory(tmp_path: Path) -> Iterator[Memory]:
     yield mem
 
 
+def _items(result: object) -> list[dict[str, str]]:
+    # mem0 returns either {"results": [...]} or a bare list; mirror backend._results.
+    return result.get("results", []) if isinstance(result, dict) else result  # type: ignore[return-value]
+
+
 def _add(memory: Memory, text: str) -> str:
-    result = memory.add(text, user_id=USER, infer=False)
-    items = result.get("results", result)
-    return str(items[0]["id"])
+    return str(_items(memory.add(text, user_id=USER, infer=False))[0]["id"])
 
 
 def _all_texts(memory: Memory) -> list[str]:
     result = memory.get_all(filters={"user_id": USER}, top_k=100)
-    items = result.get("results", result)
-    return [i["memory"] for i in items]
+    return [i["memory"] for i in _items(result)]
 
 
 def test_add_get_search_update_delete_roundtrip(memory: Memory) -> None:
@@ -92,8 +94,7 @@ def test_add_get_search_update_delete_roundtrip(memory: Memory) -> None:
     assert _all_texts(memory) == ["The user is allergic to penicillin"]
 
     found = memory.search("penicillin allergy", filters={"user_id": USER}, top_k=5)
-    hits = found.get("results", found)
-    assert any("penicillin" in h["memory"] for h in hits)
+    assert any("penicillin" in h["memory"] for h in _items(found))
 
     memory.update(mem_id, data="The user is allergic to penicillin and aspirin")
     assert "aspirin" in memory.get(mem_id)["memory"]
