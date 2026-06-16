@@ -7,6 +7,15 @@
 ---
 
 ### T001 — Window monitor + dwell/change detection  `[deps: spec 002]`
+
+> **Status: complete.** `IForegroundWindowSource` (Win32 seam), `Win32ForegroundWindowSource`
+> (one P/Invoke boundary; access-denied returns `WindowSnapshot.None`),
+> `WindowSnapshot`, `WindowObservation`, and `WindowMonitor` (dwell timer + change
+> detection, fully tested without a live desktop via `FakeWindowSource` /
+> `FakeTimeProvider`) all landed here. `AllowUnsafeBlocks` enabled on the agent
+> project for the `LibraryImport` source-generator stubs. 9 unit tests covering dwell,
+> level-triggering, title-change reset, no-window idle, and constructor validation.
+
 Port `WindowMonitor` (Win32 foreground polling, dwell timing, window/title/content
 change detection) into the 002 host as the front of the loop.
 **Done when:** the monitor reports the active window and fires only after the dwell

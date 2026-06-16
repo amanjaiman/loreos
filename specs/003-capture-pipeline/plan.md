@@ -15,7 +15,11 @@ and route analysis through `IInferenceBackend` (mockable until 004).
 
 ```
 agent/Capture/
-├── WindowMonitor.cs        # Win32 foreground-window polling + dwell/change detection
+├── IForegroundWindowSource.cs   # Win32 seam: the one P/Invoke boundary for window identity
+├── Win32ForegroundWindowSource.cs  # production implementation (GetForegroundWindow + title/pid)
+├── WindowSnapshot.cs        # identity of one foreground window at one poll tick
+├── WindowObservation.cs     # one Poll() result: window + change kind + dwell duration + HasDwelled
+├── WindowMonitor.cs         # dwell timer + change detection (testable; no Win32 calls here)
 ├── UiaExtractor.cs         # UI Automation text extraction
 ├── OcrExtractor.cs         # OCR fallback for windows without exposed text
 ├── ContentType.cs          # classify reading/shopping/messaging/coding/...
@@ -39,16 +43,16 @@ agent/Storage/
 
 ```
 every poll tick:
-  win = WindowMonitor.Current()
-  if not dwelled(win, dwell_seconds): continue
-  if SmartGate.ShouldSkip(win, history): metrics.skip(reason); continue
-  text = UiaExtractor.Extract(win) ?? OcrExtractor.Extract(win)
-  filtered = SensitivityFilter.Apply(win, text)        # ← before anything else
+  obs = WindowMonitor.Poll()           # → WindowObservation (window, change, dwell, HasDwelled)
+  if not obs.HasDwelled: continue
+  if SmartGate.ShouldSkip(obs.Window, history): metrics.skip(reason); continue
+  text = UiaExtractor.Extract(obs.Window) ?? OcrExtractor.Extract(obs.Window)
+  filtered = SensitivityFilter.Apply(obs.Window, text)  # ← before anything else
   if filtered.Blocked: metrics.filtered(reason); continue
-  obs = await analysis.Analyze(win.Title, filtered.Text)   # IInferenceBackend
-  if obs is null: metrics.skip("analysis_empty"); continue
-  await memory.Remember(obs.Text, obs.Category)            # IMemoryService
-  activityStore.Append(win, obs)                            # local telemetry only
+  result = await analysis.Analyze(obs.Window.Title, filtered.Text)  # IInferenceBackend
+  if result is null: metrics.skip("analysis_empty"); continue
+  await memory.Remember(result.Text, result.Category)    # IMemoryService
+  activityStore.Append(obs.Window, result)               # local telemetry only
   metrics.captured()
 ```
 
