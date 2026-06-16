@@ -110,7 +110,13 @@ out in 002.
   projections are available; the agent and test projects were bumped accordingly. The
   window is captured with GDI `PrintWindow` and recognized off that bitmap.
 - **Consolidate filtering into one ordered, fail-closed `SensitivityFilter`** for
-  testability and auditability.
+  testability and auditability. Each layer is independently covered ~100% line+branch.
+  Implementation choices that make the trust-critical guarantee provable: a block carries
+  **no text** (`FilterResult.Text` is empty on every block); the structural UIA layer
+  **fails closed** (any probe error answers "protected"); both the window title and the
+  extracted text are screened at the keyword and regex layers; and the regex layer
+  **drops** (does not redact) a capture containing an SSN or a Luhn-valid card number —
+  dropping the whole capture is simpler to prove correct than partial scrubbing.
 - **Activity log / raw captures stay local** in `ActivityStore` and never reach
   mem0 — they are operational telemetry the user can inspect, satisfying "the code
   is the audit trail."

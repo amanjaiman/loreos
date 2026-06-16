@@ -85,3 +85,6 @@ dotnet_diagnostic.CA1707.severity = none
 dotnet_diagnostic.CA2007.severity = none
 # CA1062: validate public-method arguments — not relevant to test helpers.
 dotnet_diagnostic.CA1062.severity = none
+# CA1861: constant array arguments — inline new[]/InlineData literals are the
+# natural way to express test inputs; the perf concern doesn't apply to tests.
+dotnet_diagnostic.CA1861.severity = none
