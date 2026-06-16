@@ -37,6 +37,20 @@ OCR is the fallback when UIA exposes no text. (`UseWPF=true` from 001 enables UI
 OCR otherwise; the interface is the only Win32/UIA seam.
 
 ### T003 — Sensitivity filter chain + exhaustive case table  `[deps: T002]` ⚠ trust-critical
+
+> **Status: complete.** `FilterDecision` / `FilterReason` / `FilterResult` (sealed class, not
+> record — trust-critical coverage measures real branches only), `Blocklist` (app + keyword
+> match; case-insensitive, `.exe`-suffix-normalised), `IWindowSecurityProbe` (UIA seam;
+> fail-closed), `UiaWindowSecurityProbe` (focused-element `IsPassword` check; any UIA error
+> → "protected"), `SensitivePatterns` (SSN separator-anchored regex + Luhn-confirmed card
+> regex; pure/static), and `SensitivityFilter` (one ordered chain: blocklist → UIA structural
+> → regex; both title and text screened; block carries no text) all landed here. Both `.exe`
+> and case variants, edge cases, and each chain layer are covered by the exhaustive case
+> table in `SensitivityFilterTests`. CA1861 relaxed in `.editorconfig` for `*.tests`
+> (inline `new[]/InlineData` are idiomatic test inputs). 93 tests passing; trust-critical
+> coverage verified 100% line + 100% branch across `SensitivityFilter`, `Blocklist`,
+> `SensitivePatterns`, and `FilterResult`.
+
 Implement `SensitivityFilter` as one ordered, fail-closed chain (blocklist → UIA
 structural → regex SSN/card with Luhn). Each drop returns a typed reason. Build the
 exhaustive case table from `specification.md` acceptance criterion 2.
