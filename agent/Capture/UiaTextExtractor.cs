@@ -122,11 +122,18 @@ public sealed class UiaTextExtractor : ITextExtractor
 
     private static void AppendLine(StringBuilder builder, string value)
     {
+        if (builder.Length >= MaxChars)
+        {
+            return;
+        }
+
         if (builder.Length > 0)
         {
             builder.Append('\n');
         }
 
-        builder.Append(value.Trim());
+        string trimmed = value.Trim();
+        int remaining = MaxChars - builder.Length;
+        builder.Append(trimmed.Length <= remaining ? trimmed : trimmed.AsSpan(0, remaining));
     }
 }

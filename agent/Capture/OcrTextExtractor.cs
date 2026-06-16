@@ -135,7 +135,13 @@ public sealed partial class OcrTextExtractor : ITextExtractor
             biCompression = BiRgb,
         };
 
-        byte[] pixels = new byte[width * height * 4];
+        long pixelCount = (long)width * height;
+        if (pixelCount > Array.MaxLength / 4)
+        {
+            return null;
+        }
+
+        byte[] pixels = new byte[pixelCount * 4];
         int scanLines = GetDIBits(dc, bitmap, 0, (uint)height, pixels, ref header, DibRgbColors);
         if (scanLines == 0)
         {
