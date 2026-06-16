@@ -27,7 +27,11 @@ agent/Capture/
 ├── OcrTextExtractor.cs      # GDI PrintWindow capture + Windows.Media.Ocr (fallback)
 ├── ContentType.cs          # classify reading/shopping/messaging/coding/...
 ├── Blocklist.cs            # apps + keywords (user-configurable)
+├── FilterResult.cs         # FilterDecision / FilterReason enums + FilterResult sealed class
+├── IWindowSecurityProbe.cs # UIA structural seam: is this window protected? (fail-closed)
+├── SensitivePatterns.cs    # regex layer: SSN (separator-anchored) + Luhn-confirmed cards
 ├── SensitivityFilter.cs    # the trust-critical chain (blocklist → UIA → regex)
+├── UiaWindowSecurityProbe.cs  # IWindowSecurityProbe: focused-element IsPassword check
 ├── SmartGate.cs            # dwell + diff thresholds + per-type heuristics
 ├── RecentCaptureGate.cs    # suppress near-duplicate recent captures
 ├── TextSimilarity.cs       # diff/similarity math used by the gates
@@ -68,7 +72,7 @@ Ordered, fail-closed, each layer independently tested:
 1. **Blocklist** — app executable match + keyword match (title/text). User-editable.
 2. **UIA structural** — drop when focused control is a password field or the window
    exposes protected/secure content.
-3. **Regex** — SSN and payment-card patterns (Luhn-checked) scrubbed/dropped.
+3. **Regex** — SSN and payment-card patterns (Luhn-checked) dropped (whole capture).
 
 Every drop returns a typed reason recorded by `CaptureMetrics`. Nothing downstream
 ever sees unfiltered text.
@@ -110,7 +114,13 @@ out in 002.
   projections are available; the agent and test projects were bumped accordingly. The
   window is captured with GDI `PrintWindow` and recognized off that bitmap.
 - **Consolidate filtering into one ordered, fail-closed `SensitivityFilter`** for
-  testability and auditability.
+  testability and auditability. Each layer is independently covered ~100% line+branch.
+  Implementation choices that make the trust-critical guarantee provable: a block carries
+  **no text** (`FilterResult.Text` is empty on every block); the structural UIA layer
+  **fails closed** (any probe error answers "protected"); both the window title and the
+  extracted text are screened at the keyword and regex layers; and the regex layer
+  **drops** (does not redact) a capture containing an SSN or a Luhn-valid card number —
+  dropping the whole capture is simpler to prove correct than partial scrubbing.
 - **Activity log / raw captures stay local** in `ActivityStore` and never reach
   mem0 — they are operational telemetry the user can inspect, satisfying "the code
   is the audit trail."

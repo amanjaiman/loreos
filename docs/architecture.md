@@ -48,8 +48,9 @@ integration surface is a translation layer, never a new copy of the logic.
    one interface, and nothing else in the codebase talks to it:
    - **mem0** ↔ `IMemoryService` / `MemorydClient` only.
    - **model APIs** ↔ `IInferenceBackend` only.
-   - **Win32 / UI Automation** ↔ `IForegroundWindowSource` (window identity) and
-     the capture extractor interfaces (text extraction) only.
+   - **Win32 / UI Automation** ↔ `IForegroundWindowSource` (window identity),
+     `IWindowSecurityProbe` (structural security check), and the capture extractor
+     interfaces (text extraction) only.
 
    No other file makes outbound HTTP or P/Invoke calls. This is what makes the
    egress list in [`privacy.md`](privacy.md) closed and auditable.
