@@ -57,6 +57,10 @@ public sealed partial class Win32ForegroundWindowSource : IForegroundWindowSourc
         {
             return string.Empty;
         }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            return string.Empty; // access denied for elevated processes (Task Manager, UAC dialogs)
+        }
     }
 
     // Pin every import to the system directory so a planted user32.dll on the search
