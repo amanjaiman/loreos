@@ -95,6 +95,17 @@ out in 002.
   `TextSimilarity`/`SmartGate` (T004/T005), not the monitor. Dwell is level-triggered
   (`HasDwelled` stays true while focus holds) so a window the gate later skips is still
   re-offered, rather than firing a single edge that can be lost.
+- **Extraction is one async seam (`ITextExtractor`) with a tested fallback composite.**
+  `CompositeTextExtractor` tries extractors in order and takes the first non-empty result
+  (UIA → OCR), tagging the source; this orchestration is pure and fully unit-tested. The
+  platform extractors (`UiaTextExtractor`, `OcrTextExtractor`) are total — any failure
+  yields `ExtractedText.Empty` so a bad read falls through instead of throwing.
+- **OCR uses the OS-native `Windows.Media.Ocr` engine, not a third-party library.** It
+  ships with Windows (no extra dependency, no key, nothing leaves the machine —
+  constitution §1/§5). This requires a Windows SDK-versioned TFM
+  (`net8.0-windows10.0.19041.0`, present on every CI windows runner) so the WinRT
+  projections are available; the agent and test projects were bumped accordingly. The
+  window is captured with GDI `PrintWindow` and recognized off that bitmap.
 - **Consolidate filtering into one ordered, fail-closed `SensitivityFilter`** for
   testability and auditability.
 - **Activity log / raw captures stay local** in `ActivityStore` and never reach
