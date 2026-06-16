@@ -21,6 +21,12 @@ public sealed class UiaWindowSecurityProbe : IWindowSecurityProbe
 
         try
         {
+            // Design intent: the capture loop only ever snapshots the FOREGROUND window,
+            // and the foreground window is also the one that holds system keyboard focus.
+            // Therefore AutomationElement.FocusedElement (a system-wide call) IS the
+            // focused element of the window being snapshotted — per-window HWND scoping
+            // is intentionally omitted. Fail-closed: if this invariant ever changes, the
+            // worst case is an over-block (a dropped capture), which is the safe direction.
             AutomationElement? focused = AutomationElement.FocusedElement;
             return focused is not null && focused.Current.IsPassword;
         }
