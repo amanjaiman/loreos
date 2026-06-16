@@ -20,8 +20,11 @@ agent/Capture/
 ├── WindowSnapshot.cs        # identity of one foreground window at one poll tick
 ├── WindowObservation.cs     # one Poll() result: window + change kind + dwell duration + HasDwelled
 ├── WindowMonitor.cs         # dwell timer + change detection (testable; no Win32 calls here)
-├── UiaExtractor.cs         # UI Automation text extraction
-├── OcrExtractor.cs         # OCR fallback for windows without exposed text
+├── ITextExtractor.cs        # text extraction seam (the only UIA/Win32 boundary for text)
+├── ExtractedText.cs         # tagged result record + ExtractionSource enum
+├── CompositeTextExtractor.cs # fallback policy: tries extractors in order, first non-empty wins
+├── UiaTextExtractor.cs      # UI Automation primary path (ContentViewWalker BFS, bounded)
+├── OcrTextExtractor.cs      # GDI PrintWindow capture + Windows.Media.Ocr (fallback)
 ├── ContentType.cs          # classify reading/shopping/messaging/coding/...
 ├── Blocklist.cs            # apps + keywords (user-configurable)
 ├── SensitivityFilter.cs    # the trust-critical chain (blocklist → UIA → regex)
@@ -46,7 +49,7 @@ every poll tick:
   obs = WindowMonitor.Poll()           # → WindowObservation (window, change, dwell, HasDwelled)
   if not obs.HasDwelled: continue
   if SmartGate.ShouldSkip(obs.Window, history): metrics.skip(reason); continue
-  text = UiaExtractor.Extract(obs.Window) ?? OcrExtractor.Extract(obs.Window)
+  text = await textExtractor.ExtractAsync(obs.Window)  # ITextExtractor (CompositeTextExtractor: UIA → OCR)
   filtered = SensitivityFilter.Apply(obs.Window, text)  # ← before anything else
   if filtered.Blocked: metrics.filtered(reason); continue
   result = await analysis.Analyze(obs.Window.Title, filtered.Text)  # IInferenceBackend
@@ -95,6 +98,17 @@ out in 002.
   `TextSimilarity`/`SmartGate` (T004/T005), not the monitor. Dwell is level-triggered
   (`HasDwelled` stays true while focus holds) so a window the gate later skips is still
   re-offered, rather than firing a single edge that can be lost.
+- **Extraction is one async seam (`ITextExtractor`) with a tested fallback composite.**
+  `CompositeTextExtractor` tries extractors in order and takes the first non-empty result
+  (UIA → OCR), tagging the source; this orchestration is pure and fully unit-tested. The
+  platform extractors (`UiaTextExtractor`, `OcrTextExtractor`) are total — any failure
+  yields `ExtractedText.Empty` so a bad read falls through instead of throwing.
+- **OCR uses the OS-native `Windows.Media.Ocr` engine, not a third-party library.** It
+  ships with Windows (no extra dependency, no key, nothing leaves the machine —
+  constitution §1/§5). This requires a Windows SDK-versioned TFM
+  (`net8.0-windows10.0.19041.0`, present on every CI windows runner) so the WinRT
+  projections are available; the agent and test projects were bumped accordingly. The
+  window is captured with GDI `PrintWindow` and recognized off that bitmap.
 - **Consolidate filtering into one ordered, fail-closed `SensitivityFilter`** for
   testability and auditability.
 - **Activity log / raw captures stay local** in `ActivityStore` and never reach

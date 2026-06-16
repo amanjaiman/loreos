@@ -2,9 +2,12 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <!-- Windows-only: the capture pipeline (spec 003) uses UI Automation, which
-         needs WPF assemblies. Set here once so the csproj baseline is stable. -->
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <!-- Windows-only: the capture pipeline (spec 003) uses UI Automation (needs WPF
+         assemblies) for primary text extraction and the OS-native Windows.Media.Ocr
+         engine for the fallback — the latter needs a Windows SDK-versioned TFM so the
+         WinRT projections (Windows.*) are available. 10.0.19041 is the floor that ships
+         Windows.Media.Ocr and is present on every CI windows runner. -->
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <UseWPF>true</UseWPF>
     <RootNamespace>Lore.Agent</RootNamespace>
     <AssemblyName>LoreAgent</AssemblyName>

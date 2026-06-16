@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- Matches the agent's TFM so the project reference resolves. -->
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <!-- Matches the agent's TFM so the project reference resolves (spec 003 T002
+         bumped it to a Windows SDK-versioned TFM for Windows.Media.Ocr). -->
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <UseWPF>true</UseWPF>
     <RootNamespace>Lore.Agent.Tests</RootNamespace>
     <IsPackable>false</IsPackable>
