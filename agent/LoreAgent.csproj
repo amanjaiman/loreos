@@ -8,6 +8,10 @@
     <UseWPF>true</UseWPF>
     <RootNamespace>Lore.Agent</RootNamespace>
     <AssemblyName>LoreAgent</AssemblyName>
+    <!-- The capture pipeline's Win32 seam (spec 003) uses source-generated P/Invoke
+         (LibraryImport); its generated marshalling stubs require unsafe blocks. This
+         enables the generator only — the hand-written agent code stays safe. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>

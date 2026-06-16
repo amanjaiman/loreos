@@ -84,6 +84,13 @@ out in 002.
 
 ## Decisions
 
+- **The monitor tracks window + title transitions; content-diff is a gate concern.**
+  `WindowMonitor` keys the dwell timer off the foreground window's *identity* (handle +
+  title), read through one Win32 seam (`IForegroundWindowSource`). Text content is only
+  available after extraction (T002), so "content change detection" lives in
+  `TextSimilarity`/`SmartGate` (T004/T005), not the monitor. Dwell is level-triggered
+  (`HasDwelled` stays true while focus holds) so a window the gate later skips is still
+  re-offered, rather than firing a single edge that can be lost.
 - **Consolidate filtering into one ordered, fail-closed `SensitivityFilter`** for
   testability and auditability.
 - **Activity log / raw captures stay local** in `ActivityStore` and never reach
