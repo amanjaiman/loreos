@@ -25,7 +25,8 @@ agent/Capture/
 ├── CompositeTextExtractor.cs # fallback policy: tries extractors in order, first non-empty wins
 ├── UiaTextExtractor.cs      # UI Automation primary path (ContentViewWalker BFS, bounded)
 ├── OcrTextExtractor.cs      # GDI PrintWindow capture + Windows.Media.Ocr (fallback)
-├── ContentType.cs          # classify reading/shopping/messaging/coding/...
+├── ContentType.cs          # the ContentType enum (reading/shopping/messaging/coding/unknown)
+├── ContentClassifier.cs    # pure classifier: executable + keyword cues → ContentType
 ├── Blocklist.cs            # apps + keywords (user-configurable)
 ├── FilterResult.cs         # FilterDecision / FilterReason enums + FilterResult sealed class
 ├── IWindowSecurityProbe.cs # UIA structural seam: is this window protected? (fail-closed)
@@ -121,6 +122,12 @@ out in 002.
   extracted text are screened at the keyword and regex layers; and the regex layer
   **drops** (does not redact) a capture containing an SSN or a Luhn-valid card number —
   dropping the whole capture is simpler to prove correct than partial scrubbing.
+- **Similarity is token-set Jaccard; classification is executable-then-keyword.**
+  `TextSimilarity.Similarity` is a set-based Jaccard ratio so scrolling/reflow (same
+  vocabulary, shuffled positions) reads as "unchanged" and the gate skips a redundant
+  inference call. `ContentClassifier` trusts the executable name first (an IDE is an IDE),
+  then small keyword cue lists (shopping → messaging → coding → reading); both are pure and
+  unit-tested. The cue lists are heuristics meant to be tuned, not a taxonomy.
 - **Activity log / raw captures stay local** in `ActivityStore` and never reach
   mem0 — they are operational telemetry the user can inspect, satisfying "the code
   is the audit trail."
