@@ -22,8 +22,17 @@ change detection) into the 002 host as the front of the loop.
 threshold; unit tests cover dwell + change transitions.
 
 ### T002 — Text extraction (UIA + OCR fallback)  `[deps: T001]`
-Port `UiaExtractor` and `OcrExtractor` behind a common extraction interface; OCR is
-the fallback when UIA exposes no text. (`UseWPF=true` from 001 enables UIA.)
+
+> **Status: complete.** `ITextExtractor` (async seam), `ExtractedText` / `ExtractionSource`
+> (tagged result), `CompositeTextExtractor` (fallback policy: UIA → OCR, first non-empty
+> wins; fully unit-tested, 8 tests), `UiaTextExtractor` (ContentViewWalker BFS, 1 500-node /
+> 20 000-char caps), and `OcrTextExtractor` (GDI `PrintWindow` capture +
+> `Windows.Media.Ocr`) all landed here. Both platform extractors are total — any failure
+> yields `ExtractedText.Empty`. TFM bumped to `net8.0-windows10.0.19041.0` on both
+> `LoreAgent` and `LoreAgent.Tests` for the WinRT projections.
+
+Port `UiaTextExtractor` and `OcrTextExtractor` behind a common `ITextExtractor` seam;
+OCR is the fallback when UIA exposes no text. (`UseWPF=true` from 001 enables UIA.)
 **Done when:** extraction returns text for a UIA-friendly window and falls back to
 OCR otherwise; the interface is the only Win32/UIA seam.
 

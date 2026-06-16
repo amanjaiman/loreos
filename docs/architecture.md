@@ -69,7 +69,7 @@ integration surface is a translation layer, never a new copy of the logic.
 
 | Component | Stack | Role |
 |---|---|---|
-| `agent` | C# / .NET 8 (`net8.0-windows`) | Capture pipeline, MCP server, local API host, supervisor |
+| `agent` | C# / .NET 8 (`net8.0-windows10.0.19041.0`) | Capture pipeline, MCP server, local API host, supervisor |
 | `cli` (`lore`) | C# / .NET 8 console | Thin client of the local API |
 | `memoryd` | Python 3.11+, FastAPI, mem0 | Bundled sidecar wrapping mem0; Qdrant on-disk vector store. Alternatively, a user-hosted instance targeted via `engine: "remote"`. |
 | `app` | Electron + React + TS | Onboarding, library, settings — talks only to the local API |

@@ -42,7 +42,7 @@ amendment (§10), not a spec decision.
 
 | Component | Stack | Notes |
 |---|---|---|
-| `agent` | C# / .NET 8 (`net8.0-windows`, `win-x64`, self-contained) | Capture pipeline + MCP server + local API host. `UseWPF=true` for UI Automation. |
+| `agent` | C# / .NET 8 (`net8.0-windows10.0.19041.0`, `win-x64`, self-contained) | Capture pipeline + MCP server + local API host. `UseWPF=true` for UI Automation; Windows SDK TFM for `Windows.Media.Ocr`. |
 | `cli` (`lore`) | C# / .NET 8 console (System.CommandLine) | Thin client of the local API. |
 | `memoryd` | Python 3.11+, FastAPI, [mem0](https://github.com/mem0ai/mem0) OSS | Bundled sidecar; packaged with PyInstaller. Pinned mem0 version. |
 | vector store | Qdrant (embedded / on-disk) | mem0's backend. No external service. |

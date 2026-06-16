@@ -37,8 +37,9 @@ and is held to the highest test bar (constitution §6).
 
 - **Window monitoring:** poll the foreground window (Win32 `GetForegroundWindow`)
   with dwell timing; detect window/title/content changes.
-- **Text extraction:** UI Automation (`UiaExtractor`) with OCR fallback
-  (`OcrExtractor`) for windows that don't expose text.
+- **Text extraction:** UI Automation (`UiaTextExtractor`) with OCR fallback
+  (`OcrTextExtractor`) for windows that don't expose text, behind the `ITextExtractor`
+  seam; `CompositeTextExtractor` implements the fallback policy.
 - **Sensitivity filter chain (trust-critical):** blocklist (apps + keywords) →
   UIA structural check (password fields etc.) → regex (SSN, card numbers). Applied
   **before** analysis/storage/egress.

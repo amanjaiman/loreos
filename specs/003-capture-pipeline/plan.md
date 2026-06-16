@@ -20,8 +20,11 @@ agent/Capture/
 ├── WindowSnapshot.cs        # identity of one foreground window at one poll tick
 ├── WindowObservation.cs     # one Poll() result: window + change kind + dwell duration + HasDwelled
 ├── WindowMonitor.cs         # dwell timer + change detection (testable; no Win32 calls here)
-├── UiaExtractor.cs         # UI Automation text extraction
-├── OcrExtractor.cs         # OCR fallback for windows without exposed text
+├── ITextExtractor.cs        # text extraction seam (the only UIA/Win32 boundary for text)
+├── ExtractedText.cs         # tagged result record + ExtractionSource enum
+├── CompositeTextExtractor.cs # fallback policy: tries extractors in order, first non-empty wins
+├── UiaTextExtractor.cs      # UI Automation primary path (ContentViewWalker BFS, bounded)
+├── OcrTextExtractor.cs      # GDI PrintWindow capture + Windows.Media.Ocr (fallback)
 ├── ContentType.cs          # classify reading/shopping/messaging/coding/...
 ├── Blocklist.cs            # apps + keywords (user-configurable)
 ├── SensitivityFilter.cs    # the trust-critical chain (blocklist → UIA → regex)
@@ -46,7 +49,7 @@ every poll tick:
   obs = WindowMonitor.Poll()           # → WindowObservation (window, change, dwell, HasDwelled)
   if not obs.HasDwelled: continue
   if SmartGate.ShouldSkip(obs.Window, history): metrics.skip(reason); continue
-  text = UiaExtractor.Extract(obs.Window) ?? OcrExtractor.Extract(obs.Window)
+  text = await textExtractor.ExtractAsync(obs.Window)  # ITextExtractor (CompositeTextExtractor: UIA → OCR)
   filtered = SensitivityFilter.Apply(obs.Window, text)  # ← before anything else
   if filtered.Blocked: metrics.filtered(reason); continue
   result = await analysis.Analyze(obs.Window.Title, filtered.Text)  # IInferenceBackend
