@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net;
+using Lore.Agent.Api.Endpoints;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -55,7 +56,7 @@ public static class ApiHost
         // from GET /system/status (T005), which reports component readiness.
         app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
-        // T002 — app.MapMemoryEndpoints();
+        app.MapMemoryEndpoints();
         // T003 — app.MapRecentEndpoints();
         // T004 — app.MapConfigEndpoints();
         // T005 — app.MapSystemEndpoints(); app.MapExportEndpoints();
