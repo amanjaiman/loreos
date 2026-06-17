@@ -36,11 +36,13 @@ internal static class CliRoot
         root.Options.Add(JsonOption);
         root.Options.Add(ApiUrlOption);
 
-        // Read commands (T002). Write commands, status/config/export, and installers follow.
+        // Read commands (T002) and write commands (T003). status/config/export and installers follow.
         root.Subcommands.Add(SearchCommand.Build());
         root.Subcommands.Add(RecentCommand.Build());
         root.Subcommands.Add(ListCommand.Build());
         root.Subcommands.Add(GetCommand.Build());
+        root.Subcommands.Add(AddCommand.Build());
+        root.Subcommands.Add(ForgetCommand.Build());
 
         // Bare `lore` (no subcommand) prints a short banner. `lore --help` still shows full help.
         // This also exercises the whole pipeline — global options → ApiClient → Output, both modes.
