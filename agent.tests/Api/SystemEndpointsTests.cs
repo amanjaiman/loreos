@@ -21,7 +21,7 @@ public sealed class SystemEndpointsTests
         var provider = new ProviderOptions { Type = "anthropic", Model = "claude-haiku-4-5", ApiKeyRef = "lore/provider" };
         await using LoreApiHarness harness = await StartAsync(services =>
         {
-            services.AddSingleton<IMemorydReadiness>(new StubReadiness(ready: true));
+            services.AddSingleton<IMemorydReadiness>(new StubMemorydReadiness(ready: true));
             services.AddSingleton(provider);
         });
 
@@ -41,7 +41,7 @@ public sealed class SystemEndpointsTests
     {
         await using LoreApiHarness harness = await StartAsync(services =>
         {
-            services.AddSingleton<IMemorydReadiness>(new StubReadiness(ready: false));
+            services.AddSingleton<IMemorydReadiness>(new StubMemorydReadiness(ready: false));
             services.AddSingleton(new ProviderOptions()); // empty => not resolvable
         });
 
@@ -118,12 +118,5 @@ public sealed class SystemEndpointsTests
         HttpResponseMessage response = await harness.Client.DeleteAsync(new Uri(path, UriKind.Relative));
         response.EnsureSuccessStatusCode();
         return JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-    }
-
-    private sealed class StubReadiness : IMemorydReadiness
-    {
-        public StubReadiness(bool ready) => IsReady = ready;
-
-        public bool IsReady { get; }
     }
 }

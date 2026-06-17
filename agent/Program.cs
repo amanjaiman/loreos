@@ -62,9 +62,13 @@ internal static class Program
         builder.Services.AddSingleton(sp => new LoreConfig(
             LoreConfig.DefaultPath, sp.GetRequiredService<ICredentialStore>()));
 
+        // The generated OpenAPI contract surfaces pin to, served at /openapi.json (005 T007).
+        ApiHost.AddOpenApi(builder.Services);
+
         WebApplication app = builder.Build();
 
         // Spec 005: every endpoint group is assembled onto this one host (constitution §3.1).
+        ApiHost.UseOpenApi(app);
         app.MapLoreApi();
 
         await app.RunAsync().ConfigureAwait(false);

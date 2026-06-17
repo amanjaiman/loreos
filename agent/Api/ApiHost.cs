@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.OpenApi.Models;
 
 namespace Lore.Agent.Api;
 
@@ -46,6 +48,38 @@ public static class ApiHost
         // rather than silently exposing memory to the network (acceptance criterion 1).
         string? configured = builder.WebHost.GetSetting(WebHostDefaults.ServerUrlsKey);
         EnsureLoopbackOnly(configured);
+    }
+
+    /// <summary>The OpenAPI document name, which also fixes its served path: <c>/openapi.json</c>.</summary>
+    public const string OpenApiDocumentName = "openapi";
+
+    /// <summary>Register OpenAPI generation. Kept separate from <see cref="MapLoreApi"/> so a host
+    /// that only wants the endpoints (e.g. a focused test) need not stand up the document
+    /// services. The generated doc is the contract surfaces pin to (acceptance criterion 6).</summary>
+    public static void AddOpenApi(IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddEndpointsApiExplorer();
+        services.AddSwaggerGen(options => options.SwaggerDoc(
+            OpenApiDocumentName,
+            new OpenApiInfo
+            {
+                Title = "Lore Local API",
+                Version = ApiVersion,
+                Description = "The one behavior layer (constitution §3.1): every Lore surface — app, "
+                    + "MCP server, CLI — reads and writes through this loopback-only API.",
+            }));
+    }
+
+    /// <summary>Serve the generated document at <c>/openapi.json</c>. Call after
+    /// <see cref="AddOpenApi"/> has registered the services.</summary>
+    public static void UseOpenApi(WebApplication app)
+    {
+        ArgumentNullException.ThrowIfNull(app);
+
+        // RouteTemplate's {documentName} resolves to "openapi", giving exactly "/openapi.json".
+        app.UseSwagger(options => options.RouteTemplate = "{documentName}.json");
     }
 
     /// <summary>Map every endpoint group onto the host. This is the single assembly point the
