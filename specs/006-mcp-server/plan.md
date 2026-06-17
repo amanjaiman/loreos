@@ -54,6 +54,15 @@ Before finalizing, compare tool names against OpenMemory MCP conventions; keep
 Lore's names (for v1 compatibility) but note any alias worth documenting so users
 of both feel at home.
 
+**Conclusion (T004):** keep Lore's v1 names — renaming would break existing
+`claude_desktop_config.json` files for zero benefit. OpenMemory MCP uses
+`add_memories` / `search_memory` / `list_memories` / `delete_all_memories`; the
+correspondence (`add_context`≈`add_memories`, `get_context`≈`search_memory`,
+`get_recent`/`get_profile`≈`list_memories`, `forget`≈per-item delete) is documented
+as a table in [`docs/integrations/http-clients.md`](../../docs/integrations/http-clients.md)
+rather than added as runtime aliases, so the tool surface stays minimal. Lore's
+`summarize_profile` and `update_context` have no OpenMemory equivalent.
+
 ## Docs
 
 `docs/integrations/` gets one file per client with copy-paste config and a
