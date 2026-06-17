@@ -1,11 +1,10 @@
 using System.Net.Http;
+using Lore.Agent.Api;
 using Lore.Agent.Capture;
 using Lore.Agent.Hosting;
 using Lore.Agent.Memory;
 using Lore.Agent.Providers;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
@@ -18,13 +17,12 @@ namespace Lore.Agent;
 /// reuses this DI graph without the HTTP listener.</summary>
 internal static class Program
 {
-    // The agent's local API binds loopback only (constitution §1.1 / §3.4).
-    private const string LocalApiUrl = "http://127.0.0.1:7842";
-
     private static async Task Main(string[] args)
     {
         WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
-        builder.WebHost.UseUrls(LocalApiUrl);
+
+        // The local API binds loopback only, with a fail-fast assertion (constitution §3.4).
+        ApiHost.ConfigureLoopbackBinding(builder);
 
         builder.Services.Configure<MemorydOptions>(builder.Configuration.GetSection("memory"));
         builder.Services.AddSingleton<IProcessRunner, ProcessRunner>();
@@ -50,8 +48,8 @@ internal static class Program
 
         WebApplication app = builder.Build();
 
-        // Only /health here; spec 005 maps the full memory API onto this host.
-        app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+        // Spec 005: every endpoint group is assembled onto this one host (constitution §3.1).
+        app.MapLoreApi();
 
         await app.RunAsync().ConfigureAwait(false);
     }
