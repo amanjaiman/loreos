@@ -77,6 +77,30 @@ internal static class CliRoot
         return root;
     }
 
+    /// <summary>Parse <paramref name="args"/> and run the matched command, returning the process
+    /// exit code. This is the one place the exit-code scheme is finalized: a System.CommandLine
+    /// <b>parse error</b> (unknown command, missing argument, bad option) is remapped from the
+    /// parser's default to the documented bad-usage code <see cref="ExitCodes.BadUsage"/>
+    /// (acceptance criterion 3). Command-level codes (success, runtime, agent-unreachable,
+    /// not-found) are produced by the actions themselves and pass through unchanged.</summary>
+    public static async Task<int> InvokeAsync(string[] args)
+    {
+        ArgumentNullException.ThrowIfNull(args);
+
+        RootCommand root = Build();
+        ParseResult parseResult = root.Parse(args);
+        int code = await parseResult.InvokeAsync().ConfigureAwait(false);
+
+        // A parse error means no command ran; the parser printed the errors and returned its own
+        // non-zero code. Normalize that to "bad usage" so callers can branch on exit 2.
+        if (parseResult.Errors.Count > 0 && code != ExitCodes.Success)
+        {
+            return ExitCodes.BadUsage;
+        }
+
+        return code;
+    }
+
     /// <summary>Build the <see cref="Output"/> for a command invocation: human-vs-JSON comes from
     /// the global <c>--json</c> flag; output goes to the console. Shared by every command's action.
     /// Command <em>logic</em> is tested by constructing an <see cref="Output"/> over captured
