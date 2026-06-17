@@ -64,6 +64,14 @@ double as launch material.
 
 - **Drop bucket tools** (buckets deferred) — keeps the surface honest about what
   exists.
+- **`update_context` is an upsert.** It finds the best match for `topic` and
+  replaces it (`Search` + `Update`); if nothing matches, it records `newInfo` as a
+  fresh memory rather than silently dropping it. The tool result's `outcome` field
+  reports which path ran (`updated` / `added`). `forget` deletes only the single
+  best match and reports `remaining_matches` so the model can call again.
+- **`user_id` is not model-facing.** Lore is single-user; tools use the `default`
+  owner internally, mirroring the REST contract, so a future multi-user surface
+  needs no breaking change.
 - **One tool impl, two transports** — no logic divergence.
 - **Installers live in the CLI (007), not here** — this spec is the server; writing
   client config files is a CLI convenience.
