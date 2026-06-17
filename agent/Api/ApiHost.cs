@@ -57,7 +57,7 @@ public static class ApiHost
         app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
         app.MapMemoryEndpoints();
-        // T003 — app.MapRecentEndpoints();
+        app.MapRecentEndpoints();
         // T004 — app.MapConfigEndpoints();
         // T005 — app.MapSystemEndpoints(); app.MapExportEndpoints();
         // T006 — app.MapProviderEndpoints(); + reserved POST /import placeholder.
