@@ -24,7 +24,7 @@ public static class ContentClassifier
     // Keyword cues, checked case-insensitively as substrings of the title + text.
     private static readonly string[] ShoppingCues =
     {
-        "add to cart", "add to bag", "shopping cart", "proceed to checkout", "checkout",
+        "add to cart", "add to bag", "shopping cart", "proceed to checkout",
         "free shipping", "order total", "buy now", "add to basket",
     };
 
@@ -36,7 +36,7 @@ public static class ContentClassifier
 
     private static readonly string[] MessagingCues =
     {
-        "new message", "sent you a message", "is typing", "unread message", "inbox",
+        "new message", "sent you a message", "is typing", "unread message",
     };
 
     private static readonly string[] ReadingCues =
