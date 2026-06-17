@@ -21,16 +21,19 @@ those seams.
 
 | # | Destination | Who configures it | Seam | When |
 |---|---|---|---|---|
-| 1 | `memory.remote_url` (user-hosted mem0 server) | User (`config.json → memory.remote_url`) | `MemorydClient` | Only when `memory.engine: "remote"`; default `"embedded"` makes zero outbound calls |
+| 1 | The **model endpoint you configured** (`provider.type`: Anthropic / OpenAI / Gemini API, or your `openai_compatible` `base_url`) | User (`config.json → provider`) | `IInferenceBackend` (capture analysis) and `memoryd`/mem0 (memory extraction + embeddings) | Whenever capture distills an observation or memory extracts/embeds. With a local `openai_compatible` endpoint (e.g. Ollama) this is loopback only |
+| 2 | `memory.remote_url` (user-hosted mem0 server) | User (`config.json → memory.remote_url`) | `MemorydClient` | Only when `memory.engine: "remote"`; default `"embedded"` keeps memory on the machine |
 
-**With the default `memory.engine: "embedded"` there are zero outbound calls.**
-No model provider exists yet (the model seam, `IInferenceBackend`, arrives with
-spec 004), and `memoryd` + mem0 run locally against an on-disk Qdrant store. If
-you opt in to `engine: "remote"`, `MemorydClient` calls the `remote_url` you
-configure — a server you host, not a Lore-operated service. As soon as a model
-provider lands, the only permitted destination will be the **model endpoint the
-user explicitly configured** — enumerated in the table above, in the same PR that
-adds it.
+**This list is closed.** The model endpoint in row 1 is the single destination
+for all model traffic — Lore never proxies inference and never ships a key (spec
+004). The key is read from the Windows Credential Manager at call time and sent
+only to that endpoint (for cloud providers) or kept on loopback (for a local
+`openai_compatible` endpoint). When the provider is a local model (Ollama / LM
+Studio / vLLM by `base_url`) and `memory.engine` is the default `"embedded"`,
+**there are zero non-loopback outbound calls.** `memoryd` + mem0 run locally
+against an on-disk Qdrant store; if you opt in to `engine: "remote"`,
+`MemorydClient` calls the `remote_url` you host (row 2), not a Lore-operated
+service.
 
 ### What is *never* an outbound call
 

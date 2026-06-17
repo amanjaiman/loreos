@@ -2,6 +2,7 @@ using System.Net.Http;
 using Lore.Agent.Capture;
 using Lore.Agent.Hosting;
 using Lore.Agent.Memory;
+using Lore.Agent.Providers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -40,6 +41,12 @@ internal static class Program
         // The capture pipeline (spec 003): monitor → filter → gate → analyze → Remember().
         // It awaits the memoryd readiness gate before storing and survives memoryd restarts.
         builder.Services.AddCapturePipeline(builder.Configuration);
+
+        // The provider layer (spec 004): the user's one model choice drives both capture
+        // analysis (the real IInferenceBackend, replacing the pipeline's placeholder) and
+        // memory (memoryd is reconfigured once healthy). Registered after the pipeline so
+        // the real backend wins.
+        builder.Services.AddProviderLayer(builder.Configuration);
 
         WebApplication app = builder.Build();
 
