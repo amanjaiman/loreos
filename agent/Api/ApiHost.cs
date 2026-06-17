@@ -59,8 +59,9 @@ public static class ApiHost
         app.MapMemoryEndpoints();
         app.MapRecentEndpoints();
         app.MapConfigEndpoints();
+        app.MapProviderEndpoints(); // POST /providers/test (from 004)
+        app.MapImportEndpoints();   // reserved POST /import placeholder (501; 009 fills it)
         // T005 — app.MapSystemEndpoints(); app.MapExportEndpoints();
-        // T006 — app.MapProviderEndpoints(); + reserved POST /import placeholder.
 
         return app;
     }

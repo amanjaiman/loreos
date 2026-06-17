@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using Lore.Agent.Providers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 
 namespace Lore.Agent.Api.Endpoints;
@@ -25,7 +26,7 @@ public static class ProviderEndpoints
 
         app.MapPost(
             "/providers/test",
-            async (ProviderTestRequest? request, ProviderOptions current, ProviderTester tester, CancellationToken ct) =>
+            async (ProviderTestRequest? request, [FromServices] ProviderOptions current, [FromServices] ProviderTester tester, CancellationToken ct) =>
             {
                 ProviderTestResult result = await HandleAsync(request, current, tester, ct).ConfigureAwait(false);
                 return Results.Json(result, ResponseJson);
