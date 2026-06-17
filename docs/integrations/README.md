@@ -39,6 +39,9 @@ These names are stable: they match Lore v1, so an existing config keeps working.
   from OpenMemory MCP.
 - [The `lore` CLI](cli.md) — terminal/script access, the `--json` contract, exit
   codes, and the `mcp install` / `skills install` installers.
+- [The Lore Agent Skill](skill.md) — teach a skill-capable agent (Claude Code) to use
+  your memory automatically. For instruction-file tools, drop in the
+  [`AGENTS.md`](agents-md.md) or [`CLAUDE.md`](claude-md.md) snippet.
 
 ## Prerequisites
 
