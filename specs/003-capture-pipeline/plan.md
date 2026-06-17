@@ -33,8 +33,11 @@ agent/Capture/
 ├── SensitivePatterns.cs    # regex layer: SSN (separator-anchored) + Luhn-confirmed cards
 ├── SensitivityFilter.cs    # the trust-critical chain (blocklist → UIA → regex)
 ├── UiaWindowSecurityProbe.cs  # IWindowSecurityProbe: focused-element IsPassword check
-├── SmartGate.cs            # dwell + diff thresholds + per-type heuristics
-├── RecentCaptureGate.cs    # suppress near-duplicate recent captures
+├── SmartGateOptions.cs     # the v1 smart-capture thresholds (diff high/low, per-type, ...)
+├── GateDecision.cs         # GateDecision + SkipReason (typed skip reasons)
+├── CaptureHistoryEntry.cs  # one remembered capture (window + text + type + time)
+├── SmartGate.cs            # diff thresholds + per-type heuristics + coding heartbeat
+├── RecentCaptureGate.cs    # bounded newest-first history; recent-duplicate suppression
 ├── TextSimilarity.cs       # diff/similarity math used by the gates
 ├── CaptureMetrics.cs       # captured/skipped/filtered counters + reasons
 └── CaptureAgent.cs         # the loop: orchestrates the above as a BackgroundService
@@ -53,13 +56,16 @@ agent/Storage/
 every poll tick:
   obs = WindowMonitor.Poll()           # → WindowObservation (window, change, dwell, HasDwelled)
   if not obs.HasDwelled: continue
-  if SmartGate.ShouldSkip(obs.Window, history): metrics.skip(reason); continue
   text = await textExtractor.ExtractAsync(obs.Window)  # ITextExtractor (CompositeTextExtractor: UIA → OCR)
   filtered = SensitivityFilter.Apply(obs.Window, text)  # ← before anything else
   if filtered.Blocked: metrics.filtered(reason); continue
+  type = ContentClassifier.Classify(obs.Window, filtered.Text)
+  gate = SmartGate.Evaluate(obs.Window, type, filtered.Text)  # content-diff needs the text
+  if not gate.ShouldCapture: metrics.skip(gate.Reason); continue
   result = await analysis.Analyze(obs.Window.Title, filtered.Text)  # IInferenceBackend
   if result is null: metrics.skip("analysis_empty"); continue
   await memory.Remember(result.Text, result.Category)    # IMemoryService
+  SmartGate.Record(obs.Window, type, filtered.Text)      # remember it for the next diff
   activityStore.Append(obs.Window, result)               # local telemetry only
   metrics.captured()
 ```
@@ -122,6 +128,16 @@ out in 002.
   extracted text are screened at the keyword and regex layers; and the regex layer
   **drops** (does not redact) a capture containing an SSN or a Luhn-valid card number —
   dropping the whole capture is simpler to prove correct than partial scrubbing.
+- **The smart gate runs after extraction+filter, immediately before analysis.** The
+  content-diff that decides "unchanged → skip" needs the extracted text, which doesn't
+  exist until after extraction — so the single gate decision sits right before the
+  expensive inference call (the thing worth saving), not before extraction (cheap, local).
+  `SmartGate.Evaluate` returns a typed `GateDecision`; `Record` is called only after a
+  successful capture so the next candidate diffs against it. The high/low diff thresholds
+  frame a band where the per-`ContentType` bar decides (reading/shopping tolerate more
+  similarity); messaging diffs only the trailing tail (new messages append); coding has a
+  heartbeat that suppresses constant editor churn. `RecentCaptureGate` is the bounded,
+  newest-first history (cap = `MaxCaptureHistory`) the gate consults.
 - **Similarity is token-set Jaccard; classification is executable-then-keyword.**
   `TextSimilarity.Similarity` is a set-based Jaccard ratio so scrolling/reflow (same
   vocabulary, shuffled positions) reads as "unchanged" and the gate skips a redundant
