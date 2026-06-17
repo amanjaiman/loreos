@@ -34,7 +34,15 @@ internal sealed class FakeMemoryService : IMemoryService
         lock (_gate)
         {
             string id = NextId();
-            _records.Add(new MemoryRecord(id, observation, null, null, Now(), Now()));
+            // Persist metadata (boxing each value back into a JsonElement, as memoryd would) so
+            // round-trips like add → get_profile can read the category back. Absent metadata
+            // stays null, preserving behavior for callers that pass none.
+            IReadOnlyDictionary<string, System.Text.Json.JsonElement>? stored = metadata is null
+                ? null
+                : metadata.ToDictionary(
+                    pair => pair.Key,
+                    pair => System.Text.Json.JsonSerializer.SerializeToElement(pair.Value));
+            _records.Add(new MemoryRecord(id, observation, null, stored, Now(), Now()));
             IReadOnlyList<AddedMemory> result = [new AddedMemory(id, observation, "ADD")];
             return Task.FromResult(result);
         }
