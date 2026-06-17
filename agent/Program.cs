@@ -1,10 +1,12 @@
 using System.Net.Http;
 using Lore.Agent.Api;
 using Lore.Agent.Capture;
+using Lore.Agent.Config;
 using Lore.Agent.Hosting;
 using Lore.Agent.Memory;
 using Lore.Agent.Providers;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
@@ -23,6 +25,11 @@ internal static class Program
 
         // The local API binds loopback only, with a fail-fast assertion (constitution §3.4).
         ApiHost.ConfigureLoopbackBinding(builder);
+
+        // config.json is the real source the /config endpoints (005 T004) read and write, so
+        // edits through the API drive the same blocks the rest of the app binds. Optional: a
+        // fresh install has none yet.
+        builder.Configuration.AddJsonFile(LoreConfig.DefaultPath, optional: true, reloadOnChange: false);
 
         builder.Services.Configure<MemorydOptions>(builder.Configuration.GetSection("memory"));
         builder.Services.AddSingleton<IProcessRunner, ProcessRunner>();
@@ -45,6 +52,11 @@ internal static class Program
         // memory (memoryd is reconfigured once healthy). Registered after the pipeline so
         // the real backend wins.
         builder.Services.AddProviderLayer(builder.Configuration);
+
+        // The config seam for the /config endpoints (005 T004): reads/writes config.json and
+        // relocates any inline key to the credential store registered by the provider layer.
+        builder.Services.AddSingleton(sp => new LoreConfig(
+            LoreConfig.DefaultPath, sp.GetRequiredService<ICredentialStore>()));
 
         WebApplication app = builder.Build();
 
