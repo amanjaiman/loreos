@@ -23,6 +23,10 @@ public static class ApiHost
     /// <summary>The fixed local API port (constitution §3.1).</summary>
     public const int Port = 7842;
 
+    /// <summary>The API contract version surfaces pin to (plan: OpenAPI <c>info.version</c> and a
+    /// status field). Breaking changes bump it; 006/007 build against it.</summary>
+    public const string ApiVersion = "1.0";
+
     /// <summary>The one URL Kestrel listens on.</summary>
     public static readonly string Url =
         string.Create(CultureInfo.InvariantCulture, $"http://{LoopbackHost}:{Port}");
@@ -61,7 +65,8 @@ public static class ApiHost
         app.MapConfigEndpoints();
         app.MapProviderEndpoints(); // POST /providers/test (from 004)
         app.MapImportEndpoints();   // reserved POST /import placeholder (501; 009 fills it)
-        // T005 — app.MapSystemEndpoints(); app.MapExportEndpoints();
+        app.MapSystemEndpoints();   // /system/status, /system/log, DELETE /system/data
+        app.MapExportEndpoints();   // /export/json, /export/markdown
 
         return app;
     }
