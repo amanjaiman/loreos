@@ -7,4 +7,14 @@
     <AssemblyName>lore</AssemblyName>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The CLI is a stable machine contract (spec 007): tests assert the JSON
+         envelope and exit codes, so the test project needs to see internals. -->
+    <InternalsVisibleTo Include="Lore.Cli.Tests" />
+  </ItemGroup>
+
 </Project>

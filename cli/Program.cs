@@ -1,15 +1,15 @@
-using System.Reflection;
+using System.CommandLine;
 
 namespace Lore.Cli;
 
-/// <summary>Entry point for the `lore` CLI. Commands arrive with spec 007;
-/// for now it prints a version banner and exits.</summary>
+/// <summary>Entry point for the <c>lore</c> CLI (spec 007): a thin client of the local API. The
+/// command tree and global options are assembled in <see cref="CliRoot"/> (so tests can drive the
+/// same surface in-process); <see cref="Main"/> only parses and invokes.</summary>
 internal static class Program
 {
-    internal static int Main()
+    internal static async Task<int> Main(string[] args)
     {
-        Version version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0);
-        Console.WriteLine($"lore {version.ToString(3)}");
-        return 0;
+        RootCommand root = CliRoot.Build();
+        return await root.Parse(args).InvokeAsync().ConfigureAwait(false);
     }
 }
