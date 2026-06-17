@@ -3,6 +3,7 @@ using Lore.Agent.Api;
 using Lore.Agent.Capture;
 using Lore.Agent.Config;
 using Lore.Agent.Hosting;
+using Lore.Agent.Mcp;
 using Lore.Agent.Memory;
 using Lore.Agent.Providers;
 using Microsoft.AspNetCore.Builder;
@@ -21,6 +22,15 @@ internal static class Program
 {
     private static async Task Main(string[] args)
     {
+        // --mcp (spec 006): serve the MCP tools over stdio, reusing the memory DI graph but
+        // opening no HTTP listener (constitution §3.3). This is a distinct host, so branch before
+        // the WebApplication/Kestrel host is ever built.
+        if (args.Contains(McpStdioServer.ModeFlag, StringComparer.Ordinal))
+        {
+            await McpStdioServer.RunAsync(args).ConfigureAwait(false);
+            return;
+        }
+
         WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
         // The local API binds loopback only, with a fail-fast assertion (constitution §3.4).
