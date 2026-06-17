@@ -8,5 +8,7 @@ Project documentation.
   lives.
 - [multi-device.md](multi-device.md) — optional remote-engine config for sharing
   memory across devices (full walkthrough: spec 011).
+- [api.md](api.md) — the local HTTP API (the one behavior layer) every surface is
+  a client of, and a link to the generated `/openapi.json` (spec 005).
 
 Integration guides land alongside their surfaces (specs 005–008).
