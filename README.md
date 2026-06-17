@@ -51,7 +51,7 @@ npm start   # opens the placeholder window
 | `memoryd/` | Python FastAPI sidecar wrapping mem0 |
 | `app/` | Electron + React desktop app |
 | `skills/` | Agent Skill packages (spec 008) |
-| `docs/` | Architecture, privacy, integration guides |
+| `docs/` | Architecture, privacy, providers, integration guides |
 | `installer/` | Windows packaging (spec 011) |
 | `specs/` | Spec-driven development artifacts, one folder per feature |
 
