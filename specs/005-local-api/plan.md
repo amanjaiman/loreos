@@ -73,6 +73,12 @@ examples. The generated doc is the authority; the markdown is the welcome mat.
   by contract tests, not code review alone.
 - **Import route reserved, not implemented** — 009 fills `POST /import`; this spec
   leaves the documented placeholder so the contract is stable.
+- **`/system/log` tails a conventional `lore.log`** (`%LocalAppData%\Lore\lore.log`)
+  via a `LogTail` reader; a missing file yields an empty tail. The redacting file
+  **sink** that writes that log (`RedactingLoggerProvider` exists for it) is not yet
+  wired into the host — it is outside T005's bar (acceptance criteria 3 & 4 cover
+  status and export). Until a sink lands, the endpoint is correct and contract-stable
+  but returns an empty tail in production. Tracked as a small follow-up.
 
 ## Dependencies & order
 

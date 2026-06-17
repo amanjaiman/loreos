@@ -43,6 +43,10 @@ internal static class Program
         builder.Services.AddSingleton<MemorydSupervisor>();
         builder.Services.AddHostedService(sp => sp.GetRequiredService<MemorydSupervisor>());
 
+        // A non-blocking readiness snapshot and the log tail, both surfaced by /system (005 T005).
+        builder.Services.AddSingleton<IMemorydReadiness, SupervisorReadiness>();
+        builder.Services.AddSingleton(new LogTail(LogTail.DefaultPath));
+
         // The capture pipeline (spec 003): monitor → filter → gate → analyze → Remember().
         // It awaits the memoryd readiness gate before storing and survives memoryd restarts.
         builder.Services.AddCapturePipeline(builder.Configuration);

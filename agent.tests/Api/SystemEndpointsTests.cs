@@ -1,0 +1,129 @@
+using System.IO;
+using System.Net.Http;
+using System.Text.Json;
+using Lore.Agent.Api;
+using Lore.Agent.Api.Endpoints;
+using Lore.Agent.Hosting;
+using Lore.Agent.Memory;
+using Lore.Agent.Providers;
+using Lore.Agent.Tests.Memory;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Lore.Agent.Tests.Api;
+
+/// <summary>Spec 005 acceptance criterion 3: <c>GET /system/status</c> reports agent + memoryd +
+/// provider readiness and the app version. Also covers the log tail and the data reset.</summary>
+public sealed class SystemEndpointsTests
+{
+    [Fact]
+    public async Task Status_reports_ready_components_and_versions()
+    {
+        var provider = new ProviderOptions { Type = "anthropic", Model = "claude-haiku-4-5", ApiKeyRef = "lore/provider" };
+        await using LoreApiHarness harness = await StartAsync(services =>
+        {
+            services.AddSingleton<IMemorydReadiness>(new StubReadiness(ready: true));
+            services.AddSingleton(provider);
+        });
+
+        using JsonDocument doc = await GetJsonAsync(harness, "/system/status");
+        JsonElement root = doc.RootElement;
+
+        Assert.Equal(ApiHost.ApiVersion, root.GetProperty("api_version").GetString());
+        Assert.False(string.IsNullOrWhiteSpace(root.GetProperty("version").GetString()));
+        JsonElement components = root.GetProperty("components");
+        Assert.Equal("running", components.GetProperty("agent").GetString());
+        Assert.Equal("ready", components.GetProperty("memoryd").GetString());
+        Assert.Equal("ready", components.GetProperty("provider").GetString());
+    }
+
+    [Fact]
+    public async Task Status_reflects_starting_memoryd_and_unconfigured_provider()
+    {
+        await using LoreApiHarness harness = await StartAsync(services =>
+        {
+            services.AddSingleton<IMemorydReadiness>(new StubReadiness(ready: false));
+            services.AddSingleton(new ProviderOptions()); // empty => not resolvable
+        });
+
+        using JsonDocument doc = await GetJsonAsync(harness, "/system/status");
+        JsonElement components = doc.RootElement.GetProperty("components");
+
+        Assert.Equal("starting", components.GetProperty("memoryd").GetString());
+        Assert.Equal("unconfigured", components.GetProperty("provider").GetString());
+    }
+
+    [Fact]
+    public async Task Log_returns_the_tail_of_the_file()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"lore-log-{Guid.NewGuid():N}.log");
+        await File.WriteAllLinesAsync(path, ["line 1", "line 2", "line 3", "line 4"]);
+        try
+        {
+            await using LoreApiHarness harness = await StartAsync(services =>
+                services.AddSingleton(new LogTail(path)));
+
+            using JsonDocument doc = await GetJsonAsync(harness, "/system/log?lines=2");
+            JsonElement lines = doc.RootElement.GetProperty("lines");
+
+            Assert.Equal(2, lines.GetArrayLength());
+            Assert.Equal("line 3", lines[0].GetString());
+            Assert.Equal("line 4", lines[1].GetString());
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task Log_on_a_missing_file_is_empty()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"lore-missing-{Guid.NewGuid():N}.log");
+        await using LoreApiHarness harness = await StartAsync(services =>
+            services.AddSingleton(new LogTail(path)));
+
+        using JsonDocument doc = await GetJsonAsync(harness, "/system/log");
+
+        Assert.Empty(doc.RootElement.GetProperty("lines").EnumerateArray());
+    }
+
+    [Fact]
+    public async Task Data_reset_forgets_every_memory()
+    {
+        var store = new FakeMemoryService();
+        store.Seed("first");
+        store.Seed("second");
+        await using LoreApiHarness harness = await StartAsync(services =>
+            services.AddSingleton<IMemoryService>(store));
+
+        using JsonDocument doc = await DeleteJsonAsync(harness, "/system/data");
+        Assert.Equal(2, doc.RootElement.GetProperty("deleted").GetInt32());
+
+        IReadOnlyList<MemoryRecord> remaining = await store.GetAllAsync();
+        Assert.Empty(remaining);
+    }
+
+    private static Task<LoreApiHarness> StartAsync(Action<IServiceCollection> configureServices) =>
+        LoreApiHarness.StartAsync(configureServices, app => app.MapSystemEndpoints());
+
+    private static async Task<JsonDocument> GetJsonAsync(LoreApiHarness harness, string path)
+    {
+        HttpResponseMessage response = await harness.Client.GetAsync(new Uri(path, UriKind.Relative));
+        response.EnsureSuccessStatusCode();
+        return JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+    }
+
+    private static async Task<JsonDocument> DeleteJsonAsync(LoreApiHarness harness, string path)
+    {
+        HttpResponseMessage response = await harness.Client.DeleteAsync(new Uri(path, UriKind.Relative));
+        response.EnsureSuccessStatusCode();
+        return JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+    }
+
+    private sealed class StubReadiness : IMemorydReadiness
+    {
+        public StubReadiness(bool ready) => IsReady = ready;
+
+        public bool IsReady { get; }
+    }
+}

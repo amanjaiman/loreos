@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Globalization;
 using Lore.Agent.Memory;
 
@@ -7,18 +6,23 @@ namespace Lore.Agent.Tests.Memory;
 /// <summary>An in-memory <see cref="IMemoryService"/> for seeding API tests (spec 005). It is
 /// deliberately simple — insertion-ordered storage, naive substring search — because the tests
 /// it serves verify the API layer's routing/shapes/status codes, not the memory engine's
-/// extraction. <see cref="Seed"/> preloads records; the CRUD verbs round-trip them.</summary>
+/// extraction. Storage preserves insertion order (a plain ordered list under a lock) so list,
+/// paging, and export assertions are deterministic. <see cref="Seed"/> preloads records.</summary>
 internal sealed class FakeMemoryService : IMemoryService
 {
-    private readonly ConcurrentDictionary<string, MemoryRecord> _byId = new(StringComparer.Ordinal);
+    private readonly object _gate = new();
+    private readonly List<MemoryRecord> _records = []; // insertion-ordered
     private int _sequence;
 
     /// <summary>Preload a record (returns its id) so a test can exercise get/list/search.</summary>
     public string Seed(string text, double? score = null, IReadOnlyDictionary<string, System.Text.Json.JsonElement>? metadata = null)
     {
-        string id = NextId();
-        _byId[id] = new MemoryRecord(id, text, score, metadata, Now(), Now());
-        return id;
+        lock (_gate)
+        {
+            string id = NextId();
+            _records.Add(new MemoryRecord(id, text, score, metadata, Now(), Now()));
+            return id;
+        }
     }
 
     public Task<IReadOnlyList<AddedMemory>> RememberAsync(
@@ -27,10 +31,13 @@ internal sealed class FakeMemoryService : IMemoryService
         IReadOnlyDictionary<string, object?>? metadata = null,
         CancellationToken cancellationToken = default)
     {
-        string id = NextId();
-        _byId[id] = new MemoryRecord(id, observation, null, null, Now(), Now());
-        IReadOnlyList<AddedMemory> result = [new AddedMemory(id, observation, "ADD")];
-        return Task.FromResult(result);
+        lock (_gate)
+        {
+            string id = NextId();
+            _records.Add(new MemoryRecord(id, observation, null, null, Now(), Now()));
+            IReadOnlyList<AddedMemory> result = [new AddedMemory(id, observation, "ADD")];
+            return Task.FromResult(result);
+        }
     }
 
     public Task<IReadOnlyList<MemoryRecord>> SearchAsync(
@@ -39,12 +46,15 @@ internal sealed class FakeMemoryService : IMemoryService
         int limit = 10,
         CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<MemoryRecord> hits = _byId.Values
-            .Where(record => record.Memory.Contains(query, StringComparison.OrdinalIgnoreCase))
-            .Take(limit)
-            .Select(record => record with { Score = 0.9 })
-            .ToArray();
-        return Task.FromResult(hits);
+        lock (_gate)
+        {
+            IReadOnlyList<MemoryRecord> hits = _records
+                .Where(record => record.Memory.Contains(query, StringComparison.OrdinalIgnoreCase))
+                .Take(limit)
+                .Select(record => record with { Score = 0.9 })
+                .ToArray();
+            return Task.FromResult(hits);
+        }
     }
 
     public Task<IReadOnlyList<MemoryRecord>> GetRecentAsync(
@@ -52,38 +62,58 @@ internal sealed class FakeMemoryService : IMemoryService
         int count = 20,
         CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<MemoryRecord> recent = _byId.Values.TakeLast(count).ToArray();
-        return Task.FromResult(recent);
+        lock (_gate)
+        {
+            IReadOnlyList<MemoryRecord> recent = _records.TakeLast(count).ToArray();
+            return Task.FromResult(recent);
+        }
     }
 
     public Task<IReadOnlyList<MemoryRecord>> GetAllAsync(
         string userId = "default",
         CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<MemoryRecord> all = _byId.Values.ToArray();
-        return Task.FromResult(all);
+        lock (_gate)
+        {
+            IReadOnlyList<MemoryRecord> all = _records.ToArray();
+            return Task.FromResult(all);
+        }
     }
 
-    public Task<MemoryRecord?> GetAsync(string id, CancellationToken cancellationToken = default) =>
-        Task.FromResult(_byId.TryGetValue(id, out MemoryRecord? record) ? record : null);
+    public Task<MemoryRecord?> GetAsync(string id, CancellationToken cancellationToken = default)
+    {
+        lock (_gate)
+        {
+            return Task.FromResult(_records.FirstOrDefault(record => record.Id == id));
+        }
+    }
 
     public Task<MemoryRecord?> UpdateAsync(string id, string text, CancellationToken cancellationToken = default)
     {
-        if (!_byId.TryGetValue(id, out MemoryRecord? existing))
+        lock (_gate)
         {
-            return Task.FromResult<MemoryRecord?>(null);
-        }
+            int index = _records.FindIndex(record => record.Id == id);
+            if (index < 0)
+            {
+                return Task.FromResult<MemoryRecord?>(null);
+            }
 
-        MemoryRecord updated = existing with { Memory = text, UpdatedAt = Now() };
-        _byId[id] = updated;
-        return Task.FromResult<MemoryRecord?>(updated);
+            MemoryRecord updated = _records[index] with { Memory = text, UpdatedAt = Now() };
+            _records[index] = updated;
+            return Task.FromResult<MemoryRecord?>(updated);
+        }
     }
 
-    public Task<bool> DeleteAsync(string id, CancellationToken cancellationToken = default) =>
-        Task.FromResult(_byId.TryRemove(id, out _));
+    public Task<bool> DeleteAsync(string id, CancellationToken cancellationToken = default)
+    {
+        lock (_gate)
+        {
+            return Task.FromResult(_records.RemoveAll(record => record.Id == id) > 0);
+        }
+    }
 
     private string NextId() =>
-        "mem-" + Interlocked.Increment(ref _sequence).ToString(CultureInfo.InvariantCulture);
+        "mem-" + (++_sequence).ToString(CultureInfo.InvariantCulture);
 
     private static string Now() => DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture);
 }
