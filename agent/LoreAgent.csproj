@@ -21,6 +21,10 @@
     <!-- The agent host is an ASP.NET Core minimal-API app (spec 002 T005): the local
          API on 127.0.0.1 that every surface is a client of (constitution §3.1). -->
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <!-- Thin local operational store for capture telemetry (spec 003 T007): the
+         human-readable activity log + raw captures the user can inspect. This is NOT
+         mem0 — it never leaves the machine. Bundle build includes native SQLite. -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.10" />
   </ItemGroup>
 
 </Project>

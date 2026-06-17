@@ -48,6 +48,7 @@ agent/Capture/
 agent/Inference/
 └── IInferenceBackend.cs    # minimal model seam + InferenceRequest (004 implements; capture mocks)
 agent/Storage/
+├── ActivityEntries.cs      # ActivityDecision enum + ActivityLogEntry / RawCaptureEntry records
 └── ActivityStore.cs        # thin local SQLite: activity_log + raw_captures (NOT mem0)
 ```
 
