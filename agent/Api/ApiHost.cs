@@ -58,7 +58,7 @@ public static class ApiHost
 
         app.MapMemoryEndpoints();
         app.MapRecentEndpoints();
-        // T004 — app.MapConfigEndpoints();
+        app.MapConfigEndpoints();
         // T005 — app.MapSystemEndpoints(); app.MapExportEndpoints();
         // T006 — app.MapProviderEndpoints(); + reserved POST /import placeholder.
 
