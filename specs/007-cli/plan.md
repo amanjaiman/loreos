@@ -73,6 +73,13 @@ reach the user.
   must be safe and repeatable.
 - **The CLI owns installers** (not 006/008) because wiring external tools is an
   admin/UX concern, kept in one place.
+- **`recent` shows recent *memories*** (not raw captures), mirroring the MCP
+  `get_recent` intent. It is a thin shim over `GET /memories?limit=N` and shares
+  that endpoint with `list` (which adds `--offset` paging). The API returns
+  memories in the store's order (not a strict recency sort, per
+  `IMemoryService.GetRecentAsync`), so "recent" is best-effort until a
+  recency-sorted endpoint exists; `recent` and `list` both forward the API's paged
+  `{ items, total, limit, offset }` shape under `--json`.
 
 ## Dependencies & order
 
