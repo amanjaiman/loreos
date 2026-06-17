@@ -1,5 +1,6 @@
 using System.CommandLine;
 using Lore.Cli.Commands;
+using Lore.Cli.Commands.Install;
 
 namespace Lore.Cli;
 
@@ -48,6 +49,9 @@ internal static class CliRoot
         root.Subcommands.Add(StatusCommand.Build());
         root.Subcommands.Add(ConfigCommand.Build());
         root.Subcommands.Add(ExportCommand.Build());
+
+        // Installers (T006): mcp install.
+        root.Subcommands.Add(McpInstallCommand.Build());
 
         // Bare `lore` (no subcommand) prints a short banner. `lore --help` still shows full help.
         // This also exercises the whole pipeline — global options → ApiClient → Output, both modes.
