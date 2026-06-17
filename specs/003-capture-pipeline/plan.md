@@ -39,8 +39,14 @@ agent/Capture/
 ├── SmartGate.cs            # diff thresholds + per-type heuristics + coding heartbeat
 ├── RecentCaptureGate.cs    # bounded newest-first history; recent-duplicate suppression
 ├── TextSimilarity.cs       # diff/similarity math used by the gates
+├── CaptureAnalysis.cs      # distilled result: first-person observation + category
+├── AnalysisPrompt.cs       # trimmed analysis.txt prompt builder (title+text → request)
+├── ObservationParser.cs    # JSON-tolerant parse of the model reply (pure, unit-tested)
+├── CaptureAnalyzer.cs      # orchestrates prompt → IInferenceBackend → parse
 ├── CaptureMetrics.cs       # captured/skipped/filtered counters + reasons
 └── CaptureAgent.cs         # the loop: orchestrates the above as a BackgroundService
+agent/Inference/
+└── IInferenceBackend.cs    # minimal model seam + InferenceRequest (004 implements; capture mocks)
 agent/Storage/
 └── ActivityStore.cs        # thin local SQLite: activity_log + raw_captures (NOT mem0)
 ```
@@ -94,11 +100,14 @@ Ported v1 smart-capture parameters (config keys already exist in the v1 registry
 
 ## Capture analysis
 
-`analysis.txt` prompt (ported, trimmed) turns filtered title+text into a JSON
-observation: a first-person sentence + a category. Uses `InferenceManager`'s
-JSON-tolerant parse (ported as a small pure helper). Malformed output → skip, never
-crash. **Input to mem0 is this distilled observation** — the quality lever called
-out in 002.
+`AnalysisPrompt` (ported, trimmed `analysis.txt`) turns filtered title+text into a JSON
+observation: a first-person sentence + a category, with an explicit "nothing worth
+remembering" escape (an empty observation). `ObservationParser` is the JSON-tolerant
+parse as a small pure helper — it unwraps markdown fences/prose, tolerates trailing
+commas, and returns `null` for any unusable reply. `CaptureAnalyzer` orchestrates
+prompt → `IInferenceBackend` → parse: malformed output → `null` (skip, never crash);
+backend/transport failures propagate to the loop, which owns resilience (T008).
+**Input to mem0 is this distilled observation** — the quality lever called out in 002.
 
 ## Decisions
 
@@ -148,7 +157,13 @@ out in 002.
   mem0 — they are operational telemetry the user can inspect, satisfying "the code
   is the audit trail."
 - **Develop against a mock `IInferenceBackend`** so this spec proceeds in parallel
-  with 004; integrate for real once 004 merges.
+  with 004; integrate for real once 004 merges. 003 defines the minimal seam it needs
+  (`CompleteAsync(InferenceRequest) → string?`, a system+user prompt with temperature) in
+  `agent/Inference/`; 004 owns the real backends and may extend the contract. Splitting
+  analyzer responsibilities so the loop survives a bad model: the **parser** turns
+  malformed output into a skip (`null`); the **analyzer** lets backend/transport exceptions
+  propagate to the loop's per-tick try/catch (T008) rather than swallowing them, honoring
+  §5 "no silently swallowed exceptions on the provider seam."
 - **Buckets/retention deferred** — `Remember()` carries category metadata only;
   grouping/expiry can return later as metadata + a scheduled job without touching
   capture.
