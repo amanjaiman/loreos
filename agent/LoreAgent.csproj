@@ -27,4 +27,10 @@
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.10" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Tests drive the capture loop's per-tick pipeline (CaptureAgent.CaptureOnceAsync),
+         which is internal so it isn't part of the public surface. -->
+    <InternalsVisibleTo Include="LoreAgent.Tests" />
+  </ItemGroup>
+
 </Project>

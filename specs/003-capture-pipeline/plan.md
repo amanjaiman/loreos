@@ -43,10 +43,17 @@ agent/Capture/
 ├── AnalysisPrompt.cs       # trimmed analysis.txt prompt builder (title+text → request)
 ├── ObservationParser.cs    # JSON-tolerant parse of the model reply (pure, unit-tested)
 ├── CaptureAnalyzer.cs      # orchestrates prompt → IInferenceBackend → parse
-├── CaptureMetrics.cs       # captured/skipped/filtered counters + reasons
+├── CaptureMetrics.cs       # captured/skipped/filtered counters + reasons (+ snapshot)
+├── CaptureOptions.cs       # poll/dwell/recapture intervals, blocklist, gate thresholds
+├── CaptureOutcome.cs       # the result of one tick (Filtered/Skipped/AnalysisEmpty/MemoryError/Captured)
+├── IReadinessSignal.cs     # await memoryd readiness without depending on the supervisor
+├── CaptureServiceCollectionExtensions.cs  # AddCapturePipeline(): wires it all into the 002 host
 └── CaptureAgent.cs         # the loop: orchestrates the above as a BackgroundService
 agent/Inference/
-└── IInferenceBackend.cs    # minimal model seam + InferenceRequest (004 implements; capture mocks)
+├── IInferenceBackend.cs    # minimal model seam + InferenceRequest (004 implements; capture mocks)
+└── NullInferenceBackend.cs # placeholder backend until 004 (analysis disabled, logged once)
+agent/Hosting/
+└── MemorydReadinessSignal.cs  # IReadinessSignal over MemorydSupervisor.Ready
 agent/Storage/
 ├── ActivityEntries.cs      # ActivityDecision enum + ActivityLogEntry / RawCaptureEntry records
 └── ActivityStore.cs        # thin local SQLite: activity_log + raw_captures (NOT mem0)
@@ -165,6 +172,19 @@ backend/transport failures propagate to the loop, which owns resilience (T008).
   malformed output into a skip (`null`); the **analyzer** lets backend/transport exceptions
   propagate to the loop's per-tick try/catch (T008) rather than swallowing them, honoring
   §5 "no silently swallowed exceptions on the provider seam."
+- **The loop is resilient by construction (criterion 6).** `CaptureAgent.ExecuteAsync`
+  awaits the memoryd readiness gate, then wraps each tick so one bad window, extraction, or
+  model response only logs and continues. A memoryd outage is handled specifically: the
+  observation is dropped with a logged, recoverable warning and a `MemoryError` metric — the
+  loop keeps running. The per-tick pipeline is the internal `CaptureOnceAsync`, returning a
+  `CaptureOutcome`, so acceptance criteria 1 and 6 are unit-tested deterministically without
+  driving the timing loop. A small re-capture throttle keeps a window held in focus from
+  being re-extracted on every poll.
+- **A placeholder `NullInferenceBackend` is registered until 004.** The host wires the full
+  pipeline now; until a real provider lands, the placeholder returns no completion (analysis
+  disabled, logged once) so the loop runs without storing. Replacing that one registration is
+  all 004 needs. This adds no outbound call, so `docs/privacy.md` is unchanged (the model
+  egress arrives with 004).
 - **Buckets/retention deferred** — `Remember()` carries category metadata only;
   grouping/expiry can return later as metadata + a scheduled job without touching
   capture.

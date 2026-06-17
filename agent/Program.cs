@@ -1,4 +1,5 @@
 using System.Net.Http;
+using Lore.Agent.Capture;
 using Lore.Agent.Hosting;
 using Lore.Agent.Memory;
 using Microsoft.AspNetCore.Builder;
@@ -35,6 +36,10 @@ internal static class Program
 
         builder.Services.AddSingleton<MemorydSupervisor>();
         builder.Services.AddHostedService(sp => sp.GetRequiredService<MemorydSupervisor>());
+
+        // The capture pipeline (spec 003): monitor → filter → gate → analyze → Remember().
+        // It awaits the memoryd readiness gate before storing and survives memoryd restarts.
+        builder.Services.AddCapturePipeline(builder.Configuration);
 
         WebApplication app = builder.Build();
 
