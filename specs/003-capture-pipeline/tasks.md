@@ -58,6 +58,18 @@ exhaustive case table from `specification.md` acceptance criterion 2.
 the correct drop/allow + reason; no downstream path can see unfiltered text.
 
 ### T004 — Content classification + similarity math  `[deps: T002]`
+
+> **Status: complete.** `ContentType` (enum: Unknown/Reading/Shopping/Messaging/Coding),
+> `ContentClassifier` (static; executable-name sets win first — `CodingApps` /
+> `MessagingApps` hash sets — then small keyword cue lists searched over title + text in
+> order: shopping → messaging → coding → reading; falls through to `Unknown`), and
+> `TextSimilarity` (`Similarity` — token-set Jaccard in [0, 1]; `Difference` — its
+> complement; tokens normalised with `ToUpperInvariant` to satisfy CA1308; two empty
+> texts = 1.0, empty vs. non-empty = 0.0) all landed here. Both are pure static classes
+> with no Win32/UIA/platform seam. 21 new unit tests covering classifier exe-wins,
+> keyword priority, case-insensitivity, and all similarity boundary cases; 120 tests
+> passing total.
+
 Port `ContentType` and `TextSimilarity` (pure functions feeding the gates).
 **Done when:** classification and similarity are unit-tested over representative
 inputs.
