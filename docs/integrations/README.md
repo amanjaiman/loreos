@@ -37,6 +37,8 @@ These names are stable: they match Lore v1, so an existing config keeps working.
 - [Cursor](cursor.md)
 - [Generic Streamable HTTP clients](http-clients.md) — and a note for users coming
   from OpenMemory MCP.
+- [The `lore` CLI](cli.md) — terminal/script access, the `--json` contract, exit
+  codes, and the `mcp install` / `skills install` installers.
 
 ## Prerequisites
 
@@ -48,5 +50,6 @@ These names are stable: they match Lore v1, so an existing config keeps working.
 - For **Streamable HTTP**, the Lore app (or agent) must be **running**, so the local
   API on `127.0.0.1:7842` is up.
 
-> A future `lore mcp install` command (spec 007) will write these client configs for
-> you. Until then, the guides below are copy-paste.
+> Prefer not to hand-edit JSON? `lore mcp install <claude-desktop|claude-code|cursor>`
+> writes these client configs for you — it merges, never overwrites, and backs up
+> first. See [the CLI guide](cli.md#installers).
