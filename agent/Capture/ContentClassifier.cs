@@ -31,7 +31,7 @@ public static class ContentClassifier
     private static readonly string[] CodingCues =
     {
         "stack overflow", "pull request", "merge request", "compiler error", "git commit",
-        ".cs", ".py", ".ts", ".js", ".java", ".rs", ".go", ".cpp",
+        ".py", ".java", ".rs", ".go", ".cpp",
     };
 
     private static readonly string[] MessagingCues =
