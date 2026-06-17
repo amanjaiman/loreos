@@ -115,9 +115,12 @@ public abstract class HttpInferenceBackend : IInferenceBackend
         string body = raw.Length > ErrorBodyCap ? raw[..ErrorBodyCap] : raw;
         int status = (int)response.StatusCode;
 
+        // Order matters: some providers (Gemini) report a bad key as HTTP 400 with an
+        // "API key" message rather than 401, so the key check comes before the rest.
         ProviderErrorKind kind = response.StatusCode switch
         {
             HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden => ProviderErrorKind.Unauthorized,
+            HttpStatusCode.BadRequest when MentionsApiKey(body) => ProviderErrorKind.Unauthorized,
             HttpStatusCode.NotFound => ProviderErrorKind.ModelNotFound,
             HttpStatusCode.BadRequest when MentionsModel(body) => ProviderErrorKind.ModelNotFound,
             _ => ProviderErrorKind.BadResponse,
@@ -137,6 +140,10 @@ public abstract class HttpInferenceBackend : IInferenceBackend
 
     private static bool MentionsModel(string body) =>
         body.Contains("model", StringComparison.OrdinalIgnoreCase);
+
+    private static bool MentionsApiKey(string body) =>
+        body.Contains("api key", StringComparison.OrdinalIgnoreCase)
+        || body.Contains("api_key", StringComparison.OrdinalIgnoreCase);
 
     private static string Summarize(string body)
     {
