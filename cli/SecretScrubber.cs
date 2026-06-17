@@ -45,6 +45,15 @@ internal static class SecretScrubber
         }
     }
 
+    /// <summary>Whether <paramref name="key"/> names secret material the CLI must not echo — used
+    /// both to redact output and to decide whether <c>config set</c> may print the value it stored.
+    /// A <c>*_ref</c> handle is never a secret (constitution §4.2).</summary>
+    public static bool IsSecret(string key)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        return IsSecretKey(key);
+    }
+
     // A key names a secret if it looks like raw key material — but never a "*_ref" handle, which
     // is the safe pointer the keystore design hands back (constitution §4.2). Compared
     // case-insensitively without allocating a lowercased copy.

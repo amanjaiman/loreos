@@ -44,6 +44,11 @@ internal static class CliRoot
         root.Subcommands.Add(AddCommand.Build());
         root.Subcommands.Add(ForgetCommand.Build());
 
+        // Admin surface (T004): status, config, export.
+        root.Subcommands.Add(StatusCommand.Build());
+        root.Subcommands.Add(ConfigCommand.Build());
+        root.Subcommands.Add(ExportCommand.Build());
+
         // Bare `lore` (no subcommand) prints a short banner. `lore --help` still shows full help.
         // This also exercises the whole pipeline — global options → ApiClient → Output, both modes.
         root.SetAction(parseResult =>
