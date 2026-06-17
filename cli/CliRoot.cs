@@ -1,4 +1,5 @@
 using System.CommandLine;
+using Lore.Cli.Commands;
 
 namespace Lore.Cli;
 
@@ -34,6 +35,12 @@ internal static class CliRoot
             + "API; read commands support --json with a stable, versioned schema and meaningful exit codes.");
         root.Options.Add(JsonOption);
         root.Options.Add(ApiUrlOption);
+
+        // Read commands (T002). Write commands, status/config/export, and installers follow.
+        root.Subcommands.Add(SearchCommand.Build());
+        root.Subcommands.Add(RecentCommand.Build());
+        root.Subcommands.Add(ListCommand.Build());
+        root.Subcommands.Add(GetCommand.Build());
 
         // Bare `lore` (no subcommand) prints a short banner. `lore --help` still shows full help.
         // This also exercises the whole pipeline — global options → ApiClient → Output, both modes.
