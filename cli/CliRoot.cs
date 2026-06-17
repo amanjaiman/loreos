@@ -50,8 +50,9 @@ internal static class CliRoot
         root.Subcommands.Add(ConfigCommand.Build());
         root.Subcommands.Add(ExportCommand.Build());
 
-        // Installers (T006): mcp install.
+        // Installers (T006, T007): mcp install, skills install.
         root.Subcommands.Add(McpInstallCommand.Build());
+        root.Subcommands.Add(SkillsInstallCommand.Build());
 
         // Bare `lore` (no subcommand) prints a short banner. `lore --help` still shows full help.
         // This also exercises the whole pipeline — global options → ApiClient → Output, both modes.
