@@ -42,6 +42,7 @@ internal sealed class FakeProcessRunner : IProcessRunner
 {
     private readonly object _gate = new();
     private readonly List<FakeManagedProcess> _started = [];
+    private readonly List<ProcessStartInfo> _startInfos = [];
     private int _attempts;
 
     /// <summary>Number of initial Start calls that throw (simulating a launch
@@ -59,6 +60,19 @@ internal sealed class FakeProcessRunner : IProcessRunner
         }
     }
 
+    /// <summary>The <see cref="ProcessStartInfo"/> of each spawn, so tests can assert
+    /// which executable (packaged exe vs. python module) the supervisor launched.</summary>
+    public IReadOnlyList<ProcessStartInfo> StartInfos
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return [.. _startInfos];
+            }
+        }
+    }
+
     public IManagedProcess Start(ProcessStartInfo startInfo)
     {
         if (Interlocked.Increment(ref _attempts) <= ThrowsBeforeSuccess)
@@ -70,6 +84,7 @@ internal sealed class FakeProcessRunner : IProcessRunner
         lock (_gate)
         {
             _started.Add(process);
+            _startInfos.Add(startInfo);
         }
 
         return process;

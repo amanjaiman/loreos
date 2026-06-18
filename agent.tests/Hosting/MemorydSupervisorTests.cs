@@ -178,6 +178,80 @@ public sealed class MemorydSupervisorTests : IDisposable
     }
 
     [Fact]
+    public async Task Embedded_launches_the_bundled_sidecar_exe_when_present()
+    {
+        // Simulate an installed layout: <BaseDirectory>/memoryd/lore-memoryd.exe exists.
+        string baseDir = Path.Combine(Path.GetTempPath(), "lore-bundle-" + Guid.NewGuid().ToString("N"));
+        string sidecarDir = Path.Combine(baseDir, "memoryd");
+        Directory.CreateDirectory(sidecarDir);
+        string exe = Path.Combine(sidecarDir, "lore-memoryd.exe");
+        await File.WriteAllTextAsync(exe, "stub");
+        try
+        {
+            MemorydOptions options = FastOptions();
+            options.BaseDirectory = baseDir;
+            var runner = new FakeProcessRunner();
+            var probe = new FakeHealthProbe(() => true);
+            MemorydSupervisor supervisor = Create(options, runner, probe);
+
+            await supervisor.StartAsync(CancellationToken.None);
+            await supervisor.Ready.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.Equal(exe, runner.StartInfos[0].FileName);
+            Assert.Empty(runner.StartInfos[0].ArgumentList); // the exe runs directly, no -m
+            await supervisor.StopAsync(CancellationToken.None);
+        }
+        finally
+        {
+            Directory.Delete(baseDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task Embedded_falls_back_to_python_module_when_no_sidecar_is_bundled()
+    {
+        MemorydOptions options = FastOptions();
+        // BaseDirectory points at a temp dir with no bundled exe -> dev fallback.
+        options.BaseDirectory = Path.Combine(Path.GetTempPath(), "lore-nobundle-" + Guid.NewGuid().ToString("N"));
+        var runner = new FakeProcessRunner();
+        var probe = new FakeHealthProbe(() => true);
+        MemorydSupervisor supervisor = Create(options, runner, probe);
+
+        await supervisor.StartAsync(CancellationToken.None);
+        await supervisor.Ready.WaitAsync(TimeSpan.FromSeconds(5));
+
+        ProcessStartInfo info = runner.StartInfos[0];
+        Assert.Equal(options.PythonExecutable, info.FileName);
+        Assert.Equal(["-m", "lore_memoryd"], info.ArgumentList);
+        await supervisor.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task Embedded_prefers_an_explicit_PackagedExecutable_override()
+    {
+        string exe = Path.Combine(Path.GetTempPath(), "lore-explicit-" + Guid.NewGuid().ToString("N") + ".exe");
+        await File.WriteAllTextAsync(exe, "stub");
+        try
+        {
+            MemorydOptions options = FastOptions();
+            options.PackagedExecutable = exe;
+            var runner = new FakeProcessRunner();
+            var probe = new FakeHealthProbe(() => true);
+            MemorydSupervisor supervisor = Create(options, runner, probe);
+
+            await supervisor.StartAsync(CancellationToken.None);
+            await supervisor.Ready.WaitAsync(TimeSpan.FromSeconds(5));
+
+            Assert.Equal(exe, runner.StartInfos[0].FileName);
+            await supervisor.StopAsync(CancellationToken.None);
+        }
+        finally
+        {
+            File.Delete(exe);
+        }
+    }
+
+    [Fact]
     public async Task StopAsync_before_healthy_cancels_ready()
     {
         var runner = new FakeProcessRunner();

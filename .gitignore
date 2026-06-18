@@ -20,6 +20,9 @@ dist/
 *.log
 .eslintcache
 
+# Packaging (spec 011): PyInstaller / setuptools / forge build artifacts
+build/
+
 # OS noise
 .DS_Store
 Thumbs.db

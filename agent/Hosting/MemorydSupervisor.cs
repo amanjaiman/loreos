@@ -191,13 +191,14 @@ public sealed class MemorydSupervisor : BackgroundService
     private ProcessStartInfo BuildStartInfo()
     {
         ProcessStartInfo info;
-        string? packaged = _options.PackagedExecutable;
-        if (!string.IsNullOrEmpty(packaged) && File.Exists(packaged))
+        string? exe = ResolveSidecarExecutable();
+        if (exe is not null)
         {
-            info = new ProcessStartInfo(packaged);
+            info = new ProcessStartInfo(exe);
         }
         else
         {
+            // Dev fallback: no frozen sidecar present, run it from source.
             info = new ProcessStartInfo(_options.PythonExecutable);
             info.ArgumentList.Add("-m");
             info.ArgumentList.Add("lore_memoryd");
@@ -207,6 +208,21 @@ public sealed class MemorydSupervisor : BackgroundService
         info.Environment["LORE_MEMORYD_HOST"] = _options.Host;
         info.Environment["LORE_MEMORYD_PORT"] = _options.Port.ToString(CultureInfo.InvariantCulture);
         return info;
+    }
+
+    /// <summary>Resolves the packaged sidecar to launch, preferring an explicit
+    /// override, then the installer's conventional bundled location. Returns null
+    /// when neither exists, so the supervisor falls back to <c>python -m lore_memoryd</c>.</summary>
+    private string? ResolveSidecarExecutable()
+    {
+        string? packaged = _options.PackagedExecutable;
+        if (!string.IsNullOrEmpty(packaged) && File.Exists(packaged))
+        {
+            return packaged;
+        }
+
+        string bundled = _options.BundledExecutablePath;
+        return File.Exists(bundled) ? bundled : null;
     }
 
     private static async Task ObserveExitedAsync(Task? exited)
