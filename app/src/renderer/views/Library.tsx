@@ -103,7 +103,15 @@ export function Library(): JSX.Element {
             <Card
               key={memory.id}
               interactive
+              role="button"
+              tabIndex={0}
               onClick={() => setSelected(memory)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setSelected(memory);
+                }
+              }}
               className="lib-card"
             >
               <p className="lib-card__text">{memory.memory}</p>
