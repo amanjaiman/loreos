@@ -1,0 +1,57 @@
+<!-- @dsCard group="Components" viewport="700x320" name="Theme Selector" subtitle="Switches between the two bundled themes — Coastal & Nocturne" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin: 0; font-family: var(--font-sans); background: var(--bg); color: var(--text); padding: 24px; transition: background var(--dur) var(--ease), color var(--dur) var(--ease); }
+  .head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+  .eyebrow { font-family: var(--eyebrow-font); font-size: var(--text-2xs); font-weight: var(--eyebrow-weight); letter-spacing: var(--tracking-eyebrow); text-transform: var(--eyebrow-transform); color: var(--accent); }
+  .h { font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 700; letter-spacing: var(--tracking-tighter); margin: 4px 0 0; }
+  .h .accent { color: var(--primary); }
+  .preview { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; align-items: stretch; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="../../_ds_bundle.js"></script>
+  <script type="text/babel">
+    const { ThemeSelector, Card, Button, Badge } = window.LoreDesignSystem_d94c44;
+    function Demo() {
+      return (
+        <div>
+          <div className="head">
+            <div>
+              <div className="eyebrow">// active theme</div>
+              <div className="h">Lore <span className="accent">remembers</span>.</div>
+            </div>
+            <ThemeSelector storageKey="lore-theme-preset-card" />
+          </div>
+          <div className="preview">
+            <Card eyebrow="Memory" title="Morning sync" subtitle="3 sources · updated 2m ago"
+                  footer={<Button size="sm" variant="outline" iconRight="arrow-right">Open</Button>}>
+              Toggle the control above — palette, type, corner radius, and light/dark all change together.
+            </Card>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, justifyContent: "center" }}>
+              <div className="row">
+                <Badge variant="success" dot>Live</Badge>
+                <Badge variant="primary">Beta</Badge>
+                <Badge variant="accent">New</Badge>
+              </div>
+              <Button variant="primary" icon="sparkles">Summon Lore</Button>
+              <Button variant="secondary">Secondary</Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    ReactDOM.createRoot(document.getElementById("root")).render(<Demo />);
+  </script>
+</body>
+</html>

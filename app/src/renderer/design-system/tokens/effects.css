@@ -1,0 +1,61 @@
+/* ============================================================================
+   Lore — Effects: shadows, borders, focus, motion, z-index
+   :root carries the MINIMAL style (soft, diffuse elevation).
+   [data-style="techy"] swaps in tight, hard-edged shadows. Motion is smooth &
+   subtle in both. [data-mode="dark"] deepens shadows.
+   ============================================================================ */
+
+:root {
+  --border-width: 1px;   /* @kind other */
+
+  /* MINIMAL (default / Coastal) — soft, diffuse elevation */
+  --shadow-xs: 0 1px 2px rgba(20, 16, 12, 0.04);
+  --shadow-sm: 0 2px 8px rgba(20, 16, 12, 0.05);
+  --shadow-md: 0 6px 20px rgba(20, 16, 12, 0.07);
+  --shadow-lg: 0 16px 44px rgba(20, 16, 12, 0.10);
+  --shadow-pop: 0 24px 70px rgba(20, 16, 12, 0.16);
+
+  /* focus ring built from the live primary color */
+  --ring-width: 4px;   /* @kind other */
+  --ring: 0 0 0 var(--ring-width) color-mix(in srgb, var(--primary) 38%, transparent);   /* @kind shadow */
+
+  /* motion — smooth & subtle */
+  --ease: cubic-bezier(0.2, 0.6, 0.2, 1);     /* @kind other */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);  /* @kind other */
+  --dur-fast: 110ms;   /* @kind other */
+  --dur: 200ms;        /* @kind other */
+  --dur-slow: 360ms;   /* @kind other */
+
+  /* z-index scale */
+  --z-base: 1;        /* @kind other */
+  --z-sticky: 100;    /* @kind other */
+  --z-overlay: 800;   /* @kind other */
+  --z-modal: 900;     /* @kind other */
+  --z-toast: 1000;    /* @kind other */
+}
+
+/* TECHY (Nocturne) — tight, low, hard-edged shadows */
+:root[data-style="techy"] {
+  --shadow-xs: 0 1px 1px rgba(20, 16, 12, 0.05);
+  --shadow-sm: 0 1px 2px rgba(20, 16, 12, 0.08);
+  --shadow-md: 0 2px 6px rgba(20, 16, 12, 0.10);
+  --shadow-lg: 0 8px 24px rgba(20, 16, 12, 0.14);
+  --shadow-pop: 0 12px 40px rgba(20, 16, 12, 0.20);
+  --ring-width: 3px;   /* @kind other */
+}
+
+:root[data-mode="dark"] {
+  --shadow-xs: 0 1px 1px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 3px 10px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.55);
+  --shadow-pop: 0 16px 50px rgba(0, 0, 0, 0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;   /* @kind other */
+    --dur: 0ms;        /* @kind other */
+    --dur-slow: 0ms;   /* @kind other */
+  }
+}

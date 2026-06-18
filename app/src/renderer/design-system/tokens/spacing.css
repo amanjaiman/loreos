@@ -1,0 +1,51 @@
+/* ============================================================================
+   Lore — Spacing, Radius & Density
+   :root carries the MINIMAL style (generous rounding, airy controls).
+   [data-style="techy"] swaps in crisp, compact controls. Spacing scale shared.
+   ============================================================================ */
+
+:root {
+  /* spacing scale (4px base) */
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* radius scale */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --radius-2xl: 20px;
+  --radius-full: 999px;
+
+  /* MINIMAL (default / Coastal) — generous rounding, airier controls */
+  --radius-control: var(--radius-full);
+  --radius-card: var(--radius-2xl);
+  --radius-field: var(--radius-lg);
+  --control-h-sm: 34px;
+  --control-h-md: 44px;
+  --control-h-lg: 54px;
+  --control-px: var(--space-5);
+}
+
+/* TECHY (Nocturne) — crisp, near-square corners; compact controls */
+:root[data-style="techy"] {
+  --radius-control: var(--radius-sm);
+  --radius-card: var(--radius-md);
+  --radius-field: var(--radius-sm);
+  --control-h-sm: 30px;
+  --control-h-md: 38px;
+  --control-h-lg: 46px;
+  --control-px: var(--space-4);
+}

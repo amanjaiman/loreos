@@ -28,4 +28,10 @@ export const rules: Required<ModuleOptions>['rules'] = [
       },
     },
   },
+  // Self-hosted webfonts (the @fontsource packages, vendored offline). css-loader
+  // resolves their url() references to these; emit them as assets.
+  {
+    test: /\.(woff2?|ttf|eot)$/,
+    type: 'asset/resource',
+  },
 ];

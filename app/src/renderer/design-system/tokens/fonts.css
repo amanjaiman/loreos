@@ -1,0 +1,12 @@
+/* Lore — Webfonts (vendored, self-hosted)
+   Techy style → Space Grotesk (display/body) + JetBrains Mono (mono)
+   Modern/Minimal style → Manrope (display/body) + JetBrains Mono (mono)
+
+   The upstream design system loaded these from Google Fonts over the network.
+   Lore is local-only: nothing leaves the machine except the model calls the user
+   configured (constitution §1; spec 010 acceptance criterion 2). Fetching webfonts
+   from a CDN would be renderer egress, so the families are self-hosted instead —
+   bundled via the `@fontsource/*` packages and imported once at the renderer entry
+   (`lib/ds-globals.ts`). The readme sanctions this swap ("Swap the @font-face
+   sources here if brand fonts arrive"). typography.css still references the
+   families by name, so nothing else changes. */
