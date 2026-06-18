@@ -20,39 +20,3 @@ body {
 #root {
   min-height: 100%;
 }
-
-/* T001 smoke surface — a centered column to prove tokens + themes render. Replaced by
-   the real app shell in T002. */
-.ds-proof {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: var(--space-12, 48px) var(--space-6, 24px);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6, 24px);
-}
-
-.ds-proof__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-4, 16px);
-}
-
-.ds-proof__wordmark {
-  font-family: var(--font-display);
-  font-weight: var(--fw-bold);
-  font-size: var(--text-2xl);
-  letter-spacing: var(--tracking-tight);
-}
-
-.ds-proof__wordmark span {
-  color: var(--primary);
-}
-
-.ds-proof__row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3, 12px);
-  align-items: center;
-}

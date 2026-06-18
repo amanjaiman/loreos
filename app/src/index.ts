@@ -13,10 +13,16 @@ if (require('electron-squirrel-startup')) {
 
 const createWindow = (): void => {
   const mainWindow = new BrowserWindow({
-    height: 600,
-    width: 800,
+    width: 1180,
+    height: 760,
+    minWidth: 900,
+    minHeight: 600,
     title: 'Lore',
+    backgroundColor: '#fbf7ef', // Coastal --bg, avoids a white flash before styles load
     webPreferences: {
+      // contextIsolation on / nodeIntegration off (Electron defaults). The renderer is
+      // a pure client of the local API (005) over loopback fetch — there is no
+      // account/sync/cloud IPC, by design (constitution §1–§3).
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
     },
   });
