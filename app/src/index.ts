@@ -1,15 +1,25 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
+import { AgentProcess } from './agentProcess';
+import { applySquirrelPathHook } from './windowsIntegration';
 
 // Webpack magic constants injected by Electron Forge's webpack plugin: they
 // point at the bundled renderer entry and preload script for dev vs. packaged.
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 
+// On a Squirrel install/update/uninstall the app is launched with a lifecycle flag.
+// Keep the bundled CLI on the user PATH (spec 011 T002), then let electron-squirrel-
+// startup create/remove shortcuts and quit.
+applySquirrelPathHook();
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 if (require('electron-squirrel-startup')) {
   app.quit();
 }
+
+// The Lore agent: spawned and supervised for the app's lifetime in a packaged build
+// (it in turn supervises memoryd — spec 002). A no-op in dev, where it's run separately.
+const agent = new AgentProcess();
 
 const createWindow = (): void => {
   const mainWindow = new BrowserWindow({
@@ -43,7 +53,10 @@ ipcMain.handle('lore:pick-document', async (): Promise<string | null> => {
     : result.filePaths[0];
 });
 
-app.on('ready', createWindow);
+app.on('ready', () => {
+  agent.start();
+  createWindow();
+});
 
 // Quit when all windows are closed, except on macOS where apps conventionally
 // stay active until the user quits explicitly.
@@ -51,6 +64,11 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+// Tear the agent (and thus memoryd) down cleanly when the app exits.
+app.on('will-quit', () => {
+  agent.stop();
 });
 
 app.on('activate', () => {

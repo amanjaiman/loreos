@@ -22,6 +22,8 @@ dist/
 
 # Packaging (spec 011): PyInstaller / setuptools / forge build artifacts
 build/
+# Staged native payload assembled by installer/build.ps1 (agent + CLI + memoryd + skills)
+/app/native/
 
 # OS noise
 .DS_Store
