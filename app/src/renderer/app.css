@@ -1,6 +1,20 @@
 /* App-level ground. Everything visual comes from the design-system tokens; this only
    anchors the document to them (background, ink, type) so a bare app renders Coastal. */
 
+/* Reduced-motion safety net. The design system already collapses its motion tokens to
+   0ms under this preference; this guarantees any animation/transition we add anywhere is
+   honored too (acceptance criterion 8). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 html,
 body {
   height: 100%;
