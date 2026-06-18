@@ -1,4 +1,3 @@
-using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -9,9 +8,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Lore.Agent.Tests.Api;
 
-/// <summary>Spec 005 T006: 004's test-connection is reachable through the API, and the reserved
-/// <c>POST /import</c> exists in the contract as a 501 placeholder for 009. Exercised end-to-end
-/// over a live loopback host.</summary>
+/// <summary>Spec 005 T006: 004's test-connection is reachable through the API. (The <c>/import</c>
+/// route, reserved here as a 501 placeholder, is now implemented and covered by
+/// <see cref="ImportEndpointsTests"/> for spec 009 T004.)</summary>
 public sealed class ProviderImportEndpointsTests
 {
     [Fact]
@@ -34,20 +33,5 @@ public sealed class ProviderImportEndpointsTests
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Assert.True(doc.RootElement.GetProperty("ok").GetBoolean());
         Assert.Equal("claude-haiku-4-5", doc.RootElement.GetProperty("model").GetString());
-    }
-
-    [Fact]
-    public async Task Import_is_reserved_and_answers_501()
-    {
-        await using LoreApiHarness harness = await LoreApiHarness.StartAsync(
-            _ => { },
-            app => app.MapImportEndpoints());
-
-        HttpResponseMessage response = await harness.Client.PostAsync(
-            new Uri("/import", UriKind.Relative), content: null);
-
-        Assert.Equal(HttpStatusCode.NotImplemented, response.StatusCode);
-        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        Assert.Contains("009", doc.RootElement.GetProperty("error").GetString(), StringComparison.Ordinal);
     }
 }

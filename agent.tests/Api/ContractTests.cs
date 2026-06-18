@@ -6,6 +6,7 @@ using System.Text.Json;
 using Lore.Agent.Api;
 using Lore.Agent.Config;
 using Lore.Agent.Hosting;
+using Lore.Agent.Import;
 using Lore.Agent.Memory;
 using Lore.Agent.Providers;
 using Lore.Agent.Storage;
@@ -53,7 +54,7 @@ public sealed class ContractTests : IAsyncLifetime, IDisposable
     [InlineData("GET", "/system/log", HttpStatusCode.OK)]
     [InlineData("GET", "/export/json", HttpStatusCode.OK)]
     [InlineData("GET", "/export/markdown", HttpStatusCode.OK)]
-    [InlineData("POST", "/import", HttpStatusCode.NotImplemented)] // reserved for 009
+    [InlineData("POST", "/import", HttpStatusCode.BadRequest)] // 009: empty body -> needs a path
     public async Task Every_simple_route_answers_as_documented(string method, string path, HttpStatusCode expected)
     {
         using var request = new HttpRequestMessage(new HttpMethod(method), new Uri(path, UriKind.Relative));
@@ -117,8 +118,8 @@ public sealed class ContractTests : IAsyncLifetime, IDisposable
         foreach (string expected in new[]
                  {
                      "/memories", "/memories/search", "/memories/{id}", "/recent", "/activity",
-                     "/config", "/providers/test", "/import", "/system/status", "/system/log",
-                     "/system/data", "/export/json", "/export/markdown",
+                     "/config", "/providers/test", "/import", "/import/{id}", "/system/status",
+                     "/system/log", "/system/data", "/export/json", "/export/markdown",
                  })
         {
             Assert.True(paths.TryGetProperty(expected, out _), $"OpenAPI is missing path {expected}");
@@ -149,6 +150,12 @@ public sealed class ContractTests : IAsyncLifetime, IDisposable
         services.AddSingleton(new ProviderTester(new FakeBackendFactory(_ => StubBackend.Returns("OK"))));
         services.AddSingleton<IMemorydReadiness>(new StubMemorydReadiness(ready: true));
         services.AddSingleton(new LogTail(_logPath));
+
+        // The import pipeline (009): one line registers the job store + service. The contract
+        // suite only pokes the route shapes (an empty POST -> 400), so the scoped import service —
+        // and its capture-filter dependency — is never resolved here.
+        services.AddDocumentImport();
+
         ApiHost.AddOpenApi(services);
     }
 
