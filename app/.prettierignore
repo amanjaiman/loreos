@@ -3,3 +3,6 @@ node_modules/
 out/
 dist/
 package-lock.json
+
+# Vendored Lore Design System (handoff bundle) — consumed unmodified, not ours to format.
+src/renderer/design-system/
