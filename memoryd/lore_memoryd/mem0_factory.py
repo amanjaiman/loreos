@@ -8,12 +8,26 @@ and adds the reconciliation pass (`reconcile.py`).
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 
 from mem0 import Memory
 
 from .models import ConfigRequest, EmbedderConfig, ProviderConfig
+
+# Host-controlled data dir override (spec 011 T005, self-hosted multi-device). Each
+# connecting agent sends its *own* local data_dir in /config; on a shared remote
+# memoryd that would let the last device to connect repoint the store (and a Windows
+# path is meaningless on a Linux/NAS host). When the host sets LORE_MEMORYD_DATA_DIR
+# it wins, so the operator — not the clients — controls where the shared store lives.
+# Unset (the embedded single-machine case) keeps the request's data_dir.
+_DATA_DIR_ENV = "LORE_MEMORYD_DATA_DIR"
+
+
+def _resolve_data_dir(cfg: ConfigRequest) -> Path:
+    return Path(os.environ.get(_DATA_DIR_ENV) or cfg.data_dir)
+
 
 # Validated local embedder default (spike T001): Ollama nomic-embed-text, 768-dim.
 # Used when the provider has no first-party embeddings, so a user with only a
@@ -103,7 +117,7 @@ def _embedder_config(emb: EmbedderConfig, provider: ProviderConfig) -> tuple[dic
 
 def build_mem0_config(cfg: ConfigRequest) -> dict[str, Any]:
     """Produce mem0's nested config dict from a Lore ConfigRequest."""
-    data_dir = Path(cfg.data_dir)
+    data_dir = _resolve_data_dir(cfg)
     embedder_block, dims = _embedder_config(cfg.embedder, cfg.provider)
     return {
         # Never the global ~/.mem0 default: that leaks per-user "Last k Messages"
@@ -124,5 +138,5 @@ def build_mem0_config(cfg: ConfigRequest) -> dict[str, Any]:
 
 def build_memory(cfg: ConfigRequest) -> Memory:
     """Build a mem0 ``Memory`` for the given config, creating the data dir."""
-    Path(cfg.data_dir).mkdir(parents=True, exist_ok=True)
+    _resolve_data_dir(cfg).mkdir(parents=True, exist_ok=True)
     return Memory.from_config(build_mem0_config(cfg))
