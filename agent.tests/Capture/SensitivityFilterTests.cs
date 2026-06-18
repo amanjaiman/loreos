@@ -198,4 +198,98 @@ public sealed class SensitivityFilterTests
         SensitivityFilter filter = Filter();
         Assert.Throws<ArgumentNullException>(() => filter.Apply(null!, "text"));
     }
+
+    // ── ApplyToText: the document variant (spec 009) ──────────────────────────
+    // Same Blocklist keyword + SensitivePatterns layers, in the same order; the two
+    // window-only layers (app, UIA) do not apply to a file and are skipped.
+
+    [Fact]
+    public void ApplyToText_drops_a_blocklisted_keyword()
+    {
+        SensitivityFilter filter = Filter(keywords: new[] { "salary" });
+
+        FilterResult result = filter.ApplyToText("my salary history is attached");
+
+        Assert.True(result.Blocked);
+        Assert.Equal(FilterReason.BlockedKeyword, result.Reason);
+    }
+
+    [Fact]
+    public void ApplyToText_drops_an_ssn()
+    {
+        SensitivityFilter filter = Filter();
+
+        FilterResult result = filter.ApplyToText("applicant SSN 123-45-6789 on file");
+
+        Assert.True(result.Blocked);
+        Assert.Equal(FilterReason.SensitivePattern, result.Reason);
+    }
+
+    [Fact]
+    public void ApplyToText_drops_a_luhn_valid_card_number()
+    {
+        SensitivityFilter filter = Filter();
+
+        FilterResult result = filter.ApplyToText("pay with 4111 1111 1111 1111 today");
+
+        Assert.True(result.Blocked);
+        Assert.Equal(FilterReason.SensitivePattern, result.Reason);
+    }
+
+    [Fact]
+    public void ApplyToText_keyword_takes_precedence_over_regex()
+    {
+        SensitivityFilter filter = Filter(keywords: new[] { "salary" });
+
+        FilterResult result = filter.ApplyToText("salary and ssn 123-45-6789");
+
+        Assert.Equal(FilterReason.BlockedKeyword, result.Reason);
+    }
+
+    [Fact]
+    public void ApplyToText_allows_benign_text_and_carries_it_through()
+    {
+        SensitivityFilter filter = Filter();
+
+        FilterResult result = filter.ApplyToText("I am planning a trip to Lisbon in May");
+
+        Assert.False(result.Blocked);
+        Assert.Equal(FilterDecision.Allow, result.Decision);
+        Assert.Equal("I am planning a trip to Lisbon in May", result.Text);
+    }
+
+    [Fact]
+    public void ApplyToText_allows_a_card_like_but_invalid_number()
+    {
+        SensitivityFilter filter = Filter();
+
+        FilterResult result = filter.ApplyToText("order id 4111111111111112 confirmed");
+
+        Assert.False(result.Blocked);
+        Assert.Equal(FilterReason.None, result.Reason);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void ApplyToText_allows_empty_text(string? text)
+    {
+        SensitivityFilter filter = Filter();
+
+        FilterResult result = filter.ApplyToText(text);
+
+        Assert.False(result.Blocked);
+        Assert.Equal(string.Empty, result.Text);
+    }
+
+    [Fact]
+    public void ApplyToText_blocked_result_never_carries_text()
+    {
+        SensitivityFilter filter = Filter();
+
+        FilterResult result = filter.ApplyToText("ssn 123-45-6789 is private");
+
+        Assert.True(result.Blocked);
+        Assert.Equal(string.Empty, result.Text);
+    }
 }

@@ -62,4 +62,30 @@ public sealed class SensitivityFilter
 
         return FilterResult.Allow(body);
     }
+
+    /// <summary>The document variant of the chain (spec 009): screen free-standing text — a chunk
+    /// of an imported document — through the layers that <em>apply to text</em>. The trust bar does
+    /// not drop because the text came from a file (constitution §4): the same user
+    /// <see cref="Blocklist">keywords</see> and the same trust-critical <see cref="SensitivePatterns"/>
+    /// regex run, in the same order. The two window-only layers are skipped because they have no
+    /// meaning for a file: there is no foreground app to match, and no live UI element to probe for
+    /// a password field. A block carries no text, exactly as <see cref="Apply"/>.</summary>
+    public FilterResult ApplyToText(string? text)
+    {
+        string body = text ?? string.Empty;
+
+        // Layer 1 (keywords): the user's explicit choices apply to any text source.
+        if (_blocklist.MatchesKeyword(body))
+        {
+            return FilterResult.Block(FilterReason.BlockedKeyword);
+        }
+
+        // Layer 3 (regex): SSN / payment-card patterns — the same detector capture uses.
+        if (SensitivePatterns.ContainsSensitive(body))
+        {
+            return FilterResult.Block(FilterReason.SensitivePattern);
+        }
+
+        return FilterResult.Allow(body);
+    }
 }
