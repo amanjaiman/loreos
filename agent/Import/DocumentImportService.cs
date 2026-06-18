@@ -26,6 +26,11 @@ public sealed class DocumentImportService
     internal const string LowTextWarning =
         "the document has little extractable text — it may be scanned or image-only";
 
+    /// <summary>The actionable failure message when extraction can't make sense of the bytes —
+    /// a truncated, corrupt, or non-PDF file. Surfaced on the job, never swallowed (criterion 5).</summary>
+    internal const string UnreadableDocumentError =
+        "could not read the document as a PDF — the file may be corrupt or not a PDF";
+
     private readonly IPdfExtractor _extractor;
     private readonly TextChunker _chunker;
     private readonly SensitivityFilter _filter;
@@ -66,7 +71,22 @@ public sealed class DocumentImportService
 
         try
         {
-            PdfExtractionResult extraction = _extractor.Extract(document);
+            PdfExtractionResult extraction;
+            try
+            {
+                extraction = _extractor.Extract(document);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+#pragma warning disable CA1031 // any extraction failure means an unreadable file — one actionable message (criterion 5)
+            catch (Exception)
+#pragma warning restore CA1031
+            {
+                return _jobs.MarkFailed(jobId, UnreadableDocumentError) ?? job;
+            }
+
             if (extraction.LowText)
             {
                 _jobs.Warn(jobId, LowTextWarning);

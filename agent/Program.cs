@@ -70,7 +70,7 @@ internal static class Program
 
         // Document import (spec 009): the /import pipeline reuses the capture filter and the
         // memory seam, so it is registered after both are in the graph.
-        builder.Services.AddDocumentImport();
+        builder.Services.AddDocumentImport(builder.Configuration);
 
         // The config seam for the /config endpoints (005 T004): reads/writes config.json and
         // relocates any inline key to the credential store registered by the provider layer.

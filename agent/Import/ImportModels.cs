@@ -1,5 +1,15 @@
 namespace Lore.Agent.Import;
 
+/// <summary>Tunable limits for document import (spec 009 T005). Bound from the <c>import</c> config
+/// section; defaults are sensible for a personal machine.</summary>
+public sealed class ImportOptions
+{
+    /// <summary>The largest document the API will accept, in bytes. Oversized files are rejected up
+    /// front (so the user gets immediate feedback) rather than flooding memory with low-value chunks
+    /// (spec risk). Default: 25 MiB.</summary>
+    public long MaxDocumentBytes { get; init; } = 25L * 1024 * 1024;
+}
+
 /// <summary>Where a document-import job is in its lifecycle (spec 009 T002). A job starts
 /// <see cref="Pending"/>, moves to <see cref="Running"/> once work begins, and ends in exactly one
 /// terminal state — <see cref="Completed"/> or <see cref="Failed"/>.</summary>

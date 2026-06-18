@@ -1,4 +1,5 @@
 using Lore.Agent.Capture;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -11,9 +12,15 @@ namespace Lore.Agent.Import;
 /// polls); the service is scoped so it resolves a fresh memory client per background import.</summary>
 public static class ImportServiceCollectionExtensions
 {
-    public static IServiceCollection AddDocumentImport(this IServiceCollection services)
+    public static IServiceCollection AddDocumentImport(
+        this IServiceCollection services, IConfiguration? configuration = null)
     {
         ArgumentNullException.ThrowIfNull(services);
+
+        // Limits from the `import` config section, or defaults. TryAdd so a test (or caller) can
+        // pre-register its own ImportOptions to override.
+        ImportOptions options = configuration?.GetSection("import").Get<ImportOptions>() ?? new ImportOptions();
+        services.TryAddSingleton(options);
 
         // TimeProvider is also registered by the capture pipeline; TryAdd keeps this extension
         // usable on its own (e.g. a focused test host that maps only the import endpoints).
