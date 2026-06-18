@@ -24,6 +24,7 @@ public static class ImportEndpoints
         app.MapPost("/import", (
             ImportRequest? request,
             [FromServices] ImportJobStore jobs,
+            [FromServices] ImportOptions options,
             [FromServices] IServiceScopeFactory scopes) =>
         {
             if (string.IsNullOrWhiteSpace(request?.Path))
@@ -31,12 +32,19 @@ public static class ImportEndpoints
                 return Results.BadRequest(new ErrorResponse("path is required"));
             }
 
-            // Validated synchronously so the caller learns of a bad path now (400) rather than via a
-            // failed job later. The actual read happens in the background.
+            // Validated synchronously so the caller learns of a bad path or an oversized file now
+            // (400) rather than via a failed job later. The actual read happens in the background.
             string path = request.Path;
             if (!File.Exists(path))
             {
                 return Results.BadRequest(new ErrorResponse($"no file at path '{path}'"));
+            }
+
+            long length = new FileInfo(path).Length;
+            if (length > options.MaxDocumentBytes)
+            {
+                return Results.BadRequest(new ErrorResponse(
+                    $"document is {length} bytes; the import limit is {options.MaxDocumentBytes} bytes"));
             }
 
             string source = string.IsNullOrWhiteSpace(request.Source) ? Path.GetFileName(path) : request.Source!;

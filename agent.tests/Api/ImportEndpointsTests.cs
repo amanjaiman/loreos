@@ -67,6 +67,38 @@ public sealed class ImportEndpointsTests
     }
 
     [Fact]
+    public async Task An_oversized_document_is_rejected_with_400()
+    {
+        var memory = new FakeMemoryService();
+        await using LoreApiHarness harness = await LoreApiHarness.StartAsync(
+            services =>
+            {
+                services.AddSingleton<IMemoryService>(memory);
+                services.AddSingleton<IPdfExtractor>(new StubExtractor("x"));
+                services.AddSingleton(new SensitivityFilter(
+                    new Blocklist(Array.Empty<string>(), Array.Empty<string>()), new AllowProbe()));
+                services.AddSingleton(new ImportOptions { MaxDocumentBytes = 8 }); // smaller than the temp file
+                services.AddDocumentImport();
+            },
+            app => app.MapImportEndpoints());
+
+        string path = await WriteTempFileAsync();
+        try
+        {
+            HttpResponseMessage response = await harness.Client.PostAsJsonAsync(
+                new Uri("/import", UriKind.Relative), new { path });
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            // Rejected up front, so no job was created and nothing was stored.
+            Assert.Empty(await memory.GetAllAsync());
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public async Task Status_for_an_unknown_job_is_404()
     {
         await using LoreApiHarness harness = await StartAsync(new FakeMemoryService(), new StubExtractor("x"));

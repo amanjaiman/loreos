@@ -153,18 +153,40 @@ public sealed class DocumentImportServiceTests
     }
 
     [Fact]
-    public async Task An_extraction_failure_fails_the_job_cleanly()
+    public async Task An_extraction_failure_fails_the_job_with_an_actionable_message()
     {
         var memory = new FakeMemoryService();
         var jobs = new ImportJobStore(TimeProvider.System);
-        var throwing = new ThrowingExtractor("the file is not a readable PDF");
-        DocumentImportService service = Build(throwing, memory, jobs);
+        DocumentImportService service = Build(new ThrowingExtractor("low-level xref error"), memory, jobs);
         ImportJob job = jobs.Create("broken.pdf");
 
         ImportJob result = await service.ImportAsync(job.Id, Stream.Null);
 
         Assert.Equal(ImportJobStatus.Failed, result.Status);
-        Assert.Equal("the file is not a readable PDF", result.Error);
+        // The raw library error is replaced with a message the user can act on (criterion 5).
+        Assert.Equal(DocumentImportService.UnreadableDocumentError, result.Error);
+        Assert.Empty(await memory.GetAllAsync());
+    }
+
+    [Fact]
+    public async Task A_malformed_file_fails_cleanly_through_the_real_extractor()
+    {
+        var memory = new FakeMemoryService();
+        var jobs = new ImportJobStore(TimeProvider.System);
+        // The real PdfExtractor against bytes that are not a PDF — must fail the job, not crash.
+        DocumentImportService service = new(
+            new PdfExtractor(),
+            new TextChunker(),
+            new SensitivityFilter(new Blocklist(Array.Empty<string>(), Array.Empty<string>()), new AllowProbe()),
+            memory,
+            jobs);
+        ImportJob job = jobs.Create("not-really.pdf");
+        using var garbage = new MemoryStream("this is plain text, not a PDF at all"u8.ToArray());
+
+        ImportJob result = await service.ImportAsync(job.Id, garbage);
+
+        Assert.Equal(ImportJobStatus.Failed, result.Status);
+        Assert.Equal(DocumentImportService.UnreadableDocumentError, result.Error);
         Assert.Empty(await memory.GetAllAsync());
     }
 
