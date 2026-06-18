@@ -4,6 +4,7 @@
 import './renderer/lib/ds-globals';
 import './renderer/design-system/styles.css';
 import './renderer/app.css';
+import './renderer/chrome/chrome.css';
 
 import { createRoot } from 'react-dom/client';
 
