@@ -23,12 +23,23 @@ public sealed class MemorydOptions
     public string DataDir { get; set; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Lore");
 
-    /// <summary>Path to the packaged single-file sidecar (PyInstaller). When set and
-    /// present, it is launched instead of the Python module.</summary>
+    /// <summary>Explicit path to the packaged PyInstaller sidecar. When set and
+    /// present it is launched instead of the bundled default or the Python module;
+    /// normally left unset so <see cref="BundledExecutablePath"/> is auto-discovered.</summary>
     public string? PackagedExecutable { get; set; }
 
-    /// <summary>Python interpreter used in dev when <see cref="PackagedExecutable"/>
-    /// is not set (<c>python -m lore_memoryd</c>).</summary>
+    /// <summary>Directory the agent runs from; the bundled sidecar is discovered
+    /// relative to it. Defaults to the executable's directory; overridable for tests.</summary>
+    public string BaseDirectory { get; set; } = AppContext.BaseDirectory;
+
+    /// <summary>Conventional location of the frozen sidecar the installer (spec 011)
+    /// lays down next to the agent: <c>&lt;BaseDirectory&gt;/memoryd/lore-memoryd.exe</c>.
+    /// Used when <see cref="PackagedExecutable"/> is unset, so a Release/installed
+    /// build runs the packaged exe while a from-source dev build falls back to Python.</summary>
+    public string BundledExecutablePath => Path.Combine(BaseDirectory, "memoryd", "lore-memoryd.exe");
+
+    /// <summary>Python interpreter used in dev when no packaged sidecar is present
+    /// (<c>python -m lore_memoryd</c>).</summary>
     public string PythonExecutable { get; set; } = "python";
 
     /// <summary>How long to wait for <c>/health</c> to go green on launch. Generous
