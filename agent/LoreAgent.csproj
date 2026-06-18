@@ -27,6 +27,10 @@
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.10" />
     <PackageReference Include="ModelContextProtocol" Version="1.4.0" />
     <PackageReference Include="ModelContextProtocol.AspNetCore" Version="1.4.0" />
+    <!-- Document import (spec 009 T001): pure-managed PDF text extraction (PdfExtractor).
+         MIT-licensed, no native dependencies, so it bundles cleanly into the self-contained
+         win-x64 agent without widening the egress/native surface. -->
+    <PackageReference Include="PdfPig" Version="0.1.14" />
     <!-- Generated OpenAPI document for the local API (spec 005 T007): the contract
          surfaces (006/007/010) pin to, served at /openapi.json. .NET 8 has no built-in
          document endpoint, so Swashbuckle generates it from the minimal-API metadata. -->
