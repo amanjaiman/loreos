@@ -1,3 +1,4 @@
+import { useConfig, useSystemStatus } from '../lib/hooks';
 import { useRouter } from '../lib/router';
 import { Activity } from '../views/Activity';
 import { Add } from '../views/Add';
@@ -25,8 +26,16 @@ const VIEWS = {
 export function AppShell(): JSX.Element {
   const { route } = useRouter();
   const View = VIEWS[route];
-  // TODO(T005): replace with live status from GET /system/status.
-  const status: AmbientStatus = 'listening';
+
+  // Ambient status: offline if Lore can't be reached, else paused/listening from the
+  // capture toggle in config. Both come through api.ts (the renderer holds no logic).
+  const { offline } = useSystemStatus();
+  const { config } = useConfig();
+  const status: AmbientStatus = offline
+    ? 'offline'
+    : config?.capture?.enabled === false
+      ? 'paused'
+      : 'listening';
 
   return (
     <div className="app-shell">
