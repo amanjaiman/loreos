@@ -32,6 +32,15 @@ def test_vector_store_and_history_live_under_data_dir() -> None:
     assert cfg["vector_store"]["config"]["collection_name"] == "lore"
 
 
+def test_data_dir_env_override_wins_over_request(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Self-hosted multi-device (spec 011 T005): the host pins the shared store so a
+    # connecting device's data_dir can't repoint it.
+    monkeypatch.setenv("LORE_MEMORYD_DATA_DIR", "/srv/lore")
+    cfg = build_mem0_config(_cfg())  # request still says /data/lore
+    assert cfg["history_db_path"].replace("\\", "/").endswith("/srv/lore/history.db")
+    assert cfg["vector_store"]["config"]["path"].replace("\\", "/").endswith("/srv/lore/qdrant")
+
+
 def test_follow_provider_uses_local_embedder_default() -> None:
     # A chat-only provider with no embeddings must still get a working embedder
     # locally — no surprise embedding spend (acceptance criterion 4).
