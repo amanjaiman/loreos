@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 
 // Webpack magic constants injected by Electron Forge's webpack plugin: they
 // point at the bundled renderer entry and preload script for dev vs. packaged.
@@ -29,6 +29,19 @@ const createWindow = (): void => {
 
   void mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 };
+
+// Native document picker for import (T009). The renderer can't obtain a real filesystem
+// path on its own; it asks the main process, which returns the chosen PDF's absolute path.
+ipcMain.handle('lore:pick-document', async (): Promise<string | null> => {
+  const result = await dialog.showOpenDialog({
+    title: 'Choose a document to import',
+    properties: ['openFile'],
+    filters: [{ name: 'PDF documents', extensions: ['pdf'] }],
+  });
+  return result.canceled || result.filePaths.length === 0
+    ? null
+    : result.filePaths[0];
+});
 
 app.on('ready', createWindow);
 
