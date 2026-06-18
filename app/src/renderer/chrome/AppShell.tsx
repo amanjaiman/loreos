@@ -5,7 +5,7 @@ import { Add } from '../views/Add';
 import { Connect } from '../views/Connect';
 import { Home } from '../views/Home';
 import { Library } from '../views/Library';
-import { Settings } from '../views/Settings';
+import { Settings } from '../views/settings/Settings';
 import { Header, type AmbientStatus } from './Header';
 import { Sidebar } from './Sidebar';
 

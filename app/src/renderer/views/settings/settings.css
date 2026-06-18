@@ -1,0 +1,86 @@
+/* Settings — tabbed sections. Layout over tokens. */
+
+.set-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.set-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.set-actions--start {
+  justify-content: flex-start;
+}
+
+.set-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.set-subtle {
+  margin: 0 0 var(--space-4);
+  color: var(--text-muted);
+  line-height: var(--lh-relaxed);
+}
+
+.set-theme {
+  margin-top: var(--space-2);
+}
+
+.set-note {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.set-note--ok {
+  color: var(--success);
+}
+
+.set-note--err {
+  color: var(--danger);
+}
+
+.set-mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-subtle);
+}
+
+.set-dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.set-about {
+  margin: var(--space-4) 0 0;
+  display: flex;
+  gap: var(--space-8);
+}
+
+.set-about dt {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow);
+  color: var(--text-subtle);
+  margin-bottom: var(--space-1);
+}
+
+.set-about dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  color: var(--text);
+}
