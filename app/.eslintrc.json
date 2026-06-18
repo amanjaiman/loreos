@@ -25,5 +25,80 @@
         "extensions": [".js", ".jsx", ".ts", ".tsx", ".d.ts", ".json", ".css"]
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      "files": ["src/renderer/**/*.ts", "src/renderer/**/*.tsx"],
+      "excludedFiles": ["src/renderer/api.ts"],
+      "rules": {
+        "no-restricted-globals": [
+          "error",
+          {
+            "name": "fetch",
+            "message": "Renderer network calls must go through api.ts (spec 005 is the only seam)."
+          },
+          {
+            "name": "XMLHttpRequest",
+            "message": "Renderer network calls must go through api.ts."
+          },
+          {
+            "name": "WebSocket",
+            "message": "Renderer network calls must go through api.ts."
+          },
+          {
+            "name": "EventSource",
+            "message": "Renderer network calls must go through api.ts."
+          }
+        ],
+        "no-restricted-properties": [
+          "error",
+          {
+            "object": "navigator",
+            "property": "sendBeacon",
+            "message": "Renderer network calls must go through api.ts."
+          },
+          {
+            "object": "window",
+            "property": "fetch",
+            "message": "Renderer network calls must go through api.ts."
+          }
+        ],
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "axios",
+                "message": "Renderer network calls must go through api.ts."
+              },
+              {
+                "name": "http",
+                "message": "Renderer network calls must go through api.ts."
+              },
+              {
+                "name": "https",
+                "message": "Renderer network calls must go through api.ts."
+              },
+              {
+                "name": "node:http",
+                "message": "Renderer network calls must go through api.ts."
+              },
+              {
+                "name": "node:https",
+                "message": "Renderer network calls must go through api.ts."
+              },
+              {
+                "name": "net",
+                "message": "Renderer network calls must go through api.ts."
+              },
+              {
+                "name": "node:net",
+                "message": "Renderer network calls must go through api.ts."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }
