@@ -1,0 +1,71 @@
+/* Activity — transparency timeline. Rows show the window, decision, and reason; filtered
+   and skipped rows carry no content (the agent stores none). Layout over tokens. */
+
+.act-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.act-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-bottom: var(--border-width) solid var(--border);
+}
+
+.act-row:last-child {
+  border-bottom: none;
+}
+
+.act-row__main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.act-row__title {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.act-row__obs {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--lh-normal);
+}
+
+.act-row__right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.act-row__time {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-subtle);
+  min-width: 64px;
+  text-align: right;
+}
+
+.act-empty {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-10);
+}
+
+.act-empty__text {
+  margin: 0;
+  padding: var(--space-8) 0;
+  text-align: center;
+  color: var(--text-muted);
+}
