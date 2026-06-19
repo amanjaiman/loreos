@@ -14,6 +14,9 @@ product. The non-negotiables, enforced in CI and review (constitution §4):
 - **Capture is filtered before it is stored or sent.** The sensitivity filter
   chain is held to the project's highest test bar.
 
+The dated pre-launch audit of these paths is in
+[docs/security-pass.md](docs/security-pass.md).
+
 ## Reporting a vulnerability
 
 Please report suspected vulnerabilities **privately**:
