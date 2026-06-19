@@ -29,6 +29,10 @@ build/
 .DS_Store
 Thumbs.db
 
+# Owner-only working checklist (uncommitted by design; references pre-open-source
+# infra that must never reach the public repo).
+docs/MANUAL_SETUP.md
+
 # Local working documents — PLAN.html references the legacy project URL,
 # which constitution §4.1 bans from the repo.
 PLAN.html
