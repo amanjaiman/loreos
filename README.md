@@ -23,9 +23,17 @@ memory. The rules that keep it that way live in
 
 No Python, .NET, or build tools required — the installer bundles them.
 
-1. **Install.** Download the latest **`LoreSetup.exe`** from
+1. **Install.** Either install with winget:
+
+   ```sh
+   winget install Lore
+   ```
+
+   or download the latest **`LoreSetup.exe`** from
    [Releases](https://github.com/amanjaiman/loreos/releases) and run it. Lore opens
-   when it finishes; the memory engine starts in the background.
+   when it finishes; the memory engine starts in the background. To update later,
+   run **`winget upgrade Lore`** — Lore itself never checks for updates (your package
+   manager does, only when you ask; see [docs/privacy.md](docs/privacy.md)).
 2. **Pick your model.** Onboarding shows the privacy explainer first, then asks you
    to connect a model — a cloud key (Anthropic / OpenAI / Gemini) or a URL to a local
    model you run (Ollama, LM Studio, …). **Test** confirms it works before you

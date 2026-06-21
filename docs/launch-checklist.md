@@ -30,9 +30,12 @@ These must all be true first. The first is the sign-off everything else rides on
       four status checks: **`csharp`, `python`, `app`, `secrets`**, and PRs before
       merge. This completes the spec 001 / T009 deferral (GitHub blocks branch
       protection on free private repos, which is why it waited for launch).
-- [ ] Publish a **GitHub Release** with the signed `LoreSetup.exe` attached, so the
-      README's "download from Releases" link works. (The `installer` workflow builds
-      the artifact; attach it to the tagged release.)
+- [ ] Publish a **GitHub Release** by pushing an annotated **`vX.Y.Z` tag** — the
+      [`release`](../.github/workflows/release.yml) workflow builds the signed
+      installer and publishes the Release with `LoreSetup.exe`, the `.nupkg`, and
+      `RELEASES` attached, so the README's "download from Releases" link works
+      (spec 012 T002). No manual artifact upload. Then submit/verify the winget
+      manifest (see [`installer/winget/README.md`](../installer/winget/README.md)).
 
 ## Seed the project (human presses publish; drafts are ready)
 
