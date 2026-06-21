@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.version.1.6.0.schema.json
+#
+# winget VERSION manifest for Lore (spec 012 T003) — the root of the three-file
+# manifest that ties the installer + defaultLocale files together. The generator
+# (T004) bumps PackageVersion in lockstep across all three.
+
+PackageIdentifier: AmanJaiman.Lore # TODO(owner): confirm publisher string "AmanJaiman"; PERMANENT once published.
+PackageVersion: 0.1.0 # Generator (T004) overwrites with the released vX.Y.Z.
+DefaultLocale: en-US
+ManifestType: version
+ManifestVersion: 1.6.0
