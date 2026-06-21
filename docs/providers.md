@@ -15,7 +15,8 @@ Configuration lives under `provider` in `config.json`:
   "type": "openai_compatible",                // anthropic | openai | gemini | openai_compatible
   "model": "qwen3:8b",                        // the model id to call
   "base_url": "http://localhost:11434/v1",    // required for openai_compatible; ignored otherwise
-  "api_key_ref": "lore/provider"              // handle into the OS keystore; "" for keyless local
+  "api_key_ref": "lore/provider",             // handle into the OS keystore; "" for keyless local
+  "max_tokens": 1024                          // optional; upper bound on tokens per call (default: 1024)
 }
 ```
 
