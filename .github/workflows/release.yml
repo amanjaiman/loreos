@@ -1,0 +1,109 @@
+name: release
+
+# Cuts a Lore release from a single tag push (spec 012 T002). Pushing an
+# annotated vX.Y.Z tag:
+#   1. injects the tag version into the .NET version source and app/package.json
+#      (single source of truth — spec 012 T001),
+#   2. asserts the tag, package.json, and agent assembly version all agree
+#      (acceptance criterion 1 — fails the release if they drift),
+#   3. builds the signed installer from pinned inputs (reuses 011's installer/build.ps1),
+#   4. publishes a GitHub Release with LoreSetup.exe, Lore-X.Y.Z-full.nupkg, and
+#      RELEASES attached (acceptance criterion 2).
+#
+# Unsigned still publishes if the LORE_SIGN_* secrets are absent (documented
+# interim, same as the local build and installer.yml). Pushes to main never cut
+# releases — only ci.yml runs there. Cutting a real public tag is human-gated.
+on:
+  push:
+    tags: ["v*"]
+  # Manual dry run: builds + asserts version sync against the committed sources,
+  # but does NOT publish a Release (no tag => the publish step is skipped).
+  workflow_dispatch:
+
+permissions:
+  contents: write # required to create the Release and upload assets
+
+jobs:
+  release:
+    name: release
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pinned toolchains, identical to installer.yml: dotnet from global.json,
+      # Python 3.11, Node 20. PyInstaller + electron-forge versions are pinned
+      # downstream (build-memoryd.ps1 / package-lock.json) so the build is reproducible.
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      # Single source of truth: derive X.Y.Z from the tag (strip the leading 'v')
+      # and write it into BOTH version sources before building, so the agent
+      # assembly version, the installer artifact name, and the tag all agree.
+      # On workflow_dispatch (no tag) we keep the committed version and only verify.
+      - name: Resolve and inject version
+        id: version
+        shell: pwsh
+        run: ./installer/set-version.ps1 -Ref "${{ github.ref }}"
+
+      # Optional code-signing: decode the PFX secret to a temp file and point the
+      # build at it. With the secret unset these are empty and the build produces an
+      # unsigned—but otherwise identical—installer (spec 011 T002 / 012 decision).
+      - name: Stage signing certificate
+        if: ${{ secrets.LORE_SIGN_CERT_BASE64 != '' }}
+        shell: pwsh
+        env:
+          LORE_SIGN_CERT_BASE64: ${{ secrets.LORE_SIGN_CERT_BASE64 }}
+        run: |
+          $pfx = Join-Path $env:RUNNER_TEMP "lore-signing.pfx"
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:LORE_SIGN_CERT_BASE64))
+          "LORE_SIGN_CERT_FILE=$pfx" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Build installer
+        shell: pwsh
+        env:
+          LORE_SIGN_CERT_PASSWORD: ${{ secrets.LORE_SIGN_CERT_PASSWORD }}
+          LORE_SIGN_TIMESTAMP_URL: ${{ vars.LORE_SIGN_TIMESTAMP_URL }}
+        run: ./installer/build.ps1
+
+      # Acceptance criterion 1: the tag, package.json, and the built agent assembly
+      # version must all report the same X.Y.Z. Fails the release on any drift.
+      - name: Verify version is single-sourced
+        shell: pwsh
+        run: ./installer/verify-version.ps1 -Expected "${{ steps.version.outputs.version }}"
+
+      # Collect the three Squirrel artifacts into one flat dir for upload.
+      - name: Stage release artifacts
+        id: stage
+        shell: pwsh
+        run: ./installer/stage-release.ps1 -Version "${{ steps.version.outputs.version }}"
+
+      # Always upload the artifacts (incl. dry runs) for inspection.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lore-release-${{ steps.version.outputs.version }}
+          path: release/*
+          if-no-files-found: error
+
+      # Publish the GitHub Release only on a real tag push. softprops/action-gh-release
+      # is idempotent: re-running the same tag updates the Release and re-uploads assets.
+      - name: Publish GitHub Release
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Lore ${{ github.ref_name }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            release/LoreSetup.exe
+            release/Lore-${{ steps.version.outputs.version }}-full.nupkg
+            release/RELEASES
