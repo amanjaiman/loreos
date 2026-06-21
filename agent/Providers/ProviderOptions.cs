@@ -13,7 +13,8 @@ namespace Lore.Agent.Providers;
 ///   "type": "openai_compatible",            // anthropic | openai | gemini | openai_compatible
 ///   "model": "qwen3:8b",
 ///   "base_url": "http://localhost:11434/v1", // required for openai_compatible; ignored otherwise
-///   "api_key_ref": "lore/provider"           // Credential Manager handle; "" for keyless local
+///   "api_key_ref": "lore/provider",          // Credential Manager handle; "" for keyless local
+///   "max_tokens": 1024                       // optional; default 1024
 /// }
 /// </code></summary>
 public sealed class ProviderOptions
