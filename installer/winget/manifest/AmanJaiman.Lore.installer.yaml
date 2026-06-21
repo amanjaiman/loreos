@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.6.0.schema.json
+#
+# winget INSTALLER manifest for Lore (spec 012 T003). This is the SOURCE the
+# release generator (T004, wingetcreate/komac) updates per version; it is also the
+# file submitted to microsoft/winget-pkgs.
+#
+# ┌─ HUMAN-GATED / install-derived fields ────────────────────────────────────┐
+# │ The fields marked `# TODO(sandbox)` below CANNOT be derived in CI or from   │
+# │ source — they are read from a REAL install. Derive and verify them in a     │
+# │ clean Windows Sandbox before the first winget-pkgs submission; see          │
+# │ installer/winget/README.md for the exact commands. Until then this manifest │
+# │ will not pass `winget validate --manifest` / upgrade detection.             │
+# └────────────────────────────────────────────────────────────────────────────┘
+
+PackageIdentifier: AmanJaiman.Lore # TODO(owner): confirm publisher string "AmanJaiman"; the id is PERMANENT once published.
+PackageVersion: 0.1.0 # Generator (T004) overwrites this with the released vX.Y.Z.
+
+# Squirrel (electron-forge MakerSquirrel) produces a per-user .exe installer that
+# installs silently with no switch and registers its uninstall entry under HKCU.
+InstallerType: exe
+Scope: user
+
+# Squirrel's setup runs silently by default (it shows only a brief progress UI and
+# requires no flags). winget treats `exe` installers as interactive unless told
+# otherwise, so we declare empty silent switches to mark it non-interactive.
+# TODO(sandbox): confirm Squirrel accepts (ignores) these and exits 0 silently.
+InstallerSwitches:
+  Silent: ""
+  SilentWithProgress: ""
+
+# Upgrade detection: winget matches an installed version by the ARP (Add/Remove
+# Programs) entry Squirrel writes under HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall.
+# These MUST match that entry exactly or `winget upgrade Lore` won't see an older
+# install. Derive both from a real install (see README "Deriving the ARP fields").
+AppsAndFeaturesEntries:
+  - DisplayVersion: "0.1.0" # TODO(sandbox): confirm Squirrel's ARP DisplayVersion format matches PackageVersion.
+    ProductCode: "Lore" # TODO(sandbox): the actual ARP key/DisplayName Squirrel registers (often the app name, NOT a GUID for Squirrel/NSIS-style installers). Verify in HKCU.
+    InstallerType: exe
+
+InstallModes:
+  - silent
+  - silentWithProgress
+
+UpgradeBehavior: install # Squirrel handles its own in-place upgrade; winget runs the new installer.
+
+Installers:
+  - Architecture: x64
+    # TODO(release): the generator (T004) fills InstallerUrl + InstallerSha256 from
+    # the published GitHub Release asset. Placeholder values below are NOT valid.
+    InstallerUrl: https://github.com/amanjaiman/loreos/releases/download/v0.1.0/LoreSetup.exe # TODO(release)
+    InstallerSha256: 0000000000000000000000000000000000000000000000000000000000000000 # TODO(release): sha256 of the released LoreSetup.exe.
+
+ManifestType: installer
+ManifestVersion: 1.6.0

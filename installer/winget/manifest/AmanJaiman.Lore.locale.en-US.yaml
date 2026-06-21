@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
+#
+# winget defaultLocale manifest for Lore (spec 012 T003). Human-readable metadata
+# shown by `winget show Lore`. The generator (T004) bumps PackageVersion; the rest
+# is stable product metadata.
+
+PackageIdentifier: AmanJaiman.Lore # TODO(owner): confirm publisher string "AmanJaiman".
+PackageVersion: 0.1.0 # Generator (T004) overwrites with the released vX.Y.Z.
+PackageLocale: en-US
+
+Publisher: Aman Jaiman # TODO(owner): confirm the publisher display name.
+PublisherUrl: https://github.com/amanjaiman
+PublisherSupportUrl: https://github.com/amanjaiman/loreos/issues
+Author: Aman Jaiman
+
+PackageName: Lore
+PackageUrl: https://github.com/amanjaiman/loreos
+License: Apache-2.0
+LicenseUrl: https://github.com/amanjaiman/loreos/blob/main/LICENSE
+Copyright: Copyright (c) Aman Jaiman
+
+ShortDescription: The open-source ambient capture agent for your personal memory layer.
+Description: |-
+  Lore watches what you do on your machine — locally, auditably, with aggressive
+  filtering — distills what matters with a model you control, stores it in mem0, and
+  serves it to every AI tool you use through MCP, a CLI, an agent skill, and a REST
+  API. No account, no telemetry, no Lore-operated server: your models, your keys,
+  your disk, your memory. Updates flow through winget; Lore itself never checks for
+  updates, preserving its zero-egress posture.
+
+Moniker: lore
+Tags:
+  - ai
+  - memory
+  - mcp
+  - local-first
+  - privacy
+  - ambient-capture
+
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

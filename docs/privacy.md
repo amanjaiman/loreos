@@ -51,7 +51,13 @@ this path reaches a Lore-operated service.
   default, and it would appear in the table above.
 - **No cloud sync, no account service, no hosted inference proxy.** These existed
   in the pre-open-source codebase and are deleted, not ported.
-- **No update check** unless and until added here explicitly.
+- **No update check.** Lore never reaches out to check for, or download, updates —
+  there is no in-app version check, no "check for updates" button, no auto-updater.
+  Updates flow entirely through your **package manager** (`winget upgrade Lore`),
+  which checks only when *you* run it; the package manager is the trusted party that
+  does the checking, not Lore. This is a deliberate design choice (spec 012) that
+  keeps the egress table below unchanged: distributing updates this way adds **no**
+  outbound call to the app or agent.
 - **mem0 / Qdrant in embedded mode** are local. The bundled `memoryd` sidecar
   runs on loopback and does not leave the machine. **Note:** mem0 OSS ships
   anonymous PostHog telemetry (`us.i.posthog.com`) *enabled by default*;

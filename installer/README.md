@@ -77,3 +77,34 @@ Electron app binaries + the Squirrel setup exe (`app/forge.config.ts`).
 installer on `windows-latest` on demand (`workflow_dispatch`) and on `v*` tags, and
 uploads it as the `lore-installer` artifact. It's separate from the per-PR gates
 (`ci.yml`) because it's heavy (self-contained publish + PyInstaller + forge make).
+
+## Release on a version tag (T002, spec 012)
+
+[`.github/workflows/release.yml`](../.github/workflows/release.yml) makes a release
+**a single tag push**. Pushing an annotated `vX.Y.Z` tag:
+
+1. **Injects the tag version** into both version sources
+   ([`set-version.ps1`](set-version.ps1)): the root `Directory.Build.props`
+   `<Version>` (drives the agent assembly / `GET /system/status`) and
+   `app/package.json` `"version"` (names the Squirrel `.nupkg`). This is the
+   single source of truth — the committed `0.1.0` is the in-development value; the
+   tag is authoritative at release time.
+2. Builds the signed installer with [`build.ps1`](build.ps1) (unsigned if the
+   `LORE_SIGN_*` secrets are absent — documented interim).
+3. **Asserts the tag, `package.json`, and the built agent assembly version all
+   match** ([`verify-version.ps1`](verify-version.ps1)) — acceptance criterion 1;
+   the release fails on any drift. On every PR the same `package.json ↔ agent`
+   invariant is also enforced by `LoreAgent.Tests.VersionSyncTests`.
+4. Stages the three artifacts ([`stage-release.ps1`](stage-release.ps1)) and
+   **publishes a GitHub Release** with `LoreSetup.exe`, `Lore-X.Y.Z-full.nupkg`,
+   and `RELEASES` attached — acceptance criterion 2.
+
+`workflow_dispatch` runs a **dry run**: it builds and verifies against the committed
+version but does not modify the version files or publish a Release. Pushes to `main`
+never cut releases (only `ci.yml` runs there). Cutting a real public tag is
+human-gated.
+
+### Bumping the in-development version
+
+When not tagging, bump `Directory.Build.props` `<Version>` and `app/package.json`
+`"version"` **together** (the test fails the build otherwise).

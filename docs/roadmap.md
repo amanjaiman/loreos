@@ -16,6 +16,8 @@
 - ✅ Surfaces: MCP (stdio + HTTP), the `lore` CLI, an agent skill, a REST API, the
   desktop app.
 - ✅ One signed-ready Windows installer bundling everything (Python invisible).
+- ✅ Tag-driven releases + **winget** distribution: `winget install Lore` /
+  `winget upgrade Lore`, with no in-app update check (spec 012).
 - ⏳ Distribution polish: a code-signing certificate (signing is wired, opt-in), a
   branded installer icon, and a redacting production log sink for `/system/log`.
 
@@ -24,6 +26,7 @@
 | Item | What | Labels |
 |---|---|---|
 | **macOS capture** | A capture backend for macOS (Accessibility API / screen text), behind the existing extractor seam. | `platform:macos` `area:capture` |
+| **Homebrew distribution** | Distribute + update on macOS through **Homebrew** (`brew install lore` / `brew upgrade lore`), mirroring the winget package-manager model on Windows (spec 012) — the same user-pulled, zero-egress update story, no bespoke updater. | `platform:macos` `area:installer` |
 | **Local review mode** | An opt-in "hold for review" path where captured observations are queued for you to approve/redact before they're stored — for the most sensitive workflows. | `area:capture` `type:feature` |
 | **Encryption at rest** | Encrypt the on-disk memory store (Qdrant + history) so a stolen disk doesn't expose memories. | `area:memory` `type:feature` |
 | **Memory buckets + retention** | Deferred from the memory spec: scope memories into buckets (work/personal/…) and set retention/expiry policies. | `area:memory` `type:feature` |
