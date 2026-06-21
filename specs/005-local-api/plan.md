@@ -75,10 +75,11 @@ examples. The generated doc is the authority; the markdown is the welcome mat.
   leaves the documented placeholder so the contract is stable.
 - **`/system/log` tails a conventional `lore.log`** (`%LocalAppData%\Lore\lore.log`)
   via a `LogTail` reader; a missing file yields an empty tail. The redacting file
-  **sink** that writes that log (`RedactingLoggerProvider` exists for it) is not yet
-  wired into the host — it is outside T005's bar (acceptance criteria 3 & 4 cover
-  status and export). Until a sink lands, the endpoint is correct and contract-stable
-  but returns an empty tail in production. Tracked as a small follow-up.
+  **sink** that writes that log is wired in `agent/Program.cs`: a `FileLoggerProvider`
+  wrapped by `RedactingLoggerProvider` and registered as an `ILoggerProvider` so it
+  shares the `SecretRegistry` the credential store registers keys into — every line is
+  scrubbed before it reaches disk. (Originally deferred past T005's bar; landed as the
+  follow-up.)
 
 ## Dependencies & order
 

@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Lore.Agent;
@@ -76,6 +77,17 @@ internal static class Program
         // relocates any inline key to the credential store registered by the provider layer.
         builder.Services.AddSingleton(sp => new LoreConfig(
             LoreConfig.DefaultPath, sp.GetRequiredService<ICredentialStore>()));
+
+        // The redacting file sink (005 T005 follow-up): write the agent log to the same lore.log
+        // LogTail serves at /system/log. Registered as an ILoggerProvider so the logging factory
+        // injects the very SecretRegistry the credential store registers keys into — that shared
+        // instance is what makes redaction effective (constitution §4.2). Registered after the
+        // provider layer so that singleton exists; wrapping FileLoggerProvider means no log line
+        // can reach disk with a key in the clear.
+        builder.Services.AddSingleton<ILoggerProvider>(sp =>
+            new RedactingLoggerProvider(
+                new FileLoggerProvider(LogTail.DefaultPath),
+                sp.GetRequiredService<SecretRegistry>()));
 
         // The generated OpenAPI contract surfaces pin to, served at /openapi.json (005 T007).
         ApiHost.AddOpenApi(builder.Services);
