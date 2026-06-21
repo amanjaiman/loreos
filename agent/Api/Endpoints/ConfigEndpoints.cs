@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Lore.Agent.Config;
+using Lore.Agent.Providers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -24,14 +25,29 @@ public static class ConfigEndpoints
             return Results.Json(current);
         });
 
-        app.MapPatch("/config", async (JsonObject? patch, [FromServices] LoreConfig config, CancellationToken ct) =>
+        app.MapPatch("/config", async (
+            JsonObject? patch,
+            [FromServices] LoreConfig config,
+            [FromServices] IProviderReloader reloader,
+            CancellationToken ct) =>
         {
             if (patch is null)
             {
                 return Results.BadRequest(new ErrorResponse("a JSON object body is required"));
             }
 
+            // Capture whether this patch touches the provider or embedder before the write, so
+            // onboarding (and any later model/embedder change) is applied to the live agent rather
+            // than waiting for a restart. Other config (capture toggles, blocklists) needs no reload.
+            bool providerChanged = patch.ContainsKey("provider") || patch.ContainsKey("embedder");
+
             JsonObject updated = await config.PatchAsync(patch, ct).ConfigureAwait(false);
+
+            if (providerChanged)
+            {
+                await reloader.ReloadAsync(ct).ConfigureAwait(false);
+            }
+
             return Results.Json(updated);
         });
 

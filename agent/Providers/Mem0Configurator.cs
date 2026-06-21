@@ -18,6 +18,7 @@ public sealed class Mem0Configurator : BackgroundService
     private readonly IReadinessSignal _readiness;
     private readonly MemorydClient _memoryd;
     private readonly ProviderOptions _options;
+    private readonly EmbedderOptions _embedder;
     private readonly ICredentialStore _credentials;
     private readonly string _dataDir;
     private readonly ILogger<Mem0Configurator> _logger;
@@ -26,6 +27,7 @@ public sealed class Mem0Configurator : BackgroundService
         IReadinessSignal readiness,
         MemorydClient memoryd,
         ProviderOptions options,
+        EmbedderOptions embedder,
         ICredentialStore credentials,
         IOptions<MemorydOptions> memorydOptions,
         ILogger<Mem0Configurator> logger)
@@ -33,12 +35,14 @@ public sealed class Mem0Configurator : BackgroundService
         ArgumentNullException.ThrowIfNull(readiness);
         ArgumentNullException.ThrowIfNull(memoryd);
         ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(embedder);
         ArgumentNullException.ThrowIfNull(credentials);
         ArgumentNullException.ThrowIfNull(memorydOptions);
         ArgumentNullException.ThrowIfNull(logger);
         _readiness = readiness;
         _memoryd = memoryd;
         _options = options;
+        _embedder = embedder;
         _credentials = credentials;
         _dataDir = memorydOptions.Value.DataDir;
         _logger = logger;
@@ -66,7 +70,15 @@ public sealed class Mem0Configurator : BackgroundService
         {
             ResolvedProvider resolved = ProviderSelector.Resolve(_options);
             string? key = resolved.ApiKeyRef is null ? null : _credentials.Read(resolved.ApiKeyRef);
-            MemoryConfig config = Mem0ProviderBridge.ToMemoryConfig(resolved, key, _dataDir);
+
+            // An explicit embedder may carry its own key (different host than the provider);
+            // resolve it from the store, else leave null so memoryd reuses the provider key.
+            string? embedderKey = string.IsNullOrWhiteSpace(_embedder.ApiKeyRef)
+                ? null
+                : _credentials.Read(_embedder.ApiKeyRef);
+            MemoryEmbedderConfig? explicitEmbedder = _embedder.ToMemoryEmbedder(embedderKey);
+
+            MemoryConfig config = Mem0ProviderBridge.ToMemoryConfig(resolved, key, _dataDir, explicitEmbedder);
 
             await _memoryd.ConfigureAsync(config, cancellationToken).ConfigureAwait(false);
             _logger.LogInformation(

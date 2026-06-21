@@ -31,12 +31,16 @@ class ProviderConfig(BaseModel):
 
 
 class EmbedderConfig(BaseModel):
-    """How to embed memories. `follow_provider` lets memoryd pick a local default
-    when the provider has no first-party embeddings (the policy lands in T003)."""
+    """How to embed memories. `follow_provider` lets memoryd pick the provider's own
+    embeddings; otherwise the agent sends an explicit embedder (spec 013). `api_key` is
+    set only when the embedder targets a different keyed host than the provider — when
+    omitted, the openai embedder reuses the provider's key. Resolved by the agent from
+    the keystore and only ever transmitted over `127.0.0.1`; never persisted or logged."""
 
     type: str = "follow_provider"
     model: str | None = None
     base_url: str | None = None
+    api_key: str | None = None
     dims: int | None = None
 
 

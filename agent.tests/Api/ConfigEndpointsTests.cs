@@ -5,6 +5,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Lore.Agent.Api.Endpoints;
 using Lore.Agent.Config;
+using Lore.Agent.Providers;
 using Lore.Agent.Tests.Config;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -111,6 +112,27 @@ public sealed class ConfigEndpointsTests : IDisposable
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Patch_touching_the_provider_triggers_a_reload()
+    {
+        await File.WriteAllTextAsync(_path, """{ "provider": { "type": "openai", "model": "gpt-4o" } }""");
+        var store = new InMemoryCredentialStore();
+        var reloader = new CountingReloader();
+        await using LoreApiHarness harness = await StartAsync(store, reloader);
+
+        // A provider change must be applied to the live agent...
+        (await harness.Client.PatchAsJsonAsync(
+            new Uri("/config", UriKind.Relative), new { provider = new { model = "gpt-4o-mini" } }))
+            .EnsureSuccessStatusCode();
+        Assert.Equal(1, reloader.Reloads);
+
+        // ...but an unrelated block must not pay for a needless reconfigure.
+        (await harness.Client.PatchAsJsonAsync(
+            new Uri("/config", UriKind.Relative), new { capture = new { enabled = false } }))
+            .EnsureSuccessStatusCode();
+        Assert.Equal(1, reloader.Reloads);
+    }
+
     public void Dispose()
     {
         if (File.Exists(_path))
@@ -119,10 +141,27 @@ public sealed class ConfigEndpointsTests : IDisposable
         }
     }
 
-    private Task<LoreApiHarness> StartAsync(InMemoryCredentialStore store) =>
+    private Task<LoreApiHarness> StartAsync(InMemoryCredentialStore store, IProviderReloader? reloader = null) =>
         LoreApiHarness.StartAsync(
-            services => services.AddSingleton(new LoreConfig(_path, store)),
+            services =>
+            {
+                services.AddSingleton(new LoreConfig(_path, store));
+                services.AddSingleton<IProviderReloader>(reloader ?? new CountingReloader());
+            },
             app => app.MapConfigEndpoints());
+
+    /// <summary>A no-op <see cref="IProviderReloader"/> that records how many times it was asked to
+    /// reload, so a test can assert the endpoint triggers a reload only for provider changes.</summary>
+    private sealed class CountingReloader : IProviderReloader
+    {
+        public int Reloads { get; private set; }
+
+        public Task ReloadAsync(CancellationToken cancellationToken = default)
+        {
+            Reloads++;
+            return Task.CompletedTask;
+        }
+    }
 
     private static async Task<string> GetStringAsync(LoreApiHarness harness, string path)
     {
