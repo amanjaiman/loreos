@@ -80,8 +80,37 @@ placeholder URL/hash — that's expected before the first real Release.
 acceptance test — if it reinstalls instead of upgrading, the ProductCode/DisplayVersion
 don't match what Squirrel wrote; re-derive them above.
 
+## Per-release automation (T004)
+
+After the first manual submission, [`../release-winget.ps1`](../release-winget.ps1)
+(driven by the `winget-submit` job in
+[`../../.github/workflows/release.yml`](../../.github/workflows/release.yml))
+regenerates and resubmits the manifest for each new version with Microsoft's
+`wingetcreate`:
+
+```powershell
+# Dry run — regenerate the manifest locally, no PR:
+./installer/release-winget.ps1 -Version 0.2.0
+
+# Submit/update the winget-pkgs PR (CI does this with the PAT):
+./installer/release-winget.ps1 -Version 0.2.0 -Submit -Token <PAT>
+```
+
+`wingetcreate update` pulls the package's current upstream manifest, swaps in the new
+version + Release `InstallerUrl`, **recomputes the SHA256 itself** (never hand-keyed),
+and refreshes the PR — idempotent, so re-running a version doesn't duplicate it.
+
+### The `WINGET_PAT` secret (maintainer-gated)
+
+The `winget-submit` job submits only when the repo secret **`WINGET_PAT`** is set — a
+GitHub PAT with rights to fork and open PRs against `microsoft/winget-pkgs` (classic
+PAT with `public_repo`, or a fine-grained token scoped to the maintainer's
+`winget-pkgs` fork). Without it the job runs a dry-run regeneration and opens no PR,
+so a release never blocks on the external submission.
+
 ## Submission (human-gated)
 
-The first `winget-pkgs` PR and Microsoft's review/merge are human-gated (see the
-spec's "Human-gated" section). Subsequent versions are generated and submitted by the
-release workflow (T004) — see [`../release-winget.ps1`](../release-winget.ps1).
+The **first** `winget-pkgs` PR and Microsoft's review/merge are human-gated (see the
+spec's "Human-gated" section): the owner confirms the package id/publisher, fills the
+`# TODO(sandbox)` fields from a real install, and submits the hand-authored manifest
+under `manifest/`. Automation (above) takes over for subsequent versions.

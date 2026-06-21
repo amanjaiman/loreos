@@ -107,3 +107,36 @@ jobs:
             release/LoreSetup.exe
             release/Lore-${{ steps.version.outputs.version }}-full.nupkg
             release/RELEASES
+
+  # Per-release winget manifest automation (spec 012 T004). Regenerates the manifest
+  # from the published Release asset and opens/updates the microsoft/winget-pkgs PR
+  # via a maintainer PAT. Runs only on a real tag AND only when the WINGET_PAT secret
+  # is configured — so the release itself never blocks on the (human-gated, externally
+  # reviewed) winget submission.
+  winget:
+    name: winget-submit
+    needs: release
+    runs-on: windows-latest
+    if: ${{ startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve version
+        id: version
+        shell: pwsh
+        run: ./installer/set-version.ps1 -Ref "${{ github.ref }}"
+      - name: Install wingetcreate
+        shell: pwsh
+        run: winget install --id Microsoft.WingetCreate --accept-source-agreements --accept-package-agreements
+      # With the PAT present, submit the PR; otherwise do a dry-run regeneration so
+      # the step is exercised but no PR is opened (documented interim).
+      - name: Generate + submit winget manifest
+        shell: pwsh
+        env:
+          WINGET_PAT: ${{ secrets.WINGET_PAT }}
+        run: |
+          if ($env:WINGET_PAT) {
+            ./installer/release-winget.ps1 -Version "${{ steps.version.outputs.version }}" -Submit -Token $env:WINGET_PAT
+          } else {
+            Write-Host "WINGET_PAT not set — dry run only (no winget-pkgs PR). See installer/winget/README.md."
+            ./installer/release-winget.ps1 -Version "${{ steps.version.outputs.version }}"
+          }

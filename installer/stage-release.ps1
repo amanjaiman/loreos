@@ -28,7 +28,7 @@ $makeDir = Join-Path $repoRoot "app/out/make/squirrel.windows/x64"
 $releaseDir = Join-Path $repoRoot "release"
 
 if (-not (Test-Path $makeDir)) {
-    throw "Squirrel output not found at $makeDir — run installer/build.ps1 first."
+    throw "Squirrel output not found at $makeDir - run installer/build.ps1 first."
 }
 
 if (Test-Path $releaseDir) { Remove-Item $releaseDir -Recurse -Force }

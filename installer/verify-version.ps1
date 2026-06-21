@@ -8,7 +8,7 @@
 
     - the release tag           (passed in as -Expected)
     - app/package.json          ("version")
-    - the built agent assembly  (LoreAgent.dll ProductVersion — the same
+    - the built agent assembly  (LoreAgent.dll ProductVersion - the same
                                  InformationalVersion GET /system/status reports)
 
   Any mismatch throws, failing the release. Build metadata after '+' in the
@@ -34,7 +34,7 @@ $pkgVersion = $pkg.version
 # agent into app/native/; LoreAgent.dll carries the InformationalVersion.
 $agentDll = Join-Path $repoRoot "app/native/LoreAgent.dll"
 if (-not (Test-Path $agentDll)) {
-    throw "Built agent not found at $agentDll — run installer/build.ps1 first."
+    throw "Built agent not found at $agentDll - run installer/build.ps1 first."
 }
 $agentVersion = (Get-Item $agentDll).VersionInfo.ProductVersion
 # Trim build metadata after '+' (mirrors SystemEndpoints.AppVersion).
