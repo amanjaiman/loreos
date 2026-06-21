@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Configuration;
+
 namespace Lore.Agent.Providers;
 
 /// <summary>A typed view over the <c>provider</c> config block — the single source of
@@ -30,14 +32,17 @@ public sealed class ProviderOptions
     [System.Diagnostics.CodeAnalysis.SuppressMessage(
         "Design", "CA1056:URI-like properties should not be strings",
         Justification = "Raw config value; validated and normalized to a Uri by ProviderSelector.")]
+    [ConfigurationKeyName("base_url")]
     public string? BaseUrl { get; set; }
 
     /// <summary>Handle into the OS credential store (spec 004 T004) where the API key
     /// lives. Never the key itself. May be empty for a keyless local endpoint.</summary>
+    [ConfigurationKeyName("api_key_ref")]
     public string? ApiKeyRef { get; set; }
 
     /// <summary>Upper bound on tokens generated per call. Capture-analysis completions
     /// are short; the test-connection prompt is tiny. Anthropic's messages API requires
     /// it, so it is carried here for every backend.</summary>
+    [ConfigurationKeyName("max_tokens")]
     public int MaxTokens { get; set; } = 1024;
 }
