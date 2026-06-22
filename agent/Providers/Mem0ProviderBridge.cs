@@ -15,11 +15,12 @@ public static class Mem0ProviderBridge
     private static readonly Uri GeminiOpenAiBaseUrl =
         new("https://generativelanguage.googleapis.com/v1beta/openai/");
 
-    // Gemini's embeddings via the same OpenAI-compatible endpoint (spec 013). The model id
-    // and its 768-dim vector are pinned so Qdrant is sized correctly; the embedder reuses
-    // the provider key (same host), so no second key is needed.
-    private const string GeminiEmbedModel = "text-embedding-004";
-    private const int GeminiEmbedDims = 768;
+    // Gemini's embeddings via the same OpenAI-compatible endpoint (spec 013). Pinned to the
+    // model that endpoint actually serves and its dimension (verified live: text-embedding-004
+    // 404s on the OpenAI-compat surface; gemini-embedding-001 returns 3072-dim vectors). The
+    // embedder reuses the provider key (same host), so no second key is needed.
+    private const string GeminiEmbedModel = "gemini-embedding-001";
+    private const int GeminiEmbedDims = 3072;
 
     /// <summary>Build the memoryd <c>POST /config</c> payload for <paramref name="provider"/>.
     /// <paramref name="apiKey"/> is the key already resolved from the credential store

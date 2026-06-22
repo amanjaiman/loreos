@@ -134,7 +134,8 @@ def test_explicit_embedder_uses_its_own_api_key_over_the_provider_key() -> None:
 
 def test_gemini_embedding_model_resolves_its_dimension() -> None:
     # Gemini's first-party embeddings via its OpenAI-compatible endpoint (spec 013):
-    # text-embedding-004 is a known 768-dim model, reusing the provider key.
+    # gemini-embedding-001 is the model that endpoint serves, at 3072 dims (verified live),
+    # reusing the provider key.
     cfg = ConfigRequest.model_validate(
         {
             "provider": {
@@ -145,7 +146,7 @@ def test_gemini_embedding_model_resolves_its_dimension() -> None:
             },
             "embedder": {
                 "type": "openai",
-                "model": "text-embedding-004",
+                "model": "gemini-embedding-001",
                 "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
             },
             "data_dir": "/data/lore",
@@ -153,9 +154,9 @@ def test_gemini_embedding_model_resolves_its_dimension() -> None:
         }
     )
     result = build_mem0_config(cfg)
-    assert result["embedder"]["config"]["model"] == "text-embedding-004"
+    assert result["embedder"]["config"]["model"] == "gemini-embedding-001"
     assert result["embedder"]["config"]["api_key"] == "g-key"  # reused from the provider
-    assert result["vector_store"]["config"]["embedding_model_dims"] == 768
+    assert result["vector_store"]["config"]["embedding_model_dims"] == 3072
 
 
 def test_unsupported_provider_raises() -> None:
