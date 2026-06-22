@@ -73,7 +73,11 @@ public sealed partial class Win32ForegroundWindowSource : IForegroundWindowSourc
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static partial uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
 
-    [LibraryImport("user32.dll", SetLastError = true)]
+    // EntryPoint is required: LibraryImport binds the exact name, and user32 exports only the
+    // W/A variants (GetWindowTextLengthW/A), never a bare GetWindowTextLength — unlike the old
+    // DllImport, it does not auto-append the charset suffix. Without this the P/Invoke throws
+    // EntryPointNotFoundException on every poll and capture silently produces nothing.
+    [LibraryImport("user32.dll", EntryPoint = "GetWindowTextLengthW", SetLastError = true)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static partial int GetWindowTextLength(IntPtr hWnd);
 

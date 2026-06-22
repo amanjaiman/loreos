@@ -49,6 +49,52 @@ public sealed class Mem0ProviderBridgeTests
     }
 
     [Fact]
+    public void Gemini_gets_its_own_first_party_embedder()
+    {
+        var resolved = new ResolvedProvider(ProviderKind.Gemini, "gemini-2.5-flash", null, "lore/provider", 256);
+
+        MemoryConfig config = Mem0ProviderBridge.ToMemoryConfig(resolved, "g-key", DataDir);
+
+        // The embedder rides the same Gemini OpenAI-compatible endpoint, so one key drives
+        // both LLM and embeddings — no local Ollama required (spec 013).
+        Assert.NotNull(config.Embedder);
+        Assert.Equal("openai", config.Embedder!.Type);
+        Assert.Equal("text-embedding-004", config.Embedder.Model);
+        Assert.Equal(
+            new Uri("https://generativelanguage.googleapis.com/v1beta/openai/"), config.Embedder.BaseUrl);
+        Assert.Equal(768, config.Embedder.Dims);
+        Assert.Null(config.Embedder.ApiKey); // reuses the provider key (same host)
+    }
+
+    [Fact]
+    public void An_explicit_embedder_overrides_the_provider_default()
+    {
+        var resolved = new ResolvedProvider(ProviderKind.Gemini, "gemini-2.5-flash", null, "lore/provider", 256);
+        var explicitEmbedder = new MemoryEmbedderConfig(
+            "ollama", "nomic-embed-text", new Uri("http://localhost:11434"), 768);
+
+        MemoryConfig config = Mem0ProviderBridge.ToMemoryConfig(resolved, "g-key", DataDir, explicitEmbedder);
+
+        Assert.Same(explicitEmbedder, config.Embedder); // explicit wins over the Gemini default
+    }
+
+    [Fact]
+    public void An_explicit_embedder_makes_a_no_embeddings_provider_work()
+    {
+        // Anthropic has no embeddings; an explicit embedder (its own key) is the supported path.
+        var resolved = new ResolvedProvider(ProviderKind.Anthropic, "claude-haiku-4-5", null, "lore/provider", 256);
+        var explicitEmbedder = new MemoryEmbedderConfig(
+            "openai", "text-embedding-3-small", null, 1536, ApiKey: "sk-embedder");
+
+        MemoryConfig config = Mem0ProviderBridge.ToMemoryConfig(resolved, "anthropic-key", DataDir, explicitEmbedder);
+
+        Assert.Equal("anthropic", config.Provider.Type);
+        Assert.NotNull(config.Embedder);
+        Assert.Equal("text-embedding-3-small", config.Embedder!.Model);
+        Assert.Equal("sk-embedder", config.Embedder.ApiKey); // separate key honored
+    }
+
+    [Fact]
     public void Keyed_openai_compatible_keeps_its_base_url()
     {
         var resolved = new ResolvedProvider(

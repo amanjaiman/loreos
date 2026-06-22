@@ -97,6 +97,60 @@ def test_follow_provider_openai_compatible_uses_local_embedder() -> None:
     assert result["vector_store"]["config"]["embedding_model_dims"] == 768
 
 
+def test_explicit_embedder_uses_its_own_api_key_over_the_provider_key() -> None:
+    # An explicit embedder on a different keyed host (spec 013): its own key wins, so a
+    # provider without embeddings (e.g. Anthropic) can borrow another endpoint's embeddings.
+    cfg = ConfigRequest.model_validate(
+        {
+            "provider": {
+                "type": "anthropic",
+                "model": "claude-haiku-4-5",
+                "api_key": "anthropic-key",
+            },
+            "embedder": {
+                "type": "openai",
+                "model": "text-embedding-3-small",
+                "api_key": "sk-embedder",
+                "base_url": "https://api.openai.com/v1",
+            },
+            "data_dir": "/data/lore",
+            "collection_name": "lore",
+        }
+    )
+    result = build_mem0_config(cfg)
+    assert result["llm"]["provider"] == "anthropic"
+    assert result["embedder"]["provider"] == "openai"
+    assert result["embedder"]["config"]["api_key"] == "sk-embedder"  # not the anthropic key
+    assert result["embedder"]["config"]["openai_base_url"] == "https://api.openai.com/v1"
+    assert result["vector_store"]["config"]["embedding_model_dims"] == 1536
+
+
+def test_gemini_embedding_model_resolves_its_dimension() -> None:
+    # Gemini's first-party embeddings via its OpenAI-compatible endpoint (spec 013):
+    # text-embedding-004 is a known 768-dim model, reusing the provider key.
+    cfg = ConfigRequest.model_validate(
+        {
+            "provider": {
+                "type": "openai_compatible",
+                "model": "gemini-2.5-flash",
+                "api_key": "g-key",
+                "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
+            },
+            "embedder": {
+                "type": "openai",
+                "model": "text-embedding-004",
+                "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
+            },
+            "data_dir": "/data/lore",
+            "collection_name": "lore",
+        }
+    )
+    result = build_mem0_config(cfg)
+    assert result["embedder"]["config"]["model"] == "text-embedding-004"
+    assert result["embedder"]["config"]["api_key"] == "g-key"  # reused from the provider
+    assert result["vector_store"]["config"]["embedding_model_dims"] == 768
+
+
 def test_unsupported_provider_raises() -> None:
     with pytest.raises(ValueError, match="Unsupported provider"):
         build_mem0_config(_cfg(type="mystery-llm"))

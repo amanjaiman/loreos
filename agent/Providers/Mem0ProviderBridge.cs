@@ -15,10 +15,20 @@ public static class Mem0ProviderBridge
     private static readonly Uri GeminiOpenAiBaseUrl =
         new("https://generativelanguage.googleapis.com/v1beta/openai/");
 
+    // Gemini's embeddings via the same OpenAI-compatible endpoint (spec 013). The model id
+    // and its 768-dim vector are pinned so Qdrant is sized correctly; the embedder reuses
+    // the provider key (same host), so no second key is needed.
+    private const string GeminiEmbedModel = "text-embedding-004";
+    private const int GeminiEmbedDims = 768;
+
     /// <summary>Build the memoryd <c>POST /config</c> payload for <paramref name="provider"/>.
     /// <paramref name="apiKey"/> is the key already resolved from the credential store
-    /// (null for a keyless local endpoint); it travels only over loopback to memoryd.</summary>
-    public static MemoryConfig ToMemoryConfig(ResolvedProvider provider, string? apiKey, string dataDir)
+    /// (null for a keyless local endpoint); it travels only over loopback to memoryd.
+    /// <paramref name="explicitEmbedder"/> is the user-configured embedder (spec 013) when
+    /// present; it overrides the provider-derived default.</summary>
+    public static MemoryConfig ToMemoryConfig(
+        ResolvedProvider provider, string? apiKey, string dataDir,
+        MemoryEmbedderConfig? explicitEmbedder = null)
     {
         ArgumentNullException.ThrowIfNull(provider);
         ArgumentException.ThrowIfNullOrWhiteSpace(dataDir);
@@ -33,10 +43,23 @@ public static class Mem0ProviderBridge
             _ => throw new ProviderConfigurationException($"Unsupported provider kind: {provider.Kind}."),
         };
 
-        // Embedder omitted -> memoryd's follow_provider default: the provider's own
-        // embeddings when it has them, else the local Ollama default.
-        return new MemoryConfig(memProvider, dataDir);
+        // Embedder precedence (spec 013): an explicit user-configured embedder wins; else a
+        // known-provider default (Gemini's own embeddings); else null, leaving memoryd's
+        // follow_provider to use the provider's first-party embeddings or error actionably.
+        MemoryEmbedderConfig? embedder = explicitEmbedder ?? DefaultEmbedder(provider.Kind);
+        return new MemoryConfig(memProvider, dataDir, embedder);
     }
+
+    // The provider-derived embedder for providers whose first-party embeddings Lore knows.
+    // Gemini's OpenAI-compatible endpoint serves embeddings too, so route them there and let
+    // memoryd reuse the provider key (same host). OpenAI is left to memoryd's follow_provider
+    // (which already selects text-embedding-3-small). Everything else returns null.
+    private static MemoryEmbedderConfig? DefaultEmbedder(ProviderKind kind) => kind switch
+    {
+        ProviderKind.Gemini => new MemoryEmbedderConfig(
+            "openai", GeminiEmbedModel, GeminiOpenAiBaseUrl, GeminiEmbedDims),
+        _ => null,
+    };
 
     private static MemoryProviderConfig MapOpenAiCompatible(ResolvedProvider provider, string? apiKey)
     {

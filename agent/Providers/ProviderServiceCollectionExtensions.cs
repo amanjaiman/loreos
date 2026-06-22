@@ -23,6 +23,13 @@ public static class ProviderServiceCollectionExtensions
             configuration.GetSection("provider").Get<ProviderOptions>() ?? new ProviderOptions();
         services.AddSingleton(options);
 
+        // The optional explicit embedder (spec 013): the escape hatch for providers without
+        // first-party embeddings. A mutable singleton, refreshed in place by ProviderReloader
+        // so an embedder change through PATCH /config takes effect without a restart.
+        EmbedderOptions embedder =
+            configuration.GetSection("embedder").Get<EmbedderOptions>() ?? new EmbedderOptions();
+        services.AddSingleton(embedder);
+
         // Secret storage (keys by handle) + the registry that scrubs them from logs.
         services.AddSingleton<SecretRegistry>();
         services.AddSingleton<ICredentialStore, WindowsCredentialStore>();
@@ -34,29 +41,50 @@ public static class ProviderServiceCollectionExtensions
         services.AddSingleton<IProviderBackendFactory, ProviderBackendFactory>();
         services.AddSingleton<ProviderTester>();
 
-        // Consumer 1 — capture: the real backend replaces the placeholder NullInferenceBackend.
-        services.AddSingleton<IInferenceBackend>(BuildInferenceBackend);
+        // Consumer 1 — capture: the real backend replaces the placeholder NullInferenceBackend,
+        // wrapped in a reloadable seam so a runtime provider change (PATCH /config) can swap it
+        // without restarting the agent. The analyzer holds the stable wrapper; ProviderReloader
+        // swaps its inner.
+        services.AddSingleton(sp => new ReloadableInferenceBackend(BuildInferenceBackend(sp)));
+        services.AddSingleton<IInferenceBackend>(sp => sp.GetRequiredService<ReloadableInferenceBackend>());
 
-        // Consumer 2 — memory: apply the same provider to memoryd once it is healthy.
-        services.AddHostedService<Mem0Configurator>();
+        // Consumer 2 — memory: apply the same provider to memoryd once it is healthy. Registered
+        // as a resolvable singleton (not just a hosted service) so ProviderReloader can re-invoke
+        // ConfigureAsync after the user changes their provider.
+        services.AddSingleton<Mem0Configurator>();
+        services.AddHostedService(sp => sp.GetRequiredService<Mem0Configurator>());
+
+        // Re-applies a runtime provider change to both consumers above, closing the startup-only
+        // wiring gap that otherwise leaves onboarding inert until the next launch.
+        services.AddSingleton<IProviderReloader, ProviderReloader>();
 
         return services;
     }
 
-    private static IInferenceBackend BuildInferenceBackend(IServiceProvider services)
+    /// <summary>Build the capture backend from the current <see cref="ProviderOptions"/>, falling
+    /// back to a no-op <see cref="NullInferenceBackend"/> (logging why) when nothing is configured
+    /// yet. Shared by startup registration and <see cref="ProviderReloader"/> so both resolve the
+    /// provider identically.</summary>
+    internal static IInferenceBackend BuildInferenceBackend(IServiceProvider services)
+        => BuildInferenceBackend(
+            services.GetRequiredService<ProviderOptions>(),
+            services.GetRequiredService<IProviderBackendFactory>(),
+            services.GetRequiredService<ILoggerFactory>());
+
+    internal static IInferenceBackend BuildInferenceBackend(
+        ProviderOptions options, IProviderBackendFactory factory, ILoggerFactory loggerFactory)
     {
-        ProviderOptions options = services.GetRequiredService<ProviderOptions>();
         try
         {
             ResolvedProvider resolved = ProviderSelector.Resolve(options);
-            return services.GetRequiredService<IProviderBackendFactory>().Create(resolved);
+            return factory.Create(resolved);
         }
         catch (ProviderConfigurationException ex)
         {
-            services.GetRequiredService<ILoggerFactory>()
+            loggerFactory
                 .CreateLogger(typeof(ProviderServiceCollectionExtensions).FullName!)
                 .LogWarning("No usable provider configured ({Reason}); capture analysis is disabled.", ex.Message);
-            return new NullInferenceBackend(services.GetRequiredService<ILogger<NullInferenceBackend>>());
+            return new NullInferenceBackend(loggerFactory.CreateLogger<NullInferenceBackend>());
         }
     }
 }

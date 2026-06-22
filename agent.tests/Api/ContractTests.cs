@@ -148,6 +148,7 @@ public sealed class ContractTests : IAsyncLifetime, IDisposable
         services.AddSingleton(_ => new LoreConfig(_configPath, new InMemoryCredentialStore()));
         services.AddSingleton(new ProviderOptions { Type = "anthropic", Model = "claude-haiku-4-5", ApiKeyRef = "lore/provider" });
         services.AddSingleton(new ProviderTester(new FakeBackendFactory(_ => StubBackend.Returns("OK"))));
+        services.AddSingleton<IProviderReloader>(new NoOpReloader());
         services.AddSingleton<IMemorydReadiness>(new StubMemorydReadiness(ready: true));
         services.AddSingleton(new LogTail(_logPath));
 
@@ -163,5 +164,12 @@ public sealed class ContractTests : IAsyncLifetime, IDisposable
     {
         ApiHost.UseOpenApi(app);
         app.MapLoreApi();
+    }
+
+    /// <summary>The contract suite only pokes route shapes, so the live provider reload is stubbed
+    /// out — its own behavior is covered by <see cref="ConfigEndpointsTests"/>.</summary>
+    private sealed class NoOpReloader : IProviderReloader
+    {
+        public Task ReloadAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 }

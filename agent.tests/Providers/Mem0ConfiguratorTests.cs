@@ -34,11 +34,13 @@ public sealed class Mem0ConfiguratorTests : IDisposable
     }
 
     private static Mem0Configurator Build(
-        MemorydClient client, ProviderOptions options, ICredentialStore store) =>
+        MemorydClient client, ProviderOptions options, ICredentialStore store,
+        EmbedderOptions? embedder = null) =>
         new(
             new ImmediateReadiness(),
             client,
             options,
+            embedder ?? new EmbedderOptions(),
             store,
             Options.Create(new MemorydOptions { DataDir = @"C:\Lore\data" }),
             NullLogger<Mem0Configurator>.Instance);
@@ -83,6 +85,38 @@ public sealed class Mem0ConfiguratorTests : IDisposable
         JsonElement provider = body.RootElement.GetProperty("provider");
         Assert.Equal("ollama", provider.GetProperty("type").GetString());
         Assert.False(provider.TryGetProperty("api_key", out _)); // null key omitted
+    }
+
+    [Fact]
+    public async Task Forwards_an_explicit_embedder_with_its_resolved_key()
+    {
+        (MemorydClient client, StubHttpMessageHandler handler) = Memoryd();
+        var store = new InMemoryCredentialStore();
+        store.Write("lore/provider", "anthropic-key");
+        store.Write("lore/embedder", "sk-embedder");
+        var options = new ProviderOptions
+        {
+            Type = "anthropic", Model = "claude-haiku-4-5", ApiKeyRef = "lore/provider",
+        };
+        // Anthropic has no embeddings; the explicit embedder block is the supported path.
+        var embedder = new EmbedderOptions
+        {
+            Type = "openai",
+            Model = "text-embedding-3-small",
+            BaseUrl = "https://api.openai.com/v1",
+            ApiKeyRef = "lore/embedder",
+            Dims = 1536,
+        };
+
+        using Mem0Configurator configurator = Build(client, options, store, embedder);
+        await configurator.ConfigureAsync(default);
+
+        using JsonDocument body = JsonDocument.Parse(handler.LastBody!);
+        JsonElement emb = body.RootElement.GetProperty("embedder");
+        Assert.Equal("openai", emb.GetProperty("type").GetString());
+        Assert.Equal("text-embedding-3-small", emb.GetProperty("model").GetString());
+        Assert.Equal("sk-embedder", emb.GetProperty("api_key").GetString()); // resolved from the store
+        Assert.Equal(1536, emb.GetProperty("dims").GetInt32());
     }
 
     [Fact]

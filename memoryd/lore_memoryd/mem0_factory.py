@@ -42,6 +42,9 @@ _EMBED_DIMS = {
     "mxbai-embed-large": 1024,
     "text-embedding-3-small": 1536,
     "text-embedding-3-large": 3072,
+    # Gemini's embeddings via its OpenAI-compatible endpoint (spec 013).
+    "text-embedding-004": 768,
+    "gemini-embedding-001": 768,
 }
 
 
@@ -81,10 +84,16 @@ def _embedder_config(emb: EmbedderConfig, provider: ProviderConfig) -> tuple[dic
             "config": {"model": emb.model, "ollama_base_url": emb.base_url or _DEFAULT_OLLAMA_URL},
         }, dims
     if emb.type == "openai" and emb.model:
-        api_key = provider.api_key if provider.type in ("openai", "openai_compatible") else None
+        # Prefer an embedder-specific key (explicit embedder on a different keyed host),
+        # else reuse the provider's key when the embedder shares its host (e.g. Gemini's
+        # OpenAI-compatible endpoint serves both chat and embeddings) — spec 013.
+        api_key = emb.api_key or (
+            provider.api_key if provider.type in ("openai", "openai_compatible") else None
+        )
         if not api_key:
             raise ValueError(
-                "OpenAI embedder requires an API key; set provider.api_key or use a local embedder"
+                "OpenAI embedder requires an API key; set embedder.api_key (or provider.api_key "
+                "when the embedder shares the provider's host), or use a local embedder"
             )
         dims = emb.dims or _EMBED_DIMS.get(emb.model, 1536)
         cfg: dict[str, Any] = {"model": emb.model, "api_key": api_key}

@@ -28,12 +28,16 @@ public sealed record MemoryProviderConfig(
     double Temperature = 0.0);
 
 /// <summary>How to embed memories. <c>follow_provider</c> lets memoryd pick the
-/// provider's own embeddings or a local default.</summary>
+/// provider's own embeddings; an explicit embedder names the type/model/endpoint (spec
+/// 013). <see cref="ApiKey"/> is set only when the embedder targets a different keyed
+/// host than the provider; left null it reuses the provider key. Sent only over
+/// <c>127.0.0.1</c>, never persisted or logged.</summary>
 public sealed record MemoryEmbedderConfig(
     string Type = "follow_provider",
     string? Model = null,
     Uri? BaseUrl = null,
-    int? Dims = null);
+    int? Dims = null,
+    string? ApiKey = null);
 
 /// <summary>Everything memoryd needs to (re)initialize its engine.</summary>
 public sealed record MemoryConfig(
