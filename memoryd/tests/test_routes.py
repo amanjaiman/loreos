@@ -7,6 +7,7 @@ from typing import Any, NoReturn
 from fastapi.testclient import TestClient
 
 from lore_memoryd.app import create_app
+from lore_memoryd.mem0_factory import EmbedderConfigError
 from lore_memoryd.models import ConfigRequest
 from lore_memoryd.routes import _redact
 
@@ -112,6 +113,26 @@ def test_configure_error_returns_generic_message(sample_config: dict[str, Any]) 
     body = resp.json()["detail"]
     assert secret not in body
     assert "provider config" in body
+
+
+def test_configure_surfaces_actionable_embedder_error(sample_config: dict[str, Any]) -> None:
+    # An EmbedderConfigError is actionable (the user must configure an embedder), so its
+    # message is surfaced — but still redacted of any secret (spec 013).
+    secret = "sk-shouldnotleak123"
+
+    def failing_factory(_cfg: ConfigRequest) -> NoReturn:
+        raise EmbedderConfigError(
+            f"Provider 'anthropic' has no first-party embeddings (key {secret}); "
+            "set embedder.type, embedder.model, embedder.base_url, embedder.dims."
+        )
+
+    error_client = TestClient(create_app(backend_factory=failing_factory))
+    resp = error_client.post("/config", json=sample_config)
+    assert resp.status_code == 400
+    body = resp.json()["detail"]
+    assert "no first-party embeddings" in body  # actionable guidance surfaced
+    assert "embedder.type" in body
+    assert secret not in body  # still redacted
 
 
 def test_health_still_ok(client: TestClient) -> None:

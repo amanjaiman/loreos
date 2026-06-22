@@ -16,6 +16,13 @@ from mem0 import Memory
 
 from .models import ConfigRequest, EmbedderConfig, ProviderConfig
 
+
+class EmbedderConfigError(ValueError):
+    """An embedder cannot be resolved from the config — the user must fix something
+    actionable (configure an embedder, supply a key). Distinct from a runtime engine
+    failure so the /config handler can surface the (redacted) message instead of the
+    generic "check provider config and logs" (spec 013)."""
+
 # Host-controlled data dir override (spec 011 T005, self-hosted multi-device). Each
 # connecting agent sends its *own* local data_dir in /config; on a shared remote
 # memoryd that would let the last device to connect repoint the store (and a Windows
@@ -91,7 +98,7 @@ def _embedder_config(emb: EmbedderConfig, provider: ProviderConfig) -> tuple[dic
             provider.api_key if provider.type in ("openai", "openai_compatible") else None
         )
         if not api_key:
-            raise ValueError(
+            raise EmbedderConfigError(
                 "OpenAI embedder requires an API key; set embedder.api_key (or provider.api_key "
                 "when the embedder shares the provider's host), or use a local embedder"
             )
@@ -101,9 +108,9 @@ def _embedder_config(emb: EmbedderConfig, provider: ProviderConfig) -> tuple[dic
             cfg["openai_base_url"] = emb.base_url or provider.base_url
         return {"provider": "openai", "config": cfg}, dims
 
-    # follow_provider: use the provider's first-party embeddings when it has them
-    # (OpenAI-shaped), otherwise fall back to the validated local default so a
-    # chat-only key never incurs surprise embedding spend (acceptance criterion 4).
+    # follow_provider (spec 013): use first-party embeddings where the provider has them,
+    # use a self-hosted endpoint's own embeddings at *its* URL, and otherwise require an
+    # explicit embedder — never silently assume a local Ollama a cloud-only user doesn't run.
     if provider.type == "openai" and provider.api_key:
         model = "text-embedding-3-small"
         cfg = {"model": model, "api_key": provider.api_key}
@@ -111,28 +118,37 @@ def _embedder_config(emb: EmbedderConfig, provider: ProviderConfig) -> tuple[dic
             cfg["openai_base_url"] = provider.base_url
         return {"provider": "openai", "config": cfg}, _EMBED_DIMS[model]
 
-    # Local default (Ollama nomic-embed-text). Reuse the provider's own Ollama
-    # endpoint when the provider itself is Ollama.
-    ollama_url = (
-        provider.base_url
-        if provider.type == "ollama" and provider.base_url
-        else _DEFAULT_OLLAMA_URL
+    # A self-hosted endpoint (the bridge maps keyless openai_compatible to type 'ollama')
+    # serves its own embeddings — use them at the provider's own base_url, not localhost.
+    if provider.type == "ollama":
+        ollama_url = provider.base_url or _DEFAULT_OLLAMA_URL
+        return {
+            "provider": "ollama",
+            "config": {"model": _LOCAL_EMBED_MODEL, "ollama_base_url": ollama_url},
+        }, _LOCAL_EMBED_DIMS
+
+    # No first-party embeddings (Anthropic; chat-only OpenAI-compatible like OpenRouter/Groq)
+    # and no explicit embedder. Don't invent a local Ollama — tell the user exactly what to set.
+    raise EmbedderConfigError(
+        f"Provider '{provider.type}' has no first-party embeddings and no embedder is "
+        "configured. Set an explicit embedder: embedder.type (openai or ollama), "
+        "embedder.model, embedder.base_url, and embedder.dims (point it at an "
+        "OpenAI-compatible or Ollama embeddings endpoint you can reach)."
     )
-    return {
-        "provider": "ollama",
-        "config": {"model": _LOCAL_EMBED_MODEL, "ollama_base_url": ollama_url},
-    }, _LOCAL_EMBED_DIMS
 
 
 def build_mem0_config(cfg: ConfigRequest) -> dict[str, Any]:
     """Produce mem0's nested config dict from a Lore ConfigRequest."""
     data_dir = _resolve_data_dir(cfg)
+    # Validate the chat provider before the embedder so a provider-level problem (unknown
+    # type, missing key) surfaces ahead of any embedder guidance.
+    llm_block = _llm_config(cfg.provider)
     embedder_block, dims = _embedder_config(cfg.embedder, cfg.provider)
     return {
         # Never the global ~/.mem0 default: that leaks per-user "Last k Messages"
         # across instances and poisons extraction (spike T001 Finding 2).
         "history_db_path": str(data_dir / "history.db"),
-        "llm": _llm_config(cfg.provider),
+        "llm": llm_block,
         "embedder": embedder_block,
         "vector_store": {
             "provider": "qdrant",
