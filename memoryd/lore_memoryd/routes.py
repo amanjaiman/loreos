@@ -14,6 +14,7 @@ import re
 from fastapi import APIRouter, HTTPException, Request
 
 from .backend import MemoryBackend
+from .mem0_factory import EmbedderConfigError
 from .models import (
     AddRequest,
     AddResponse,
@@ -60,6 +61,12 @@ def configure(request: Request, body: ConfigRequest) -> ConfigResponse:
                 close()
     try:
         request.app.state.backend = request.app.state.backend_factory(body)
+    except EmbedderConfigError as exc:
+        # An actionable misconfiguration (e.g. a provider with no embeddings and no embedder
+        # configured): surface the redacted guidance so the user can fix it (spec 013).
+        message = _redact(str(exc))
+        logger.error("embedder configuration error: %s", message)
+        raise HTTPException(status_code=400, detail=message) from exc
     except Exception as exc:
         logger.error("failed to initialize memory engine: %s", _redact(str(exc)))
         raise HTTPException(

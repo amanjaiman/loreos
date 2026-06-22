@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from lore_memoryd.mem0_factory import build_mem0_config
+from lore_memoryd.mem0_factory import EmbedderConfigError, build_mem0_config
 from lore_memoryd.models import ConfigRequest
 
 
@@ -41,13 +41,21 @@ def test_data_dir_env_override_wins_over_request(monkeypatch: pytest.MonkeyPatch
     assert cfg["vector_store"]["config"]["path"].replace("\\", "/").endswith("/srv/lore/qdrant")
 
 
-def test_follow_provider_uses_local_embedder_default() -> None:
-    # A chat-only provider with no embeddings must still get a working embedder
-    # locally — no surprise embedding spend (acceptance criterion 4).
-    cfg = build_mem0_config(_cfg(type="anthropic", model="claude-haiku-4-5", api_key="sk-test"))
-    assert cfg["llm"]["provider"] == "anthropic"
+def test_follow_provider_without_embeddings_raises_actionable_error() -> None:
+    # A chat-only provider with no first-party embeddings and no explicit embedder must
+    # NOT silently assume a local Ollama (spec 013) — it raises an actionable error naming
+    # the embedder config to set.
+    with pytest.raises(EmbedderConfigError, match="no first-party embeddings"):
+        build_mem0_config(_cfg(type="anthropic", model="claude-haiku-4-5", api_key="sk-test"))
+
+
+def test_self_hosted_ollama_embeds_at_its_own_base_url() -> None:
+    # A self-hosted endpoint (keyless openai_compatible -> type 'ollama') serves its own
+    # embeddings at *its* URL, never an implicit localhost (spec 013).
+    cfg = build_mem0_config(_cfg(type="ollama", model="qwen2.5:7b", base_url="http://nas:11434"))
     assert cfg["embedder"]["provider"] == "ollama"
     assert cfg["embedder"]["config"]["model"] == "nomic-embed-text"
+    assert cfg["embedder"]["config"]["ollama_base_url"] == "http://nas:11434"
     assert cfg["vector_store"]["config"]["embedding_model_dims"] == 768
 
 
@@ -75,9 +83,10 @@ def test_follow_provider_uses_openai_first_party_embeddings() -> None:
     assert result["vector_store"]["config"]["embedding_model_dims"] == 1536
 
 
-def test_follow_provider_openai_compatible_uses_local_embedder() -> None:
-    # openai_compatible endpoints (Groq, Mistral, local proxies) cannot be assumed to
-    # expose text-embedding-3-small — fall back to the local nomic-embed-text default.
+def test_follow_provider_openai_compatible_without_embedder_raises() -> None:
+    # Keyed openai_compatible endpoints (Groq/OpenRouter) cannot be assumed to expose
+    # embeddings, and their embed model id is unguessable — require an explicit embedder
+    # rather than silently falling back to a local Ollama (spec 013).
     cfg = ConfigRequest.model_validate(
         {
             "provider": {
@@ -91,10 +100,8 @@ def test_follow_provider_openai_compatible_uses_local_embedder() -> None:
             "collection_name": "lore",
         }
     )
-    result = build_mem0_config(cfg)
-    assert result["embedder"]["provider"] == "ollama"
-    assert result["embedder"]["config"]["model"] == "nomic-embed-text"
-    assert result["vector_store"]["config"]["embedding_model_dims"] == 768
+    with pytest.raises(EmbedderConfigError, match="no first-party embeddings"):
+        build_mem0_config(cfg)
 
 
 def test_explicit_embedder_uses_its_own_api_key_over_the_provider_key() -> None:
