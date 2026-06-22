@@ -49,9 +49,9 @@ _EMBED_DIMS = {
     "mxbai-embed-large": 1024,
     "text-embedding-3-small": 1536,
     "text-embedding-3-large": 3072,
-    # Gemini's embeddings via its OpenAI-compatible endpoint (spec 013).
-    "text-embedding-004": 768,
-    "gemini-embedding-001": 768,
+    # Gemini's embeddings via its OpenAI-compatible endpoint (spec 013; verified live —
+    # text-embedding-004 is not served on that surface, gemini-embedding-001 is, at 3072).
+    "gemini-embedding-001": 3072,
 }
 
 

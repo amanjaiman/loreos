@@ -59,10 +59,10 @@ public sealed class Mem0ProviderBridgeTests
         // both LLM and embeddings — no local Ollama required (spec 013).
         Assert.NotNull(config.Embedder);
         Assert.Equal("openai", config.Embedder!.Type);
-        Assert.Equal("text-embedding-004", config.Embedder.Model);
+        Assert.Equal("gemini-embedding-001", config.Embedder.Model);
         Assert.Equal(
             new Uri("https://generativelanguage.googleapis.com/v1beta/openai/"), config.Embedder.BaseUrl);
-        Assert.Equal(768, config.Embedder.Dims);
+        Assert.Equal(3072, config.Embedder.Dims);
         Assert.Null(config.Embedder.ApiKey); // reuses the provider key (same host)
     }
 
