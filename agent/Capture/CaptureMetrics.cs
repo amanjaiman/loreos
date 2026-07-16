@@ -5,6 +5,8 @@ namespace Lore.Agent.Capture;
 /// <summary>A point-in-time count of every capture decision the loop made.</summary>
 public sealed record CaptureMetricsSnapshot(
     long Captured,
+    long Observed,
+    long EpisodesClosed,
     long AnalysisEmpty,
     long MemoryErrors,
     IReadOnlyDictionary<FilterReason, long> Filtered,
@@ -25,10 +27,19 @@ public sealed class CaptureMetrics
     private readonly long[] _filtered = new long[Enum.GetValues<FilterReason>().Length];
     private readonly long[] _skipped = new long[Enum.GetValues<SkipReason>().Length];
     private long _captured;
+    private long _observed;
+    private long _episodesClosed;
     private long _analysisEmpty;
     private long _memoryErrors;
 
+    /// <summary>v1: a memory was stored.</summary>
     public void Captured() => Interlocked.Increment(ref _captured);
+
+    /// <summary>v2: a post-filter observation entered the episode stream.</summary>
+    public void Observed() => Interlocked.Increment(ref _observed);
+
+    /// <summary>v2: an episode closed and was persisted.</summary>
+    public void EpisodeClosed() => Interlocked.Increment(ref _episodesClosed);
 
     public void AnalysisEmpty() => Interlocked.Increment(ref _analysisEmpty);
 
@@ -41,6 +52,8 @@ public sealed class CaptureMetrics
     /// <summary>A consistent-enough snapshot of all counters for display.</summary>
     public CaptureMetricsSnapshot Snapshot() => new(
         Interlocked.Read(ref _captured),
+        Interlocked.Read(ref _observed),
+        Interlocked.Read(ref _episodesClosed),
         Interlocked.Read(ref _analysisEmpty),
         Interlocked.Read(ref _memoryErrors),
         ToMap<FilterReason>(_filtered),

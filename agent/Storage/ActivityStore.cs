@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Text.Json;
+using Lore.Agent.Capture.Episodes;
 using Microsoft.Data.Sqlite;
 
 namespace Lore.Agent.Storage;
@@ -100,6 +102,129 @@ public sealed class ActivityStore : IDisposable
         return results;
     }
 
+    /// <summary>Persist one closed episode (v2-001). List-valued fields are stored as
+    /// JSON arrays; the row is the auditable record of what the distiller will see.</summary>
+    public Task SaveEpisodeAsync(Episode episode, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(episode);
+        return ExecuteAsync(
+            command =>
+            {
+                command.CommandText =
+                    """
+                    INSERT INTO episodes (id, started_at, ended_at, executables, titles, samples, observation_count)
+                    VALUES ($id, $start, $end, $exes, $titles, $samples, $count);
+                    """;
+                command.Parameters.AddWithValue("$id", episode.Id);
+                command.Parameters.AddWithValue("$start", Iso(episode.StartedAt));
+                command.Parameters.AddWithValue("$end", Iso(episode.EndedAt));
+                command.Parameters.AddWithValue("$exes", JsonSerializer.Serialize(episode.Executables));
+                command.Parameters.AddWithValue("$titles", JsonSerializer.Serialize(episode.Titles));
+                command.Parameters.AddWithValue("$samples", JsonSerializer.Serialize(episode.Samples));
+                command.Parameters.AddWithValue("$count", episode.ObservationCount);
+            },
+            cancellationToken);
+    }
+
+    /// <summary>The most recent episodes, newest first.</summary>
+    public async Task<IReadOnlyList<Episode>> GetRecentEpisodesAsync(
+        int limit = 50, CancellationToken cancellationToken = default)
+    {
+        var results = new List<Episode>();
+        await ReadAsync(
+            command => command.CommandText =
+                """
+                SELECT id, started_at, ended_at, executables, titles, samples, observation_count
+                FROM episodes ORDER BY ended_at DESC LIMIT $limit;
+                """,
+            limit,
+            reader => results.Add(new Episode(
+                reader.GetString(0),
+                ParseAt(reader.GetString(1)),
+                ParseAt(reader.GetString(2)),
+                JsonSerializer.Deserialize<List<string>>(reader.GetString(3)) ?? [],
+                JsonSerializer.Deserialize<List<string>>(reader.GetString(4)) ?? [],
+                JsonSerializer.Deserialize<List<string>>(reader.GetString(5)) ?? [],
+                reader.GetInt32(6))),
+            cancellationToken).ConfigureAwait(false);
+        return results;
+    }
+
+    /// <summary>One episode by id, or <c>null</c> — provenance lookups from the library.</summary>
+    public async Task<Episode?> GetEpisodeAsync(string id, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(id);
+        Episode? found = null;
+        await ReadAsync(
+            command =>
+            {
+                command.CommandText =
+                    """
+                    SELECT id, started_at, ended_at, executables, titles, samples, observation_count
+                    FROM episodes WHERE id = $id LIMIT $limit;
+                    """;
+                command.Parameters.AddWithValue("$id", id);
+            },
+            1,
+            reader => found = new Episode(
+                reader.GetString(0),
+                ParseAt(reader.GetString(1)),
+                ParseAt(reader.GetString(2)),
+                JsonSerializer.Deserialize<List<string>>(reader.GetString(3)) ?? [],
+                JsonSerializer.Deserialize<List<string>>(reader.GetString(4)) ?? [],
+                JsonSerializer.Deserialize<List<string>>(reader.GetString(5)) ?? [],
+                reader.GetInt32(6)),
+            cancellationToken).ConfigureAwait(false);
+        return found;
+    }
+
+    /// <summary>Append one decision-trail row (v2-001).</summary>
+    public Task LogDecisionAsync(DecisionEntry entry, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        return ExecuteAsync(
+            command =>
+            {
+                command.CommandText =
+                    """
+                    INSERT INTO decisions (at, episode_id, action, reason, statement, kind, memory_id)
+                    VALUES ($at, $episode, $action, $reason, $statement, $kind, $memory);
+                    """;
+                command.Parameters.AddWithValue("$at", Iso(entry.At));
+                command.Parameters.AddWithValue("$episode", entry.EpisodeId);
+                command.Parameters.AddWithValue("$action", entry.Action);
+                command.Parameters.AddWithValue("$reason", entry.Reason);
+                command.Parameters.AddWithValue("$statement", entry.Statement);
+                command.Parameters.AddWithValue("$kind", entry.Kind);
+                command.Parameters.AddWithValue("$memory", entry.MemoryId);
+            },
+            cancellationToken);
+    }
+
+    /// <summary>The most recent decision-trail rows, newest first.</summary>
+    public async Task<IReadOnlyList<DecisionEntry>> GetRecentDecisionsAsync(
+        int limit = 100, CancellationToken cancellationToken = default)
+    {
+        var results = new List<DecisionEntry>();
+        await ReadAsync(
+            command => command.CommandText =
+                """
+                SELECT at, episode_id, action, reason, statement, kind, memory_id
+                FROM decisions ORDER BY id DESC LIMIT $limit;
+                """,
+            limit,
+            reader => results.Add(new DecisionEntry(
+                ParseAt(reader.GetString(0)),
+                reader.GetString(1),
+                reader.GetString(2),
+                reader.GetString(3),
+                reader.GetString(4),
+                reader.GetString(5),
+                reader.GetString(6))),
+            cancellationToken).ConfigureAwait(false);
+        return results;
+    }
+
     /// <summary>The most recent raw-capture rows, newest first.</summary>
     public async Task<IReadOnlyList<RawCaptureEntry>> GetRecentRawCapturesAsync(
         int limit = 50, CancellationToken cancellationToken = default)
@@ -153,6 +278,25 @@ public sealed class ActivityStore : IDisposable
                 content_type TEXT NOT NULL,
                 text_length INTEGER NOT NULL,
                 text TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS episodes (
+                id TEXT PRIMARY KEY,
+                started_at TEXT NOT NULL,
+                ended_at TEXT NOT NULL,
+                executables TEXT NOT NULL,
+                titles TEXT NOT NULL,
+                samples TEXT NOT NULL,
+                observation_count INTEGER NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS decisions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                at TEXT NOT NULL,
+                episode_id TEXT NOT NULL,
+                action TEXT NOT NULL,
+                reason TEXT NOT NULL,
+                statement TEXT NOT NULL,
+                kind TEXT NOT NULL,
+                memory_id TEXT NOT NULL
             );
             """;
         command.ExecuteNonQuery();

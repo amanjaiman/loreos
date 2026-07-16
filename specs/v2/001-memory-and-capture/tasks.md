@@ -22,11 +22,12 @@
   `MemorydClient` implements; sentinel/expiry helpers; unit tests incl.
   round-trip and non-null-keys invariant.
 
-- [ ] **T004 — Agent: episode segmentation + stores.** `EpisodeBuilder` (pure
-  logic: continuity/close rules from plan, config thresholds),
-  `Episode`/`EpisodeStore` + `decisions` table in the local SQLite,
-  representative-sample selection; wire into the capture loop behind
-  `capture.pipeline: "v2"` (flag off → old path untouched). Unit tests on
+- [x] **T004 — Agent: episode segmentation + stores.** `EpisodeBuilder` (pure
+  logic: continuity/close rules from plan, `capture.episodes` config
+  thresholds), `Episode` + `episodes`/`decisions` tables in the existing
+  `ActivityStore`, representative-sample selection; wired into the capture loop
+  behind `capture.pipeline: "v2"` (flag off → old path untouched) with an
+  `IEpisodeProcessor` seam (null placeholder until T005/T006). Unit tests on
   recorded observation traces; flush-on-shutdown test.
 
 - [ ] **T005 — Agent: skeptical distiller.** `prompts/distill.txt` (few-shot per
