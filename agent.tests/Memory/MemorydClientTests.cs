@@ -187,6 +187,79 @@ public sealed class MemorydClientTests : IDisposable
     }
 
     [Fact]
+    public async Task UpdateAsync_sends_metadata_patch_and_omits_absent_text()
+    {
+        (MemorydClient client, StubHttpMessageHandler handler) = Build(
+            _ => (HttpStatusCode.OK, """{"id":"m1","memory":"unchanged"}"""));
+
+        await client.UpdateAsync(
+            "m1", metadataPatch: new Dictionary<string, object?> { ["status"] = "archived" });
+
+        JsonElement body = Body(handler);
+        Assert.Equal("archived", body.GetProperty("metadata").GetProperty("status").GetString());
+        Assert.False(body.TryGetProperty("text", out _)); // null text omitted, never sent
+    }
+
+    [Fact]
+    public async Task UpdateAsync_rejects_patch_with_nothing_to_change()
+    {
+        (MemorydClient client, _) = Build(_ => (HttpStatusCode.OK, "{}"));
+        await Assert.ThrowsAsync<ArgumentException>(() => client.UpdateAsync("m1"));
+    }
+
+    [Fact]
+    public async Task UpdateAsync_rejects_empty_text()
+    {
+        (MemorydClient client, _) = Build(_ => (HttpStatusCode.OK, "{}"));
+        await Assert.ThrowsAsync<ArgumentException>(() => client.UpdateAsync("m1", ""));
+    }
+
+    [Fact]
+    public async Task SearchAsync_sends_filters_in_body()
+    {
+        (MemorydClient client, StubHttpMessageHandler handler) = Build(
+            _ => (HttpStatusCode.OK, """{"results":[]}"""));
+
+        await client.SearchAsync(
+            "travel ideas", "u1", 5, MemoryFilters.ActiveUnexpired(1_800_000_000));
+
+        JsonElement filters = Body(handler).GetProperty("filters");
+        Assert.Equal("active", filters.GetProperty("status").GetString());
+        Assert.Equal(1_800_000_000, filters.GetProperty("expires_at").GetProperty("gt").GetInt64());
+    }
+
+    [Fact]
+    public async Task ListAsync_sends_filters_as_json_query_parameter()
+    {
+        (MemorydClient client, StubHttpMessageHandler handler) = Build(
+            _ => (HttpStatusCode.OK, """{"results":[]}"""));
+
+        await client.ListAsync("u1", 20, 0, new Dictionary<string, object?> { ["kind"] = "state" });
+
+        Assert.Equal("/memories", handler.LastUri!.AbsolutePath);
+        string decoded = Uri.UnescapeDataString(handler.LastUri.Query);
+        Assert.Contains("\"kind\":\"state\"", decoded, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task StoreAsync_serializes_typed_metadata_and_returns_single_result()
+    {
+        (MemorydClient client, StubHttpMessageHandler handler) = Build(
+            _ => (HttpStatusCode.OK, """{"results":[{"id":"m9","memory":"I visited France.","event":"ADD"}]}"""));
+
+        var metadata = new MemoryMetadata(
+            MemoryKinds.Experience, MemoryStatuses.Active, 0.9,
+            MemoryMetadata.FarFutureUnixSeconds, 1_799_000_000, MemoryUpdateReasons.Promoted);
+        AddedMemory added = await client.StoreAsync("I visited France.", metadata);
+
+        Assert.Equal("m9", added.Id);
+        JsonElement meta = Body(handler).GetProperty("metadata");
+        Assert.Equal("experience", meta.GetProperty("kind").GetString());
+        Assert.Equal(MemoryMetadata.FarFutureUnixSeconds, meta.GetProperty("expires_at").GetInt64());
+        Assert.Equal(1, meta.GetProperty("v").GetInt32());
+    }
+
+    [Fact]
     public async Task DeleteAsync_returns_true_on_success_and_false_on_404()
     {
         (MemorydClient ok, StubHttpMessageHandler handler) = Build(

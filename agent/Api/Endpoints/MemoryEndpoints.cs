@@ -54,7 +54,11 @@ public static class MemoryEndpoints
             }
 
             IReadOnlyList<MemoryRecord> hits = await service
-                .SearchAsync(request.Query, UserOr(request.UserId), NormalizeLimit(request.Limit, 10), ct)
+                .SearchAsync(
+                    request.Query,
+                    UserOr(request.UserId),
+                    NormalizeLimit(request.Limit, 10),
+                    cancellationToken: ct)
                 .ConfigureAwait(false);
             return Results.Json(new MemoryResults(hits.Select(MemoryDto.From).ToArray()), ResponseJson);
         });
@@ -88,7 +92,9 @@ public static class MemoryEndpoints
                 return Results.BadRequest(new ErrorResponse("text is required"));
             }
 
-            MemoryRecord? updated = await service.UpdateAsync(id, request.Text, ct).ConfigureAwait(false);
+            MemoryRecord? updated = await service
+                .UpdateAsync(id, request.Text, cancellationToken: ct)
+                .ConfigureAwait(false);
             return updated is null
                 ? NotFound(id)
                 : Results.Json(MemoryDto.From(updated), ResponseJson);
