@@ -225,6 +225,28 @@ public sealed class ActivityStore : IDisposable
         return count;
     }
 
+    /// <summary>Decision counts grouped by action at or after <paramref name="since"/> —
+    /// the capture-economy line (episodes seen → distilled → staged → promoted…).</summary>
+    public async Task<IReadOnlyDictionary<string, int>> GetDecisionCountsSinceAsync(
+        DateTimeOffset since, CancellationToken cancellationToken = default)
+    {
+        var counts = new Dictionary<string, int>(StringComparer.Ordinal);
+        await ReadAsync(
+            command =>
+            {
+                command.CommandText =
+                    """
+                    SELECT action, COUNT(*) FROM decisions
+                    WHERE at >= $since GROUP BY action LIMIT $limit;
+                    """;
+                command.Parameters.AddWithValue("$since", Iso(since));
+            },
+            1000,
+            reader => counts[reader.GetString(0)] = reader.GetInt32(1),
+            cancellationToken).ConfigureAwait(false);
+        return counts;
+    }
+
     /// <summary>The most recent decision-trail rows, newest first.</summary>
     public async Task<IReadOnlyList<DecisionEntry>> GetRecentDecisionsAsync(
         int limit = 100, CancellationToken cancellationToken = default)

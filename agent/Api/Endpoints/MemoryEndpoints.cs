@@ -32,14 +32,30 @@ public static class MemoryEndpoints
         RouteGroupBuilder memories = app.MapGroup("/memories");
 
         // List, paged over the full store (memoryd has no native cursor; a local personal
-        // store is small enough to page in the API).
+        // store is small enough to page in the API). kind/status filter the library view
+        // (v2-001): e.g. ?status=staged is the staging review, ?kind=state the health card.
         memories.MapGet("", async (
-            [FromServices] IMemoryService service, string? userId, int? limit, int? offset, CancellationToken ct) =>
+            [FromServices] IMemoryService service, string? userId, int? limit, int? offset,
+            string? kind, string? status, CancellationToken ct) =>
         {
             int take = NormalizeLimit(limit, fallback: 50);
             int skip = offset is > 0 ? offset.Value : 0;
-            IReadOnlyList<MemoryRecord> all = await service
-                .GetAllAsync(UserOr(userId), ct).ConfigureAwait(false);
+            if (kind is not null && !MemoryKinds.IsKnown(kind))
+            {
+                return Results.BadRequest(new ErrorResponse(
+                    $"unknown kind '{kind}'; valid: {string.Join(", ", MemoryKinds.All)}"));
+            }
+
+            if (status is not null && !MemoryStatuses.IsKnown(status))
+            {
+                return Results.BadRequest(new ErrorResponse(
+                    $"unknown status '{status}'; valid: staged, active, archived"));
+            }
+
+            IReadOnlyList<MemoryRecord> all = kind is null && status is null
+                ? await service.GetAllAsync(UserOr(userId), ct).ConfigureAwait(false)
+                : await ListAllFilteredAsync(service, UserOr(userId), kind, status, ct)
+                    .ConfigureAwait(false);
             IEnumerable<MemoryDto> page = all.Skip(skip).Take(take).Select(MemoryDto.From);
             return Results.Json(
                 new PagedMemories(page.ToArray(), all.Count, take, skip), ResponseJson);
@@ -53,13 +69,24 @@ public static class MemoryEndpoints
                 return Results.BadRequest(new ErrorResponse("query is required"));
             }
 
-            IReadOnlyList<MemoryRecord> hits = await service
-                .SearchAsync(
-                    request.Query,
-                    UserOr(request.UserId),
-                    NormalizeLimit(request.Limit, 10),
-                    cancellationToken: ct)
-                .ConfigureAwait(false);
+            IReadOnlyList<MemoryRecord> hits;
+            try
+            {
+                hits = await service
+                    .SearchAsync(
+                        request.Query,
+                        UserOr(request.UserId),
+                        NormalizeLimit(request.Limit, 10),
+                        request.FiltersAsObjects(),
+                        ct)
+                    .ConfigureAwait(false);
+            }
+            catch (MemorydException ex) when (ex.StatusCode == StatusCodes.Status400BadRequest)
+            {
+                // An unsupported filter shape — the store's guidance is the actionable part.
+                return Results.BadRequest(new ErrorResponse(ex.Body ?? "unsupported filters"));
+            }
+
             return Results.Json(new MemoryResults(hits.Select(MemoryDto.From).ToArray()), ResponseJson);
         });
 
@@ -85,15 +112,46 @@ public static class MemoryEndpoints
                 new AddedMemories(added.Select(AddedMemoryDto.From).ToArray()), ResponseJson, statusCode: StatusCodes.Status201Created);
         });
 
-        memories.MapPatch("/{id}", async (string id, UpdateRequest? request, [FromServices] IMemoryService service, CancellationToken ct) =>
+        // User authority (v2-001): any user patch outranks inferred evidence — the
+        // lifecycle engine may reinforce but never revise or archive it afterwards.
+        memories.MapPatch("/{id}", async (
+            string id, UpdateRequest? request, [FromServices] IMemoryService service,
+            CancellationToken ct) =>
         {
-            if (string.IsNullOrWhiteSpace(request?.Text))
+            bool hasText = !string.IsNullOrWhiteSpace(request?.Text);
+            if (request is null || (!hasText && request.Pinned is null && request.Kind is null))
             {
-                return Results.BadRequest(new ErrorResponse("text is required"));
+                return Results.BadRequest(new ErrorResponse("provide text, pinned, and/or kind"));
+            }
+
+            if (request.Kind is not null && !MemoryKinds.IsKnown(request.Kind))
+            {
+                return Results.BadRequest(new ErrorResponse(
+                    $"unknown kind '{request.Kind}'; valid: {string.Join(", ", MemoryKinds.All)}"));
+            }
+
+            var patch = new Dictionary<string, object?>
+            {
+                ["updated_reason"] = MemoryUpdateReasons.UserEdit,
+            };
+            if (hasText)
+            {
+                patch["user_edited"] = true;
+                patch["confidence"] = 1.0; // the user said so
+            }
+
+            if (request.Pinned is bool pinned)
+            {
+                patch["pinned"] = pinned;
+            }
+
+            if (request.Kind is not null)
+            {
+                patch["kind"] = request.Kind;
             }
 
             MemoryRecord? updated = await service
-                .UpdateAsync(id, request.Text, cancellationToken: ct)
+                .UpdateAsync(id, hasText ? request.Text : null, patch, ct)
                 .ConfigureAwait(false);
             return updated is null
                 ? NotFound(id)
@@ -111,6 +169,36 @@ public static class MemoryEndpoints
 
     private static string UserOr(string? userId) =>
         string.IsNullOrWhiteSpace(userId) ? DefaultUserId : userId;
+
+    // Page through the seam's filtered list until a short page — mirrors GetAllAsync's
+    // enumeration so filtered pages report an honest total at personal-store scale.
+    private static async Task<IReadOnlyList<MemoryRecord>> ListAllFilteredAsync(
+        IMemoryService service, string userId, string? kind, string? status, CancellationToken ct)
+    {
+        var filters = new Dictionary<string, object?>();
+        if (kind is not null)
+        {
+            filters["kind"] = kind;
+        }
+
+        if (status is not null)
+        {
+            filters["status"] = status;
+        }
+
+        const int PageSize = 500;
+        var all = new List<MemoryRecord>();
+        for (int offset = 0; ; offset += PageSize)
+        {
+            IReadOnlyList<MemoryRecord> page = await service
+                .ListAsync(userId, PageSize, offset, filters, ct).ConfigureAwait(false);
+            all.AddRange(page);
+            if (page.Count < PageSize)
+            {
+                return all;
+            }
+        }
+    }
 
     // A non-positive or absent limit falls back; an oversized one is clamped so a client can't
     // ask the store for an unbounded page.
@@ -173,9 +261,9 @@ public sealed record AddedMemories(
 public sealed record ErrorResponse(
     [property: JsonPropertyName("error")] string Error);
 
-/// <summary><c>POST /memories/search</c> body. <c>filters</c> is reserved: it is part of the
-/// contract surfaces pin to, but the memory seam does not yet apply it — a later spec wires it
-/// through without a breaking change.</summary>
+/// <summary><c>POST /memories/search</c> body. <c>filters</c> (v2-001) is the flat
+/// <c>field: value</c> / <c>field: {op: value}</c> shape the store supports; unsupported
+/// shapes come back as an actionable 400.</summary>
 public sealed record SearchRequest
 {
     [JsonPropertyName("query")]
@@ -189,6 +277,11 @@ public sealed record SearchRequest
 
     [JsonPropertyName("filters")]
     public IReadOnlyDictionary<string, JsonElement>? Filters { get; init; }
+
+    /// <summary>Box the JSON filters for the seam (a <see cref="JsonElement"/> serializes
+    /// back to its source JSON, so operator objects survive).</summary>
+    public IReadOnlyDictionary<string, object?>? FiltersAsObjects() =>
+        Filters?.ToDictionary(pair => pair.Key, pair => (object?)pair.Value);
 }
 
 /// <summary><c>POST /memories</c> body: an observation to remember, plus optional owner and
@@ -210,9 +303,17 @@ public sealed record AddRequest
         Metadata?.ToDictionary(pair => pair.Key, pair => (object?)pair.Value);
 }
 
-/// <summary><c>PATCH /memories/{id}</c> body: the replacement text.</summary>
+/// <summary><c>PATCH /memories/{id}</c> body (v2-001): any of the replacement text, a
+/// pin toggle, and a kind correction. Every field is user authority — the patch stamps
+/// <c>user_edit</c> and a text edit raises confidence to 1.0.</summary>
 public sealed record UpdateRequest
 {
     [JsonPropertyName("text")]
     public string? Text { get; init; }
+
+    [JsonPropertyName("pinned")]
+    public bool? Pinned { get; init; }
+
+    [JsonPropertyName("kind")]
+    public string? Kind { get; init; }
 }
