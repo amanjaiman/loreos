@@ -35,24 +35,28 @@ _ALLOWED_FILTER_OPS = frozenset(
 )
 
 
+class FilterValidationError(ValueError):
+    """A caller-supplied filter has a shape/operator the pinned mem0 rejects."""
+
+
 def validate_filters(filters: dict[str, Any] | None) -> None:
     """Reject filter shapes the pinned mem0 does not support, with guidance.
 
     Valid: a flat dict of ``field: value`` (equality) or ``field: {op: value}``
-    with ops from `_ALLOWED_FILTER_OPS`. Raises ``ValueError`` otherwise.
+    with ops from `_ALLOWED_FILTER_OPS`. Raises `FilterValidationError` otherwise.
     """
     if not filters:
         return
     for field, value in filters.items():
         if field in ("AND", "OR", "NOT"):
-            raise ValueError(
+            raise FilterValidationError(
                 f"unsupported filter {field!r}: the pinned mem0 takes a flat "
                 "{field: value} or {field: {op: value}} dict, not boolean trees"
             )
         if isinstance(value, dict):
             unknown = set(value) - _ALLOWED_FILTER_OPS
             if unknown:
-                raise ValueError(
+                raise FilterValidationError(
                     f"unsupported filter operator(s) for field {field!r}: "
                     f"{sorted(unknown)}; supported: {sorted(_ALLOWED_FILTER_OPS)}"
                 )
