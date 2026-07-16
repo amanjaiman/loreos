@@ -208,6 +208,13 @@ public sealed class MemorydClientTests : IDisposable
     }
 
     [Fact]
+    public async Task UpdateAsync_rejects_empty_text()
+    {
+        (MemorydClient client, _) = Build(_ => (HttpStatusCode.OK, "{}"));
+        await Assert.ThrowsAsync<ArgumentException>(() => client.UpdateAsync("m1", ""));
+    }
+
+    [Fact]
     public async Task SearchAsync_sends_filters_in_body()
     {
         (MemorydClient client, StubHttpMessageHandler handler) = Build(

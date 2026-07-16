@@ -125,6 +125,11 @@ public sealed class MemorydClient : IMemoryService
             throw new ArgumentException("provide text and/or metadataPatch to update");
         }
 
+        if (text is not null)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(text);
+        }
+
         using var request = new HttpRequestMessage(HttpMethod.Patch, Relative($"memories/{Uri.EscapeDataString(id)}"))
         {
             Content = JsonContent.Create(new UpdateRequestBody(text, metadataPatch), options: JsonOptions),
