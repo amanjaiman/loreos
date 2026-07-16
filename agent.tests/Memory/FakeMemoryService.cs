@@ -52,17 +52,69 @@ internal sealed class FakeMemoryService : IMemoryService
         string query,
         string userId = "default",
         int limit = 10,
+        IReadOnlyDictionary<string, object?>? filters = null,
         CancellationToken cancellationToken = default)
     {
         lock (_gate)
         {
             IReadOnlyList<MemoryRecord> hits = _records
                 .Where(record => record.Memory.Contains(query, StringComparison.OrdinalIgnoreCase))
+                .Where(record => Matches(record, filters))
                 .Take(limit)
                 .Select(record => record with { Score = 0.9 })
                 .ToArray();
             return Task.FromResult(hits);
         }
+    }
+
+    public Task<IReadOnlyList<MemoryRecord>> ListAsync(
+        string userId = "default",
+        int limit = 100,
+        int offset = 0,
+        IReadOnlyDictionary<string, object?>? filters = null,
+        CancellationToken cancellationToken = default)
+    {
+        lock (_gate)
+        {
+            IReadOnlyList<MemoryRecord> page = _records
+                .Where(record => Matches(record, filters))
+                .Skip(offset)
+                .Take(limit)
+                .ToArray();
+            return Task.FromResult(page);
+        }
+    }
+
+    // Equality-only filter support (a scalar value must equal the metadata entry);
+    // operator terms ({op: value}) are ignored — enough for API-layer tests.
+    private static bool Matches(MemoryRecord record, IReadOnlyDictionary<string, object?>? filters)
+    {
+        if (filters is null)
+        {
+            return true;
+        }
+
+        foreach ((string key, object? expected) in filters)
+        {
+            if (expected is IReadOnlyDictionary<string, object?>)
+            {
+                continue;
+            }
+
+            System.Text.Json.JsonElement? actual =
+                record.Metadata is not null && record.Metadata.TryGetValue(key, out System.Text.Json.JsonElement e)
+                    ? e
+                    : null;
+            string? actualText = actual?.ValueKind == System.Text.Json.JsonValueKind.String
+                ? actual.Value.GetString()
+                : actual?.ToString();
+            if (!string.Equals(actualText, expected?.ToString(), StringComparison.Ordinal))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public Task<IReadOnlyList<MemoryRecord>> GetRecentAsync(
@@ -96,7 +148,11 @@ internal sealed class FakeMemoryService : IMemoryService
         }
     }
 
-    public Task<MemoryRecord?> UpdateAsync(string id, string text, CancellationToken cancellationToken = default)
+    public Task<MemoryRecord?> UpdateAsync(
+        string id,
+        string? text = null,
+        IReadOnlyDictionary<string, object?>? metadataPatch = null,
+        CancellationToken cancellationToken = default)
     {
         lock (_gate)
         {
@@ -106,7 +162,28 @@ internal sealed class FakeMemoryService : IMemoryService
                 return Task.FromResult<MemoryRecord?>(null);
             }
 
-            MemoryRecord updated = _records[index] with { Memory = text, UpdatedAt = Now() };
+            MemoryRecord existing = _records[index];
+            // Mirror memoryd: merge the metadata patch; a text-only patch preserves it.
+            IReadOnlyDictionary<string, System.Text.Json.JsonElement>? metadata = existing.Metadata;
+            if (metadataPatch is not null)
+            {
+                var merged = existing.Metadata is null
+                    ? new Dictionary<string, System.Text.Json.JsonElement>()
+                    : new Dictionary<string, System.Text.Json.JsonElement>(existing.Metadata);
+                foreach ((string key, object? value) in metadataPatch)
+                {
+                    merged[key] = System.Text.Json.JsonSerializer.SerializeToElement(value);
+                }
+
+                metadata = merged;
+            }
+
+            MemoryRecord updated = existing with
+            {
+                Memory = text ?? existing.Memory,
+                Metadata = metadata,
+                UpdatedAt = Now(),
+            };
             _records[index] = updated;
             return Task.FromResult<MemoryRecord?>(updated);
         }

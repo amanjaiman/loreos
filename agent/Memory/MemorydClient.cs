@@ -63,20 +63,29 @@ public sealed class MemorydClient : IMemoryService
         string query,
         string userId = "default",
         int limit = 10,
+        IReadOnlyDictionary<string, object?>? filters = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(query);
-        var body = new SearchRequestBody(query, userId, limit);
+        var body = new SearchRequestBody(query, userId, limit, filters);
         Envelope<MemoryRecord> result = await PostForJsonAsync<SearchRequestBody, Envelope<MemoryRecord>>(
             "memories/search", body, "search", cancellationToken).ConfigureAwait(false);
         return result.Results ?? [];
     }
 
+    public Task<IReadOnlyList<MemoryRecord>> ListAsync(
+        string userId = "default",
+        int limit = 100,
+        int offset = 0,
+        IReadOnlyDictionary<string, object?>? filters = null,
+        CancellationToken cancellationToken = default) =>
+        ListAsync(userId, limit, offset, filters, "list", cancellationToken);
+
     public Task<IReadOnlyList<MemoryRecord>> GetRecentAsync(
         string userId = "default",
         int count = 20,
         CancellationToken cancellationToken = default) =>
-        ListAsync(userId, count, 0, "get_recent", cancellationToken);
+        ListAsync(userId, count, 0, null, "get_recent", cancellationToken);
 
     public async Task<IReadOnlyList<MemoryRecord>> GetAllAsync(
         string userId = "default",
@@ -88,7 +97,7 @@ public sealed class MemorydClient : IMemoryService
         for (int offset = 0; ; offset += _getAllPageSize)
         {
             IReadOnlyList<MemoryRecord> page = await ListAsync(
-                userId, _getAllPageSize, offset, "get_all", cancellationToken).ConfigureAwait(false);
+                userId, _getAllPageSize, offset, null, "get_all", cancellationToken).ConfigureAwait(false);
             all.AddRange(page);
             if (page.Count < _getAllPageSize)
             {
@@ -106,14 +115,19 @@ public sealed class MemorydClient : IMemoryService
 
     public async Task<MemoryRecord?> UpdateAsync(
         string id,
-        string text,
+        string? text = null,
+        IReadOnlyDictionary<string, object?>? metadataPatch = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(id);
-        ArgumentException.ThrowIfNullOrEmpty(text);
+        if (text is null && metadataPatch is null)
+        {
+            throw new ArgumentException("provide text and/or metadataPatch to update");
+        }
+
         using var request = new HttpRequestMessage(HttpMethod.Patch, Relative($"memories/{Uri.EscapeDataString(id)}"))
         {
-            Content = JsonContent.Create(new UpdateRequestBody(text), options: JsonOptions),
+            Content = JsonContent.Create(new UpdateRequestBody(text, metadataPatch), options: JsonOptions),
         };
         return await SendForRecordOrNullAsync(request, "update", cancellationToken).ConfigureAwait(false);
     }
@@ -136,10 +150,18 @@ public sealed class MemorydClient : IMemoryService
         string userId,
         int limit,
         int offset,
+        IReadOnlyDictionary<string, object?>? filters,
         string operation,
         CancellationToken cancellationToken)
     {
-        Uri uri = Relative($"memories?user_id={Uri.EscapeDataString(userId)}&limit={limit}&offset={offset}");
+        string query = $"memories?user_id={Uri.EscapeDataString(userId)}&limit={limit}&offset={offset}";
+        if (filters is not null && filters.Count > 0)
+        {
+            string filtersJson = JsonSerializer.Serialize(filters, JsonOptions);
+            query += $"&filters={Uri.EscapeDataString(filtersJson)}";
+        }
+
+        Uri uri = Relative(query);
         using var request = new HttpRequestMessage(HttpMethod.Get, uri);
         using HttpResponseMessage response = await _http.SendAsync(request, cancellationToken).ConfigureAwait(false);
         await EnsureSuccessAsync(response, operation, cancellationToken).ConfigureAwait(false);
@@ -211,7 +233,13 @@ public sealed class MemorydClient : IMemoryService
 
     private sealed record AddRequestBody(string Text, string UserId, IReadOnlyDictionary<string, object?>? Metadata);
 
-    private sealed record SearchRequestBody(string Query, string UserId, int Limit);
+    private sealed record SearchRequestBody(
+        string Query,
+        string UserId,
+        int Limit,
+        IReadOnlyDictionary<string, object?>? Filters);
 
-    private sealed record UpdateRequestBody(string Text);
+    private sealed record UpdateRequestBody(
+        string? Text,
+        IReadOnlyDictionary<string, object?>? Metadata);
 }

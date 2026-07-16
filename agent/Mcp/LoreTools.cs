@@ -54,7 +54,7 @@ public static class LoreTools
     {
         ArgumentNullException.ThrowIfNull(memory);
         IReadOnlyList<MemoryRecord> hits = await memory
-            .SearchAsync(query, UserId, NormalizeLimit(limit, 10), cancellationToken)
+            .SearchAsync(query, UserId, NormalizeLimit(limit, 10), cancellationToken: cancellationToken)
             .ConfigureAwait(false);
         return new ContextResult(hits.Select(MemoryHit.From).ToArray());
     }
@@ -182,7 +182,7 @@ public static class LoreTools
         ArgumentNullException.ThrowIfNull(memory);
 
         IReadOnlyList<MemoryRecord> matches = await memory
-            .SearchAsync(topic, UserId, 1, cancellationToken).ConfigureAwait(false);
+            .SearchAsync(topic, UserId, 1, cancellationToken: cancellationToken).ConfigureAwait(false);
 
         if (matches.Count == 0)
         {
@@ -196,7 +196,7 @@ public static class LoreTools
 
         MemoryRecord target = matches[0];
         MemoryRecord? updated = await memory
-            .UpdateAsync(target.Id, newInfo, cancellationToken).ConfigureAwait(false);
+            .UpdateAsync(target.Id, newInfo, cancellationToken: cancellationToken).ConfigureAwait(false);
         return updated is null
             ? new UpdateResult("not_found", target.Id, null, target.Memory)
             : new UpdateResult("updated", updated.Id, updated.Memory, target.Memory);
@@ -216,7 +216,7 @@ public static class LoreTools
         ArgumentNullException.ThrowIfNull(memory);
 
         IReadOnlyList<MemoryRecord> matches = await memory
-            .SearchAsync(topic, UserId, 5, cancellationToken).ConfigureAwait(false);
+            .SearchAsync(topic, UserId, 5, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (matches.Count == 0)
         {
             return new ForgetResult(false, null, null, 0);

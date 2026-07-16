@@ -69,7 +69,15 @@ public sealed class CaptureAgentTests
         }
 
         public Task<IReadOnlyList<MemoryRecord>> SearchAsync(
-            string query, string userId = "default", int limit = 10, CancellationToken cancellationToken = default) =>
+            string query, string userId = "default", int limit = 10,
+            IReadOnlyDictionary<string, object?>? filters = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<MemoryRecord>>([]);
+
+        public Task<IReadOnlyList<MemoryRecord>> ListAsync(
+            string userId = "default", int limit = 100, int offset = 0,
+            IReadOnlyDictionary<string, object?>? filters = null,
+            CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<MemoryRecord>>([]);
 
         public Task<IReadOnlyList<MemoryRecord>> GetRecentAsync(
@@ -83,7 +91,10 @@ public sealed class CaptureAgentTests
         public Task<MemoryRecord?> GetAsync(string id, CancellationToken cancellationToken = default) =>
             Task.FromResult<MemoryRecord?>(null);
 
-        public Task<MemoryRecord?> UpdateAsync(string id, string text, CancellationToken cancellationToken = default) =>
+        public Task<MemoryRecord?> UpdateAsync(
+            string id, string? text = null,
+            IReadOnlyDictionary<string, object?>? metadataPatch = null,
+            CancellationToken cancellationToken = default) =>
             Task.FromResult<MemoryRecord?>(null);
 
         public Task<bool> DeleteAsync(string id, CancellationToken cancellationToken = default) =>
