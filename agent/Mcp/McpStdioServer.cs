@@ -13,7 +13,7 @@ using Microsoft.Extensions.Options;
 namespace Lore.Agent.Mcp;
 
 /// <summary>The <c>--mcp</c> entrypoint (spec 006 T002): an stdio MCP server that reuses the
-/// agent's 002 memory DI graph and runs the seven <see cref="LoreTools"/> over stdio JSON-RPC.
+/// agent's 002 memory DI graph and runs the eight <see cref="LoreTools"/> over stdio JSON-RPC.
 ///
 /// <para>It deliberately builds a <b>plain generic host, never a <c>WebApplication</c></b>, so
 /// <b>no Kestrel/HTTP listener is opened</b> (constitution §3.3; acceptance criterion 3) — in
@@ -37,7 +37,7 @@ internal static class McpStdioServer
     }
 
     /// <summary>Compose the <c>--mcp</c> host. Separated from <see cref="RunAsync"/> so a test can
-    /// assert what it wires — the seven tools present and, crucially, no HTTP server registered
+    /// assert what it wires — the eight tools present and, crucially, no HTTP server registered
     /// (acceptance criterion 3) — without starting memoryd.</summary>
     public static IHost BuildHost(string[] args)
     {
@@ -78,7 +78,15 @@ internal static class McpStdioServer
         // IInferenceBackend is the only one — exactly what the tool resolves.
         builder.Services.AddProviderLayer(builder.Configuration);
 
-        // The MCP server and the seven tools, over stdio.
+        // Recall (v2-001): the every-turn tool's service. TimeProvider is normally
+        // registered by the capture pipeline, which --mcp deliberately does not run.
+        builder.Services.AddSingleton(TimeProvider.System);
+        builder.Services.AddSingleton(
+            builder.Configuration.GetSection("recall").Get<Recall.RecallOptions>()
+                ?? new Recall.RecallOptions());
+        builder.Services.AddTransient<Recall.RecallService>();
+
+        // The MCP server and the eight tools, over stdio.
         builder.Services
             .AddMcpServer()
             .WithStdioServerTransport()

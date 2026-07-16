@@ -6,14 +6,15 @@ using ModelContextProtocol.Server;
 
 namespace Lore.Agent.Tests.Mcp;
 
-/// <summary>Coverage for the <c>--mcp</c> stdio host (spec 006 T002). Asserts what
-/// <see cref="McpStdioServer.BuildHost"/> wires without starting it (so no memoryd is spawned):
-/// the seven tools are present, and — the load-bearing guarantee — the host opens
-/// <b>no HTTP listener</b> (acceptance criterion 3).</summary>
+/// <summary>Coverage for the <c>--mcp</c> stdio host (spec 006 T002; v2-001 T008 adds
+/// <c>recall</c>). Asserts what <see cref="McpStdioServer.BuildHost"/> wires without
+/// starting it (so no memoryd is spawned): the eight tools are present, and — the
+/// load-bearing guarantee — the host opens <b>no HTTP listener</b> (criterion 3).</summary>
 public sealed class McpStdioServerTests
 {
     private static readonly string[] ExpectedTools =
     [
+        "recall",
         "get_context",
         "get_recent",
         "get_profile",
@@ -24,7 +25,7 @@ public sealed class McpStdioServerTests
     ];
 
     [Fact]
-    public void BuildHost_registers_all_seven_tools()
+    public void BuildHost_registers_all_eight_tools()
     {
         using IHost host = McpStdioServer.BuildHost([McpStdioServer.ModeFlag]);
 

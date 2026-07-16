@@ -42,7 +42,7 @@ One mem0 memory per fact. `memory` = the first-person statement. Metadata
 | `status` | `staged · active · archived` | recall filters `active`; `archived` covers superseded + user-deleted-by-revision; staging lives in mem0 (spike consequence) |
 | `confidence` | float 0–1 | promotion sets ≥0.6; reinforcement bumps by +0.1 capped 0.95; user edit/pin sets 1.0 |
 | `expires_at` | int epoch s | `state`: now + horizon (distiller suggests days, clamped 7–180; default 45). All other kinds: sentinel `4102444800`. Recall filters `gt now` |
-| `established_at` / `updated_reason` | int epoch s / string | provenance for UI; `updated_reason` ∈ `promoted·reinforced·revised·user_edit·confirmed·v1_archive` |
+| `established_at` / `updated_reason` | int epoch s / string | provenance for UI; `updated_reason` ∈ `promoted·reinforced·revised·user_edit·confirmed` |
 | `reinforced` | int | supporting-episode count beyond the first |
 | `episodes` | string[] | supporting episode ids (decision-trail join) |
 | `pinned` / `user_edited` | bool | user authority: when either is true the LifecycleEngine may only *reinforce*, never revise/archive; conflicts surface as a confirmation card instead |
@@ -57,37 +57,28 @@ footgun, spike rule 2); search validates the supported operator set and requires
 
 ## Episode segmentation (pure logic, no inference)
 
-`EpisodeBuilder` consumes post-filter observations (`CapturedObservation`) from
-the existing loop:
+`EpisodeBuilder` consumes post-filter `WindowObservation`s from the existing
+loop:
 
 - **Continuity:** an observation joins the open episode when same process, OR
   title Jaccard ≥ 0.4, OR text `TextSimilarity` ≥ 0.5 (existing util), AND gap
   since last observation < 3 min.
-- **Near-duplicates:** text Jaccard ≥ 0.9 vs the episode's latest observation is
-  counted but not kept as another sample.
 - **Close:** on 10 min inactivity, continuity break (new episode opens), 45 min
   max age, or 40-observation cap. Agent shutdown flushes open episodes.
-- **Episode record** (`episodes` table in the local activity store): id,
-  start/end, app set, title set, observation count, and up to 8 *representative*
-  text samples (first/last + most mutually dissimilar, each ≤ 600 chars) —
-  bounded distiller input, auditable in the app.
-- All thresholds live in `EpisodeOptions`, bound from `capture.episodes`
-  (config, not code) — spec risk item.
-- Closed episodes hand off through `IEpisodeProcessor` (the distiller/lifecycle
-  seam; null placeholder until T005/T006), and the loop writes a `closed`
-  decision row per episode regardless of processor outcome.
+- **Episode record** (SQLite `episodes` table): id, start/end, app set, title
+  set, and up to 8 *representative* text samples (first/last + most mutually
+  dissimilar, each ≤ 600 chars) — bounded distiller input, auditable in the app.
+- All thresholds live in `CaptureOptions` (config, not code) — spec risk item.
 
 ## Skeptical distillation (one inference call per closed episode)
 
-`DistillPrompt` (prompt in code like `AnalysisPrompt`, not a `prompts/*.txt`
-file — T005 decision): given the episode record, return
+`prompts/distill.txt`: given the episode record, return
 `{"facts": [{"statement", "kind", "confidence", "horizon_days"|null}], …}` or
 `{"facts": []}`. The prompt: durable facts *about the user* only; **an empty
 list is the expected answer** for routine activity (news, docs, ordinary
 coding); never infer identity from content merely viewed; statements
-first-person, self-contained, ≤ 200 chars; few-shot pairs: the wisdom-teeth
-state (with `horizon_days`) and Paris-booking experience positives and a
-news-reading negative. Parser
+first-person, self-contained, ≤ 200 chars; few-shot pairs including the
+wisdom-teeth and France positives and news/coding negatives. Parser
 (`DistillParser`) hardens like `ObservationParser` today: malformed output →
 episode marked `distill_failed`, loop never crashes. Cap: ≤ 3 facts accepted
 per episode (take highest-confidence).
@@ -102,7 +93,7 @@ per episode (take highest-confidence).
      extend `expires_at` for `state`, append episode id.
    - same fact vs **staged** → *promote* (budget permitting): `status: active`,
      `established_at`, confidence max(candidate, staged)+0.1.
-   - same topic vs **active** → *arbitrate*: one `ArbitrationPrompt` call →
+   - same topic vs **active** → *arbitrate*: one `prompts/arbitrate.txt` call →
      `duplicate | supersedes | coexist`. `supersedes` → archive old (+
      `supersedes` link on new active memory). Pinned/user-edited targets are
      never auto-archived — emit a `needs_confirmation` decision instead.
@@ -114,7 +105,7 @@ per episode (take highest-confidence).
    SQLite. At cap, candidates **stay staged** (deferred, not dropped) and the
    decision trail says so.
 4. **Every step writes a decision row**: episode id, candidate statement,
-   action (`closed·stored·reinforced·promoted·arbitrated·staged·deferred·
+   action (`stored·reinforced·promoted·arbitrated·staged·deferred·
    distill_failed·skipped_gate·filtered`), reason, memory id. This table *is*
    the spec's explainability guarantee and the app's Activity feed.
 
@@ -128,7 +119,7 @@ per episode (take highest-confidence).
    Kind weights (config): state 1.15, preference/identity/project 1.0,
    experience 0.9. Temporal: 1.0 for non-experience; experience
    `max(0.6, exp(-ageDays/365))`.
-3. Floor: drop blended < 0.47 (config; calibrated on the golden set — floor
+3. Floor: drop blended < 0.55 (config; calibrated on the golden set — floor
    errs toward empty, spec AC 6). Return ≤ k with statement, kind,
    established_at, score.
    *Calibration note (T007):* the defaults survived the golden corpus as-is
@@ -140,11 +131,11 @@ per episode (take highest-confidence).
 Zero generative calls; one embedding call (inside memoryd's search). Spike:
 36 ms warm end-to-end locally, so cloud-embedder p50 < 500 ms holds with room.
 A post-bulk warm-up query after batched writes absorbs the Qdrant settling
-spike the probe saw. **MCP tool** `recall` (new, deliberately unprefixed,
-alongside reworded existing tools): description explicitly instructs agents
-to call it with the user's message *on every turn* and to expect (and respect)
-empty results —
-this text is a reviewed deliverable, not an afterthought.
+spike the probe saw. **MCP tool** `recall` (new, alongside reworded existing
+tools; named without a `lore_` prefix to match the surface's existing
+unprefixed tool names): description explicitly instructs agents to call it
+with the user's message *on every turn* and to expect (and respect) empty
+results — this text is a reviewed deliverable, not an afterthought.
 
 ## API contracts (agent, `/api/v1`)
 
@@ -174,10 +165,11 @@ invitation, not launch scope.
 ## File layout
 
 ```
-agent/Capture/Episodes/{Episode,EpisodeBuilder,EpisodeOptions,IEpisodeProcessor}.cs (new; episodes/decisions tables live in agent/Storage/ActivityStore.cs)
+agent/Capture/Episodes/{Episode,EpisodeBuilder,EpisodeStore}.cs   (new)
 agent/Distill/{Distiller,DistillPrompt,DistillParser,CandidateFact}.cs (new)
 agent/Lifecycle/{LifecycleEngine,ArbitrationPrompt,PromotionBudget,DecisionTrail}.cs (new)
 agent/Recall/{RecallService,RecallScorer,RecallOptions}.cs        (new)
+agent/prompts/{distill.txt,arbitrate.txt}                         (new; analysis.txt retired)
 agent/Api/Endpoints/{Recall,Staging,Episodes}Endpoints.cs         (new; Memories extended)
 agent/Capture/{SmartGate*,CaptureAnalyzer,AnalysisPrompt,ObservationParser,…}.cs (retired with v2-002)
 memoryd/lore_memoryd/{backend,routes,models}.py                   (raw mode, merge-patch, filter validation)

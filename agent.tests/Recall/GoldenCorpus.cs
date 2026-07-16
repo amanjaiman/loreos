@@ -8,6 +8,12 @@ namespace Lore.Agent.Tests.Recall;
 /// a real embedder. These calibrate the blend/floor (spec AC 1/2/6) deterministically;
 /// true semantic matching is verified end-to-end by the T010 harness against a live
 /// embedder.</summary>
+/// <summary>A <see cref="TimeProvider"/> pinned to <see cref="GoldenCorpus.Now"/>.</summary>
+internal sealed class GoldenTimeProvider : TimeProvider
+{
+    public override DateTimeOffset GetUtcNow() => GoldenCorpus.Now;
+}
+
 internal static class GoldenCorpus
 {
     /// <summary>"Now" for every golden test: 2026-07-15T12:00:00Z.</summary>

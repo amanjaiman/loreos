@@ -98,7 +98,7 @@ internal static class Program
         // The generated OpenAPI contract surfaces pin to, served at /openapi.json (005 T007).
         ApiHost.AddOpenApi(builder.Services);
 
-        // The Streamable HTTP MCP transport (006 T003): the same seven tools the stdio server
+        // The Streamable HTTP MCP transport (006 T003): the same eight tools the stdio server
         // exposes, mounted on this loopback host for URL-based clients.
         builder.Services.AddLoreMcpHttp();
 

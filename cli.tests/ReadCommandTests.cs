@@ -41,6 +41,45 @@ public sealed class ReadCommandTests
         return (code, stdout.ToString(), stderr.ToString());
     }
 
+    private const string RecallBody =
+        "{\"results\":[{\"id\":\"m1\",\"statement\":\"I'm recovering from a wisdom tooth extraction.\","
+        + "\"kind\":\"state\",\"established_at\":1752321600,\"score\":0.57}]}";
+
+    [Fact]
+    public async Task Recall_renders_typed_facts_in_human_mode()
+    {
+        (int code, string stdout, _) = await Run(
+            HttpStatusCode.OK, RecallBody, json: false,
+            (c, o, ct) => RecallCommand.RunAsync(c, o, "should I order takeout", 5, null, ct));
+
+        Assert.Equal(ExitCodes.Success, code);
+        Assert.Contains("[state]", stdout, StringComparison.Ordinal);
+        Assert.Contains("wisdom tooth", stdout, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Recall_empty_result_is_success_not_an_error()
+    {
+        (int code, string stdout, _) = await Run(
+            HttpStatusCode.OK, "{\"results\":[]}", json: false,
+            (c, o, ct) => RecallCommand.RunAsync(c, o, "cook pasta", 5, null, ct));
+
+        Assert.Equal(ExitCodes.Success, code);
+        Assert.Contains("Nothing in memory", stdout, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Recall_json_mode_forwards_the_api_body()
+    {
+        (int code, string stdout, _) = await Run(
+            HttpStatusCode.OK, RecallBody, json: true,
+            (c, o, ct) => RecallCommand.RunAsync(c, o, "takeout", 5, "state,experience", ct));
+
+        Assert.Equal(ExitCodes.Success, code);
+        Assert.Contains("\"kind\"", stdout, StringComparison.Ordinal);
+        Assert.Contains("wisdom tooth", stdout, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task Search_renders_hits_in_human_mode()
     {

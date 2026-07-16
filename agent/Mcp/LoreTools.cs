@@ -5,11 +5,12 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Lore.Agent.Inference;
 using Lore.Agent.Memory;
+using Lore.Agent.Recall;
 using ModelContextProtocol.Server;
 
 namespace Lore.Agent.Mcp;
 
-/// <summary>The MCP tool surface (spec 006): the seven core tools every MCP client — Claude
+/// <summary>The MCP tool surface (spec 006): the eight core tools every MCP client — Claude
 /// Desktop, Claude Code, Cursor, generic HTTP clients — sees. This is a <b>thin shim</b>
 /// (constitution §8): each tool is a translation onto <see cref="IMemoryService"/> (the one
 /// memory seam, §3.2) with no business logic of its own. One implementation backs both
@@ -38,12 +39,48 @@ public static class LoreTools
     /// <summary>The category used when none is supplied or recorded.</summary>
     internal const string DefaultCategory = "general";
 
+    // ── recall: the v2-001 every-turn hot path. This description is a reviewed spec
+    // deliverable — it is what convinces a model to call the tool ambiently. ──────────
+    [McpServerTool(Name = "recall")]
+    [Description(
+        "Recall the user's durable memories relevant to their CURRENT message. Call this on "
+        + "every user message, passing the message (or a one-line summary of it) as the query, "
+        + "before you answer — the way a good assistant quietly remembers. It is fast and cheap "
+        + "(vector search only, no LLM behind it), and it usually returns nothing: an empty "
+        + "result means nothing in memory is relevant, so just proceed. When results come back, "
+        + "weave them into your answer naturally — e.g. a takeout question while the user is "
+        + "recovering from dental surgery should steer toward soft foods; a travel question "
+        + "should not re-suggest a country they already visited. Never recite the memory list "
+        + "or mention this tool. Returns at most k facts (kinds: identity, preference, state, "
+        + "experience, project), strongest first, each with when it was established.")]
+    public static async Task<RecallToolResult> Recall(
+        RecallService recall,
+        [Description("The user's current message, verbatim or condensed to its substance.")]
+        string query,
+        [Description("Maximum memories to return. Defaults to 5.")]
+        int k = 5,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(recall);
+        IReadOnlyList<RecallHit> hits = await recall
+            .RecallAsync(query, NormalizeLimit(k, 5), kinds: null, cancellationToken)
+            .ConfigureAwait(false);
+        return new RecallToolResult(
+            hits.Select(hit => new RecalledFact(
+                hit.Statement,
+                hit.Kind,
+                DateTimeOffset.FromUnixTimeSeconds(hit.EstablishedAt)
+                    .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                hit.Score)).ToArray());
+    }
+
     [McpServerTool(Name = "get_context")]
     [Description(
-        "Search the user's personal memory for context relevant to a query. Call this whenever "
-        + "you need to know what the user has been doing, prefers, or has told you before — for "
-        + "example at the start of a task, or when a request refers to something you have no "
-        + "context on. Returns the most relevant memories, most relevant first.")]
+        "Search the user's personal memory for context relevant to a query. Prefer `recall` for "
+        + "routine per-message memory checks; use get_context when you are explicitly digging — "
+        + "the user asked what Lore knows about a topic, or you need broader matches than "
+        + "recall's high-precision filter returns. Returns the most relevant memories, most "
+        + "relevant first.")]
     public static async Task<ContextResult> GetContext(
         IMemoryService memory,
         [Description("What to look for, in natural language (e.g. 'database the user is using').")]
@@ -271,6 +308,19 @@ public sealed record MemoryHit(
         return new MemoryHit(record.Id, record.Memory, record.Score, category);
     }
 }
+
+/// <summary>One fact returned by <c>recall</c> — the shape a model injects into its
+/// reasoning, so it carries the kind and when the fact was established.</summary>
+public sealed record RecalledFact(
+    [property: JsonPropertyName("statement")] string Statement,
+    [property: JsonPropertyName("kind")] string Kind,
+    [property: JsonPropertyName("established")] string Established,
+    [property: JsonPropertyName("score")] double Score);
+
+/// <summary>The result of <c>recall</c>: relevant facts, strongest first — and, very
+/// often, correctly none.</summary>
+public sealed record RecallToolResult(
+    [property: JsonPropertyName("facts")] IReadOnlyList<RecalledFact> Facts);
 
 /// <summary>The result of <c>get_context</c> / <c>get_recent</c>: matching memories.</summary>
 public sealed record ContextResult(

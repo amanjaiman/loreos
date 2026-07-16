@@ -13,6 +13,38 @@ namespace Lore.Agent.Tests.Mcp;
 public sealed class LoreToolsTests
 {
     [Fact]
+    public async Task Recall_returns_typed_facts_with_established_dates()
+    {
+        var recall = new Lore.Agent.Recall.RecallService(
+            new Recall.GoldenMemoryService(),
+            new Lore.Agent.Recall.RecallOptions(),
+            new Recall.GoldenTimeProvider());
+
+        RecallToolResult result = await LoreTools.Recall(
+            recall, "should I order takeout tonight");
+
+        RecalledFact fact = Assert.Single(result.Facts);
+        Assert.Equal("I'm recovering from a wisdom tooth extraction.", fact.Statement);
+        Assert.Equal("state", fact.Kind);
+        Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", fact.Established);
+        Assert.True(fact.Score > 0.5);
+    }
+
+    [Fact]
+    public async Task Recall_empty_is_a_normal_result()
+    {
+        var recall = new Lore.Agent.Recall.RecallService(
+            new Recall.GoldenMemoryService(),
+            new Lore.Agent.Recall.RecallOptions(),
+            new Recall.GoldenTimeProvider());
+
+        RecallToolResult result = await LoreTools.Recall(
+            recall, "how do I cook pasta carbonara");
+
+        Assert.Empty(result.Facts);
+    }
+
+    [Fact]
     public async Task GetContext_searches_and_returns_scored_hits()
     {
         var memory = new FakeMemoryService();
