@@ -10,13 +10,7 @@ import {
 // no URLs to honor, so a route is just an enum in memory — no history, no dependency.
 // Onboarding is gated outside this router (it owns the whole window when shown).
 
-export type Route =
-  | 'home'
-  | 'library'
-  | 'activity'
-  | 'connect'
-  | 'add'
-  | 'settings';
+export type Route = 'today' | 'memory' | 'activity' | 'settings';
 
 interface RouterValue {
   route: Route;
@@ -27,7 +21,7 @@ const RouterContext = createContext<RouterValue | null>(null);
 
 export function RouterProvider({
   children,
-  initial = 'home',
+  initial = 'today',
 }: {
   children: ReactNode;
   initial?: Route;

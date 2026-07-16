@@ -8,10 +8,11 @@ using Microsoft.Extensions.Options;
 
 namespace Lore.Agent.Capture;
 
-/// <summary>Registers the capture pipeline into the 002 host's DI graph (constitution §3.5:
+/// <summary>Registers the capture pipeline into the host's DI graph (constitution §3.5:
 /// constructor injection, no global state). Wires the Win32/UIA seams, the extraction
-/// composite, the trust-critical filter, the smart gate, analysis (against a placeholder
-/// backend until 004), the local activity store, metrics, and the loop itself.</summary>
+/// composite, the trust-critical filter, episode segmentation, the distiller + lifecycle
+/// engine (against a placeholder backend until the provider layer registers the real
+/// one), the local activity store, metrics, and the loop itself.</summary>
 public static class CaptureServiceCollectionExtensions
 {
     public static IServiceCollection AddCapturePipeline(
@@ -38,20 +39,14 @@ public static class CaptureServiceCollectionExtensions
         services.AddSingleton(new Blocklist(options.BlocklistApps, options.BlocklistKeywords));
         services.AddSingleton<SensitivityFilter>();
 
-        // Smart gate + bounded history.
-        services.AddSingleton(options.Gate);
-        services.AddSingleton(_ => new RecentCaptureGate(options.Gate.MaxCaptureHistory));
-        services.AddSingleton<SmartGate>();
-
         // Window monitor (dwell threshold from config).
         services.AddSingleton(sp => new WindowMonitor(
             sp.GetRequiredService<IForegroundWindowSource>(),
             sp.GetRequiredService<TimeProvider>(),
             options.DwellThreshold));
 
-        // Analysis — placeholder backend until spec 004 registers the real providers.
+        // Placeholder backend until the provider layer (004) registers the real one.
         services.AddSingleton<IInferenceBackend, NullInferenceBackend>();
-        services.AddSingleton<CaptureAnalyzer>();
 
         // Local operational store: activity.db next to the memory data dir (NOT mem0).
         services.AddSingleton(sp =>
@@ -61,8 +56,7 @@ public static class CaptureServiceCollectionExtensions
             return new ActivityStore(Path.Combine(memory.DataDir, "activity.db"));
         });
 
-        // v2 pipeline (behind capture.pipeline): episode segmentation feeding the
-        // skeptical distiller and the lifecycle engine.
+        // Episode segmentation feeding the skeptical distiller and the lifecycle engine.
         services.AddSingleton(options.Episodes);
         services.AddSingleton(options.Lifecycle);
         services.AddSingleton<Episodes.EpisodeBuilder>();

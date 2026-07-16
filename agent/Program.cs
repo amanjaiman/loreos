@@ -3,7 +3,6 @@ using Lore.Agent.Api;
 using Lore.Agent.Capture;
 using Lore.Agent.Config;
 using Lore.Agent.Hosting;
-using Lore.Agent.Import;
 using Lore.Agent.Mcp;
 using Lore.Agent.Memory;
 using Lore.Agent.Providers;
@@ -68,10 +67,6 @@ internal static class Program
         // memory (memoryd is reconfigured once healthy). Registered after the pipeline so
         // the real backend wins.
         builder.Services.AddProviderLayer(builder.Configuration);
-
-        // Document import (spec 009): the /import pipeline reuses the capture filter and the
-        // memory seam, so it is registered after both are in the graph.
-        builder.Services.AddDocumentImport(builder.Configuration);
 
         // The config seam for the /config endpoints (005 T004): reads/writes config.json and
         // relocates any inline key to the credential store registered by the provider layer.

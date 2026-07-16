@@ -5,15 +5,23 @@ import { useConfig } from '../../lib/hooks';
 import { About } from './About';
 import { Appearance } from './Appearance';
 import { CapturePrivacy } from './CapturePrivacy';
+import { Connections } from './Connections';
 import { Data } from './Data';
 import { ModelMemory } from './ModelMemory';
 import './settings.css';
 
-type SettingsTab = 'model' | 'capture' | 'appearance' | 'data' | 'about';
+type SettingsTab =
+  | 'model'
+  | 'capture'
+  | 'connections'
+  | 'appearance'
+  | 'data'
+  | 'about';
 
 const TABS = [
   { value: 'model', label: 'Model & memory' },
   { value: 'capture', label: 'Capture & privacy' },
+  { value: 'connections', label: 'Connections' },
   { value: 'appearance', label: 'Appearance' },
   { value: 'data', label: 'Data' },
   { value: 'about', label: 'About' },
@@ -41,6 +49,7 @@ export function Settings(): JSX.Element {
       {tab === 'capture' && (
         <CapturePrivacy config={config} onSaved={() => void refresh()} />
       )}
+      {tab === 'connections' && <Connections />}
       {tab === 'appearance' && <Appearance />}
       {tab === 'data' && <Data onReset={() => void refresh()} />}
       {tab === 'about' && <About />}

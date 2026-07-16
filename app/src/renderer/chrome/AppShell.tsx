@@ -1,34 +1,27 @@
 import { useConfig, useSystemStatus } from '../lib/hooks';
 import { useRouter } from '../lib/router';
 import { Activity } from '../views/Activity';
-import { Add } from '../views/Add';
-import { Connect } from '../views/Connect';
-import { Home } from '../views/Home';
-import { Library } from '../views/Library';
+import { Memory } from '../views/Memory';
 import { Settings } from '../views/settings/Settings';
+import { Today } from '../views/Today';
 import { Header, type AmbientStatus } from './Header';
-import { Sidebar } from './Sidebar';
 
 const VIEWS = {
-  home: Home,
-  library: Library,
+  today: Today,
+  memory: Memory,
   activity: Activity,
-  connect: Connect,
-  add: Add,
   settings: Settings,
 } as const;
 
 /**
- * Persistent chrome: the left sidebar nav and the sticky ambient header wrapping the
- * routed page. The renderer holds no business logic — the status shown here is a
- * placeholder until T005 polls GET /system/status through api.ts (T003).
+ * The v2-003 shell: one sticky header (wordmark · tabs · ambient status) over a single
+ * centered column. No sidebar, no multi-pane dashboards — the app is a quiet place the
+ * user visits, not a workspace they live in. The renderer holds no business logic.
  */
 export function AppShell(): JSX.Element {
   const { route } = useRouter();
   const View = VIEWS[route];
 
-  // Ambient status: offline if Lore can't be reached, else paused/listening from the
-  // capture toggle in config. Both come through api.ts (the renderer holds no logic).
   const { offline } = useSystemStatus();
   const { config } = useConfig();
   const status: AmbientStatus = offline
@@ -39,13 +32,10 @@ export function AppShell(): JSX.Element {
 
   return (
     <div className="app-shell">
-      <Sidebar />
-      <div className="app-main">
-        <Header route={route} status={status} />
-        <main className="app-content">
-          <View />
-        </main>
-      </div>
+      <Header status={status} />
+      <main className="app-content">
+        <View />
+      </main>
     </div>
   );
 }

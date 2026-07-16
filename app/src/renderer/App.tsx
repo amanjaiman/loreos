@@ -46,7 +46,7 @@ export function App(): JSX.Element {
     return <Onboarding onComplete={() => setPhase('ready')} />;
   }
   return (
-    <RouterProvider initial="home">
+    <RouterProvider initial="today">
       <AppShell />
     </RouterProvider>
   );

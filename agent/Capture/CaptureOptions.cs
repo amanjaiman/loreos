@@ -1,8 +1,8 @@
 namespace Lore.Agent.Capture;
 
-/// <summary>How the capture loop runs, bound from the <c>capture</c> config section. The
-/// gate thresholds live in the nested <see cref="Gate"/>; the blocklist is the user's own
-/// apps and keywords.</summary>
+/// <summary>How the capture loop runs, bound from the <c>capture</c> config section.
+/// Episode/lifecycle thresholds live in the nested options; the blocklist is the user's
+/// own apps and keywords.</summary>
 public sealed class CaptureOptions
 {
     /// <summary>Master switch. When false the loop idles and captures nothing.</summary>
@@ -16,14 +16,8 @@ public sealed class CaptureOptions
 
     /// <summary>The minimum time before the same unchanged window is re-examined — bounds
     /// re-extraction so a window held in focus isn't re-read on every poll. Content changes
-    /// within this window are caught at the next re-examination and judged by the gate.</summary>
+    /// within this window are caught at the next re-examination.</summary>
     public TimeSpan RecaptureInterval { get; init; } = TimeSpan.FromSeconds(30);
-
-    /// <summary>Which decision pipeline runs after the filter chain: <c>"v2"</c> (the
-    /// default since v2-001 T010) is episode segmentation + skeptical distillation;
-    /// <c>"v1"</c> is the retired dwell-gate-analyze path, kept only until v2-002's
-    /// retirement PR deletes it.</summary>
-    public string Pipeline { get; init; } = "v2";
 
     /// <summary>Episode segmentation thresholds (v2 pipeline).</summary>
     public Episodes.EpisodeOptions Episodes { get; init; } = new();
@@ -36,7 +30,4 @@ public sealed class CaptureOptions
 
     /// <summary>Keywords that drop a capture when found in a title or text.</summary>
     public IReadOnlyList<string> BlocklistKeywords { get; init; } = [];
-
-    /// <summary>Smart-gate thresholds.</summary>
-    public SmartGateOptions Gate { get; init; } = new();
 }

@@ -5,12 +5,20 @@ import { ProgressBar, ThemeSelector } from '../../design-system';
 import { type ProviderInput } from '../../lib/provider';
 import { ConnectModel } from './ConnectModel';
 import { Done } from './Done';
+import { MemoryModel } from './MemoryModel';
 import { Privacy } from './Privacy';
 import { TuneCapture } from './TuneCapture';
 import { Welcome } from './Welcome';
 import './onboarding.css';
 
-const STEP_LABELS = ['Welcome', 'Privacy', 'Your model', 'Capture', 'Done'];
+const STEP_LABELS = [
+  'Welcome',
+  'Privacy',
+  'Your model',
+  'Memory',
+  'Capture',
+  'Done',
+];
 
 // Sensible privacy defaults the user can edit. Apps match by executable name; keywords
 // are case-insensitive substrings (see the capture blocklist).
@@ -91,7 +99,8 @@ export function Onboarding({
               onBack={back}
             />
           )}
-          {step === 3 && (
+          {step === 3 && <MemoryModel onNext={next} onBack={back} />}
+          {step === 4 && (
             <TuneCapture
               apps={apps}
               keywords={keywords}
@@ -103,7 +112,7 @@ export function Onboarding({
               onBack={back}
             />
           )}
-          {step === 4 && (
+          {step === 5 && (
             <Done listening={listening} onFinish={finish} onBack={back} />
           )}
         </div>

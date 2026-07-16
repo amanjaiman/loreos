@@ -1,51 +1,21 @@
-/* Activity — transparency timeline. Rows show the window, decision, and reason; filtered
-   and skipped rows carry no content (the agent stores none). Layout over tokens. */
+/* Activity — the decision trail and episode feed. Layout over tokens only. */
+
+.act-loading {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-10) 0;
+}
 
 .act-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
   display: flex;
   flex-direction: column;
+  gap: var(--space-3);
 }
 
-.act-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-4);
-  padding: var(--space-3) 0;
-  border-bottom: var(--border-width) solid var(--border);
-}
-
-.act-row:last-child {
-  border-bottom: none;
-}
-
-.act-row__main {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.act-row__title {
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.act-row__obs {
-  color: var(--text-muted);
-  font-size: var(--text-sm);
-  line-height: var(--lh-normal);
-}
-
-.act-row__right {
-  flex-shrink: 0;
+.act-row__head {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-3);
 }
 
@@ -53,19 +23,61 @@
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   color: var(--text-subtle);
-  min-width: 64px;
-  text-align: right;
+  white-space: nowrap;
 }
 
-.act-empty {
-  display: flex;
-  justify-content: center;
-  padding: var(--space-10);
+.act-row__statement {
+  margin: var(--space-3) 0 0;
+  color: var(--text);
+  font-size: var(--text-base);
 }
 
-.act-empty__text {
-  margin: 0;
-  padding: var(--space-8) 0;
-  text-align: center;
+.act-row__reason {
+  margin: var(--space-2) 0 0;
   color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.act-episode {
+  cursor: pointer;
+}
+
+.act-episode__title {
+  color: var(--text);
+  font-weight: var(--fw-medium);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.act-episode__stats {
+  margin: var(--space-2) 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-subtle);
+}
+
+.act-episode__detail {
+  margin-top: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.act-episode__titles {
+  margin: 0;
+  padding-left: var(--space-5);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.act-episode__sample {
+  margin: 0;
+  padding: var(--space-3);
+  background: var(--surface-2);
+  border-radius: var(--radius-field);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
 }

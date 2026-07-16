@@ -1,9 +1,9 @@
 import { useState } from 'react';
 
-import { Badge, Card, Tabs } from '../design-system';
-import { CodeBlock } from '../components/CodeBlock';
-import { useSystemStatus } from '../lib/hooks';
-import './connect.css';
+import { Badge, Card, Tabs } from '../../design-system';
+import { CodeBlock } from '../../components/CodeBlock';
+import { useSystemStatus } from '../../lib/hooks';
+import './connections.css';
 
 type ClientTab = 'claude-desktop' | 'claude-code' | 'cursor' | 'cli';
 
@@ -38,12 +38,12 @@ const TABS = [
  * integration docs, plus the 007 one-line installers, and a live hint of whether Lore is
  * running (so the client will be able to connect). All read-only via api.ts.
  */
-export function Connect(): JSX.Element {
+export function Connections(): JSX.Element {
   const [tab, setTab] = useState<ClientTab>('claude-desktop');
   const { offline } = useSystemStatus();
 
   return (
-    <div className="app-page">
+    <div className="settings-connections">
       <div className="connect-status">
         <Badge variant={offline ? 'warning' : 'success'} dot>
           {offline ? "Lore isn't running" : 'Lore is running'}

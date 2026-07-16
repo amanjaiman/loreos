@@ -111,6 +111,109 @@ export interface ActivityFeed {
   items: ActivityEntry[];
 }
 
+// ---- v2-001: typed memories, episodes, decisions, staging ------------------------
+
+/** The five memory kinds (closed set) and lifecycle statuses. */
+export type MemoryKind =
+  | 'identity'
+  | 'preference'
+  | 'state'
+  | 'experience'
+  | 'project';
+export type MemoryStatus = 'staged' | 'active' | 'archived';
+
+export const MEMORY_KINDS: MemoryKind[] = [
+  'identity',
+  'preference',
+  'state',
+  'experience',
+  'project',
+];
+
+/** The v2-001 typed metadata parsed off a memory; null when the row is not v2-shaped. */
+export interface MemoryMeta {
+  kind: string;
+  status: string;
+  confidence: number;
+  expires_at: number;
+  established_at: number;
+  updated_reason: string;
+  reinforced: number;
+  episodes: string[];
+  pinned: boolean;
+  user_edited: boolean;
+  supersedes: string;
+}
+
+/** Parse a memory's metadata into the typed v2 shape (rows without `v` are v1 relics). */
+export function metaOf(memory: Memory): MemoryMeta | null {
+  const m = memory.metadata;
+  if (m === undefined || m['v'] === undefined) {
+    return null;
+  }
+  return {
+    kind: typeof m['kind'] === 'string' ? m['kind'] : '',
+    status: typeof m['status'] === 'string' ? m['status'] : '',
+    confidence: typeof m['confidence'] === 'number' ? m['confidence'] : 0,
+    expires_at: typeof m['expires_at'] === 'number' ? m['expires_at'] : 0,
+    established_at:
+      typeof m['established_at'] === 'number' ? m['established_at'] : 0,
+    updated_reason:
+      typeof m['updated_reason'] === 'string' ? m['updated_reason'] : '',
+    reinforced: typeof m['reinforced'] === 'number' ? m['reinforced'] : 0,
+    episodes: Array.isArray(m['episodes'])
+      ? m['episodes'].filter((e): e is string => typeof e === 'string')
+      : [],
+    pinned: m['pinned'] === true,
+    user_edited: m['user_edited'] === true,
+    supersedes: typeof m['supersedes'] === 'string' ? m['supersedes'] : '',
+  };
+}
+
+/** One episode: what the distiller saw (provenance for memories). */
+export interface Episode {
+  id: string;
+  started_at: string;
+  ended_at: string;
+  executables: string[];
+  titles: string[];
+  samples: string[];
+  observation_count: number;
+}
+
+export interface Episodes {
+  items: Episode[];
+}
+
+/** One decision-trail row — the Activity feed's unit. */
+export interface Decision {
+  at: string;
+  episode_id: string;
+  action: string; // closed | no_facts | distill_failed | staged | promoted | …
+  reason: string;
+  statement: string;
+  kind: string;
+  memory_id: string;
+}
+
+export interface Decisions {
+  items: Decision[];
+}
+
+/** Today's capture economy since UTC midnight, against the promotion budget. */
+export interface Economy {
+  decisions_today: Record<string, number>;
+  promoted_today: number;
+  daily_budget: number;
+}
+
+/** A user-authority patch: text/pin/kind (any subset). */
+export interface MemoryPatch {
+  text?: string;
+  pinned?: boolean;
+  kind?: MemoryKind;
+}
+
 /** Config is a free-form JSON document; known blocks are typed, the rest is open. */
 export interface LoreConfigShape {
   provider?: {
@@ -171,26 +274,6 @@ export interface MemoryExport {
   exported_at: string;
   count: number;
   memories: Memory[];
-}
-
-export interface ImportRequest {
-  path: string;
-  source?: string;
-}
-
-export interface ImportJob {
-  id: string;
-  document_id: string;
-  source: string;
-  status: string; // pending | running | completed | failed
-  progress: number;
-  total_chunks: number;
-  processed_chunks: number;
-  memories_created: number;
-  warning?: string;
-  error?: string;
-  created_at: string;
-  updated_at: string;
 }
 
 // ---- Transport ------------------------------------------------------------------
@@ -278,11 +361,15 @@ export const api = {
     limit?: number;
     offset?: number;
     userId?: string;
+    kind?: MemoryKind;
+    status?: MemoryStatus;
   }) =>
     getJson<PagedMemories>('/memories', {
       limit: params?.limit,
       offset: params?.offset,
       user_id: params?.userId,
+      kind: params?.kind,
+      status: params?.status,
     }),
   searchMemories: (request: SearchRequest) =>
     mutateJson<MemoryResults>('POST', '/memories/search', request),
@@ -290,13 +377,24 @@ export const api = {
     getJson<Memory>(`/memories/${encodeURIComponent(id)}`),
   addMemory: (request: AddRequest) =>
     mutateJson<AddedMemories>('POST', '/memories', request),
-  updateMemory: (id: string, text: string) =>
-    mutateJson<Memory>('PATCH', `/memories/${encodeURIComponent(id)}`, {
-      text,
-    }),
+  updateMemory: (id: string, patch: MemoryPatch) =>
+    mutateJson<Memory>('PATCH', `/memories/${encodeURIComponent(id)}`, patch),
   deleteMemory: async (id: string): Promise<void> => {
     await send(`/memories/${encodeURIComponent(id)}`, { method: 'DELETE' });
   },
+  confirmMemory: (id: string) =>
+    mutateJson<Memory>('POST', `/memories/${encodeURIComponent(id)}/confirm`),
+
+  // v2-001: staging curation, episodes, the decision trail, the day's economy
+  promoteStaged: (id: string) =>
+    mutateJson<Memory>('POST', `/staging/${encodeURIComponent(id)}/promote`),
+  dismissStaged: (id: string) =>
+    mutateJson<Memory>('POST', `/staging/${encodeURIComponent(id)}/dismiss`),
+  episodes: (limit?: number) => getJson<Episodes>('/episodes', { limit }),
+  getEpisode: (id: string) =>
+    getJson<Episode>(`/episodes/${encodeURIComponent(id)}`),
+  decisions: (limit?: number) => getJson<Decisions>('/decisions', { limit }),
+  economy: () => getJson<Economy>('/system/economy'),
 
   // Local telemetry
   recent: (limit?: number) => getJson<RecentCaptures>('/recent', { limit }),
@@ -323,11 +421,6 @@ export const api = {
     return response.text();
   },
 
-  // Import (009)
-  startImport: (request: ImportRequest) =>
-    mutateJson<ImportJob>('POST', '/import', request),
-  getImport: (id: string) =>
-    getJson<ImportJob>(`/import/${encodeURIComponent(id)}`),
 };
 
 export type LoreApi = typeof api;
