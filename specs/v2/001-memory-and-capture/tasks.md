@@ -30,13 +30,17 @@
   `IEpisodeProcessor` seam (null placeholder until T005/T006). Unit tests on
   recorded observation traces; flush-on-shutdown test.
 
-- [ ] **T005 — Agent: skeptical distiller.** `prompts/distill.txt` (few-shot per
-  plan), `Distiller` + `DistillParser` (malformed output → `distill_failed`
-  decision, never a crash), ≤ 3 facts/episode cap. Tests with mocked
-  `IInferenceBackend`: happy path, empty-is-normal, garbage output, cap.
+- [x] **T005 — Agent: skeptical distiller.** `DistillPrompt` (few-shot system
+  prompt in code, matching the `AnalysisPrompt` convention — deviation from the
+  original `prompts/distill.txt` sketch, recorded in plan.md), `Distiller` +
+  `DistillParser` (malformed output → `distill_failed` decision, never a
+  crash; null-vs-empty distinguishes unusable output from "nothing durable"),
+  ≤ 3 facts/episode cap. Tests with mocked `IInferenceBackend`: happy path,
+  empty-is-normal, garbage output, cap.
 
 - [ ] **T006 — Agent: lifecycle engine + budget.** Similarity-band routing
-  (reinforce/promote/arbitrate/stage), `prompts/arbitrate.txt`, high-signal
+  (reinforce/promote/arbitrate/stage), `ArbitrationPrompt` (in code, per the
+  T005 convention), high-signal
   fast path, pinned/user-edited protection (`needs_confirmation` decision),
   `PromotionBudget` (SQLite counter, defer-not-drop), full decision-trail
   writes. Exhaustive routing-table unit tests with mocked seams (AC 3/4/5/7).

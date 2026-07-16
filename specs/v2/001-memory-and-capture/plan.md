@@ -79,13 +79,15 @@ the existing loop:
 
 ## Skeptical distillation (one inference call per closed episode)
 
-`prompts/distill.txt`: given the episode record, return
+`DistillPrompt` (prompt in code like `AnalysisPrompt`, not a `prompts/*.txt`
+file — T005 decision): given the episode record, return
 `{"facts": [{"statement", "kind", "confidence", "horizon_days"|null}], …}` or
 `{"facts": []}`. The prompt: durable facts *about the user* only; **an empty
 list is the expected answer** for routine activity (news, docs, ordinary
 coding); never infer identity from content merely viewed; statements
-first-person, self-contained, ≤ 200 chars; few-shot pairs including the
-wisdom-teeth and France positives and news/coding negatives. Parser
+first-person, self-contained, ≤ 200 chars; few-shot pairs: the wisdom-teeth
+state (with `horizon_days`) and Paris-booking experience positives and a
+news-reading negative. Parser
 (`DistillParser`) hardens like `ObservationParser` today: malformed output →
 episode marked `distill_failed`, loop never crashes. Cap: ≤ 3 facts accepted
 per episode (take highest-confidence).
@@ -100,7 +102,7 @@ per episode (take highest-confidence).
      extend `expires_at` for `state`, append episode id.
    - same fact vs **staged** → *promote* (budget permitting): `status: active`,
      `established_at`, confidence max(candidate, staged)+0.1.
-   - same topic vs **active** → *arbitrate*: one `prompts/arbitrate.txt` call →
+   - same topic vs **active** → *arbitrate*: one `ArbitrationPrompt` call →
      `duplicate | supersedes | coexist`. `supersedes` → archive old (+
      `supersedes` link on new active memory). Pinned/user-edited targets are
      never auto-archived — emit a `needs_confirmation` decision instead.
@@ -171,7 +173,6 @@ agent/Capture/Episodes/{Episode,EpisodeBuilder,EpisodeOptions,IEpisodeProcessor}
 agent/Distill/{Distiller,DistillPrompt,DistillParser,CandidateFact}.cs (new)
 agent/Lifecycle/{LifecycleEngine,ArbitrationPrompt,PromotionBudget,DecisionTrail}.cs (new)
 agent/Recall/{RecallService,RecallScorer,RecallOptions}.cs        (new)
-agent/prompts/{distill.txt,arbitrate.txt}                         (new; analysis.txt retired)
 agent/Api/Endpoints/{Recall,Staging,Episodes}Endpoints.cs         (new; Memories extended)
 agent/Capture/{SmartGate*,CaptureAnalyzer,AnalysisPrompt,ObservationParser,…}.cs (retired with v2-002)
 memoryd/lore_memoryd/{backend,routes,models}.py                   (raw mode, merge-patch, filter validation)
