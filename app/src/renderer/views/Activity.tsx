@@ -1,136 +1,174 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-import { api, LoreOfflineError, type ActivityEntry } from '../api';
-import { Badge, Card, Spinner, Tabs, Tag, Tooltip } from '../design-system';
+import { api, LoreOfflineError, type Decision, type Episode } from '../api';
+import { Card, Spinner, Tabs, Tag } from '../design-system';
 import { formatRelative } from '../lib/format';
 import './activity.css';
 
-type TabValue = 'all' | 'Captured' | 'Skipped' | 'Filtered';
+type Feed = 'decisions' | 'episodes';
 
-const DECISION_VARIANT: Record<string, 'success' | 'neutral' | 'warning'> = {
-  Captured: 'success',
-  Skipped: 'neutral',
-  Filtered: 'warning',
+const ACTION_LABELS: Record<string, string> = {
+  closed: 'episode closed',
+  no_facts: 'nothing durable',
+  distill_failed: 'distillation failed',
+  route_failed: 'routing failed',
+  staged: 'staged',
+  deferred: 'deferred (budget)',
+  deferred_high_signal: 'deferred (budget)',
+  promoted: 'remembered',
+  reinforced: 'reinforced',
+  revised: 'revised',
+  needs_confirmation: 'needs your confirmation',
+  user_promoted: 'kept by you',
+  user_dismissed: 'dismissed by you',
 };
 
-function reasonLabel(entry: ActivityEntry): string {
-  if (entry.reason.length > 0) {
-    return entry.reason;
-  }
-  return entry.decision === 'Captured' ? 'Stored to memory' : entry.decision;
-}
-
 /**
- * Activity — the transparency timeline: what Lore saw and decided per window. Captured /
- * Skipped / Filtered with the reason. Filtered (and skipped) rows show *that* and *why*
- * only — the agent never stores their content, so there is nothing sensitive to reveal
- * (acceptance criterion 5, activity half). Captured rows show their distilled observation.
+ * Activity — the explainability surface (v2-001): the decision trail ("why does — or
+ * doesn't — Lore know X?") and the episodes the distiller actually saw. Read-only;
+ * trust is won here, not managed here.
  */
 export function Activity(): JSX.Element {
-  const [entries, setEntries] = useState<ActivityEntry[] | null>(null);
+  const [feed, setFeed] = useState<Feed>('decisions');
+  const [decisions, setDecisions] = useState<Decision[] | null>(null);
+  const [episodes, setEpisodes] = useState<Episode[] | null>(null);
   const [offline, setOffline] = useState(false);
-  const [tab, setTab] = useState<TabValue>('all');
 
-  useEffect(() => {
-    let alive = true;
-    void (async (): Promise<void> => {
-      try {
-        const feed = await api.activity(200);
-        if (alive) {
-          setEntries(feed.items);
-        }
-      } catch (e) {
-        if (alive) {
-          setOffline(e instanceof LoreOfflineError);
-          setEntries([]);
-        }
-      }
-    })();
-    return () => {
-      alive = false;
-    };
+  const load = useCallback(async (): Promise<void> => {
+    try {
+      const [d, e] = await Promise.all([api.decisions(200), api.episodes(50)]);
+      setDecisions(d.items);
+      setEpisodes(e.items);
+      setOffline(false);
+    } catch (err) {
+      setOffline(err instanceof LoreOfflineError);
+      setDecisions([]);
+      setEpisodes([]);
+    }
   }, []);
 
-  const counts = useMemo(() => {
-    const c = { all: 0, Captured: 0, Skipped: 0, Filtered: 0 };
-    for (const e of entries ?? []) {
-      c.all += 1;
-      if (
-        e.decision === 'Captured' ||
-        e.decision === 'Skipped' ||
-        e.decision === 'Filtered'
-      ) {
-        c[e.decision] += 1;
-      }
-    }
-    return c;
-  }, [entries]);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
-  const visible = useMemo(
-    () => (entries ?? []).filter((e) => tab === 'all' || e.decision === tab),
-    [entries, tab],
-  );
-
-  const tabs = [
-    { value: 'all', label: `All · ${counts.all}` },
-    { value: 'Captured', label: `Captured · ${counts.Captured}` },
-    { value: 'Skipped', label: `Skipped · ${counts.Skipped}` },
-    { value: 'Filtered', label: `Filtered · ${counts.Filtered}` },
-  ];
+  const loading = decisions === null || episodes === null;
 
   return (
     <div className="app-page">
-      <Tabs tabs={tabs} value={tab} onChange={(v) => setTab(v as TabValue)} />
+      <Tabs
+        tabs={[
+          { value: 'decisions', label: 'Decisions' },
+          { value: 'episodes', label: 'Episodes' },
+        ]}
+        value={feed}
+        onChange={(v) => setFeed(v as Feed)}
+      />
 
-      {entries === null ? (
-        <div className="act-empty">
+      {loading ? (
+        <div className="act-loading">
           <Spinner size={20} />
         </div>
       ) : offline ? (
-        <p className="act-empty__text">
-          Lore isn't running — the activity log is unavailable.
-        </p>
-      ) : visible.length === 0 ? (
-        <p className="act-empty__text">
-          {tab === 'all'
-            ? 'Nothing yet. As Lore watches, every decision shows up here.'
-            : `No ${tab.toLowerCase()} windows yet.`}
+        <p className="app-empty">Lore isn't running — no activity to show.</p>
+      ) : feed === 'decisions' ? (
+        decisions.length === 0 ? (
+          <p className="app-empty">
+            No decisions yet. As episodes close, every choice Lore makes —
+            remembered, staged, or passed over — is recorded here.
+          </p>
+        ) : (
+          <div className="act-list">
+            {decisions.map((d, i) => (
+              <DecisionRow key={i} decision={d} />
+            ))}
+          </div>
+        )
+      ) : episodes.length === 0 ? (
+        <p className="app-empty">
+          No episodes yet. An episode is a stretch of related activity; it
+          closes after a break and is summarized for the distiller.
         </p>
       ) : (
-        <Card>
-          <ul className="act-list">
-            {visible.map((entry, i) => (
-              <li key={`${entry.at}-${i}`} className="act-row">
-                <div className="act-row__main">
-                  <span className="act-row__title">
-                    {entry.window_title ||
-                      entry.executable ||
-                      'Untitled window'}
-                  </span>
-                  {entry.decision === 'Captured' &&
-                    entry.observation.length > 0 && (
-                      <span className="act-row__obs">{entry.observation}</span>
-                    )}
-                </div>
-                <div className="act-row__right">
-                  {entry.decision === 'Captured' &&
-                    entry.category.length > 0 && <Tag>{entry.category}</Tag>}
-                  <Tooltip label={reasonLabel(entry)}>
-                    <Badge
-                      variant={DECISION_VARIANT[entry.decision] ?? 'neutral'}
-                    >
-                      {entry.decision}
-                    </Badge>
-                  </Tooltip>
-                  <span className="act-row__time">
-                    {formatRelative(entry.at)}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Card>
+        <div className="act-list">
+          {episodes.map((e) => (
+            <EpisodeCard key={e.id} episode={e} />
+          ))}
+        </div>
       )}
     </div>
+  );
+}
+
+function DecisionRow({ decision }: { decision: Decision }): JSX.Element {
+  return (
+    <Card className="act-row">
+      <div className="act-row__head">
+        <Tag>{ACTION_LABELS[decision.action] ?? decision.action}</Tag>
+        <span className="act-row__time">{formatRelative(decision.at)}</span>
+      </div>
+      {decision.statement.length > 0 && (
+        <p className="act-row__statement">{decision.statement}</p>
+      )}
+      {decision.reason.length > 0 && (
+        <p className="act-row__reason">{decision.reason}</p>
+      )}
+    </Card>
+  );
+}
+
+function EpisodeCard({ episode }: { episode: Episode }): JSX.Element {
+  const [open, setOpen] = useState(false);
+  const minutes = Math.max(
+    1,
+    Math.round(
+      (new Date(episode.ended_at).getTime() -
+        new Date(episode.started_at).getTime()) /
+        60_000,
+    ),
+  );
+  return (
+    <Card
+      interactive
+      role="button"
+      tabIndex={0}
+      className="act-episode"
+      onClick={() => setOpen((o) => !o)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          setOpen((o) => !o);
+        }
+      }}
+    >
+      <div className="act-row__head">
+        <span className="act-episode__title">
+          {episode.titles[0] ?? episode.executables.join(', ')}
+        </span>
+        <span className="act-row__time">
+          {formatRelative(episode.ended_at)}
+        </span>
+      </div>
+      <p className="act-episode__stats">
+        {minutes} min · {episode.executables.join(', ')} ·{' '}
+        {episode.observation_count} observation
+        {episode.observation_count === 1 ? '' : 's'}
+      </p>
+      {open && (
+        <div className="act-episode__detail">
+          {episode.titles.length > 1 && (
+            <ul className="act-episode__titles">
+              {episode.titles.map((t, i) => (
+                <li key={i}>{t}</li>
+              ))}
+            </ul>
+          )}
+          {episode.samples.map((s, i) => (
+            <p key={i} className="act-episode__sample">
+              {s}
+            </p>
+          ))}
+        </div>
+      )}
+    </Card>
   );
 }
