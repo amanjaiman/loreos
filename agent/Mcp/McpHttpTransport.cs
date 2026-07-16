@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Lore.Agent.Mcp;
 
-/// <summary>The Streamable HTTP MCP transport (spec 006 T003): the same seven
+/// <summary>The Streamable HTTP MCP transport (spec 006 T003): the same eight
 /// <see cref="LoreTools"/> the stdio server exposes, mounted on the local API host (005) for
 /// clients that prefer a URL over spawning a process. One tool implementation, two transports —
 /// no logic divergence (plan).
@@ -19,7 +19,7 @@ public static class McpHttpTransport
     /// <c>http://127.0.0.1:7842/mcp</c>.</summary>
     public const string Path = "/mcp";
 
-    /// <summary>Register the MCP server, the Streamable HTTP transport, and the seven tools into
+    /// <summary>Register the MCP server, the Streamable HTTP transport, and the eight tools into
     /// the host's services. Call before <c>Build()</c>.</summary>
     public static IServiceCollection AddLoreMcpHttp(this IServiceCollection services)
     {

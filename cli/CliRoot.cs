@@ -38,6 +38,7 @@ internal static class CliRoot
         root.Options.Add(ApiUrlOption);
 
         // Read commands (T002) and write commands (T003). status/config/export and installers follow.
+        root.Subcommands.Add(RecallCommand.Build());
         root.Subcommands.Add(SearchCommand.Build());
         root.Subcommands.Add(RecentCommand.Build());
         root.Subcommands.Add(ListCommand.Build());

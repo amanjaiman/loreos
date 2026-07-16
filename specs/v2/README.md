@@ -8,7 +8,7 @@ retired v1 shape and are archived per v2-002.
 
 | Spec | What | Status |
 |---|---|---|
-| [v2-001 — Memory Model & Capture](001-memory-and-capture/specification.md) | The product core: typed memories with lifecycle, episode-based skeptical capture, the every-turn recall contract, app-facing API resources. | specification ✓ · [spike GO](001-memory-and-capture/spike-findings.md) (raw-store mode) · [plan](001-memory-and-capture/plan.md) ✓ · [tasks](001-memory-and-capture/tasks.md) in progress |
+| [v2-001 — Memory Model & Capture](001-memory-and-capture/specification.md) | The product core: typed memories with lifecycle, episode-based skeptical capture, the every-turn recall contract, app-facing API resources. | specification ✓ · [spike GO](001-memory-and-capture/spike-findings.md) (raw-store mode) · [plan](001-memory-and-capture/plan.md) ✓ · [tasks](001-memory-and-capture/tasks.md) all tasks T001–T010 done |
 | [v2-002 — Architecture Reset](002-architecture-reset/specification.md) | What survives v1 / what's retired, spec-tree archive, repo mechanics, docs rewrite. | specification ✓ · plan pending |
 | [v2-003 — App Redesign](003-app-redesign/specification.md) | Sidebar-free single-column app on the Lore Design System (Coastal/Nocturne), five screens, vendored assets, zero egress. | specification ✓ · plan pending |
 

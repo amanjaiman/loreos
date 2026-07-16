@@ -89,10 +89,19 @@ internal static class Program
                 new FileLoggerProvider(LogTail.DefaultPath),
                 sp.GetRequiredService<SecretRegistry>()));
 
+        // v1 → v2 migration (v2-001 T010): stamp pre-schema rows as archived, once ready.
+        builder.Services.AddHostedService<V1ArchiveSweep>();
+
+        // Recall (v2-001): the every-turn hot path behind POST /recall and the MCP tool.
+        builder.Services.AddSingleton(
+            builder.Configuration.GetSection("recall").Get<Lore.Agent.Recall.RecallOptions>()
+                ?? new Lore.Agent.Recall.RecallOptions());
+        builder.Services.AddTransient<Lore.Agent.Recall.RecallService>();
+
         // The generated OpenAPI contract surfaces pin to, served at /openapi.json (005 T007).
         ApiHost.AddOpenApi(builder.Services);
 
-        // The Streamable HTTP MCP transport (006 T003): the same seven tools the stdio server
+        // The Streamable HTTP MCP transport (006 T003): the same eight tools the stdio server
         // exposes, mounted on this loopback host for URL-based clients.
         builder.Services.AddLoreMcpHttp();
 

@@ -11,13 +11,14 @@ namespace Lore.Agent.Tests.Mcp;
 
 /// <summary>Integration coverage for the Streamable HTTP transport (spec 006 T003,
 /// acceptance criterion 2). Boots the loopback API host with the MCP transport mounted, then
-/// drives a real MCP client over Streamable HTTP: the seven tools are listed, and a
+/// drives a real MCP client over Streamable HTTP: the eight tools are listed, and a
 /// representative read and write are invoked end-to-end. The full search -> add -> forget
 /// round-trip across both transports lands in T005.</summary>
 public sealed class McpHttpTransportTests
 {
     private static readonly string[] ExpectedTools =
     [
+        "recall",
         "get_context",
         "get_recent",
         "get_profile",
@@ -28,7 +29,7 @@ public sealed class McpHttpTransportTests
     ];
 
     [Fact]
-    public async Task All_seven_tools_are_listed_over_streamable_http()
+    public async Task All_eight_tools_are_listed_over_streamable_http()
     {
         var memory = new FakeMemoryService();
         await using LoreApiHarness harness = await StartMcpHostAsync(memory);
