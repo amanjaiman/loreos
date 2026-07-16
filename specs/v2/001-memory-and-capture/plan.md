@@ -119,16 +119,17 @@ per episode (take highest-confidence).
    Kind weights (config): state 1.15, preference/identity/project 1.0,
    experience 0.9. Temporal: 1.0 for non-experience; experience
    `max(0.6, exp(-ageDays/365))`.
-3. Floor: drop blended < 0.55 (config; calibrated on the golden set — floor
+3. Floor: drop blended < 0.47 (config; calibrated on the golden set — floor
    errs toward empty, spec AC 6). Return ≤ k with statement, kind,
    established_at, score.
 
 Zero generative calls; one embedding call (inside memoryd's search). Spike:
 36 ms warm end-to-end locally, so cloud-embedder p50 < 500 ms holds with room.
 A post-bulk warm-up query after batched writes absorbs the Qdrant settling
-spike the probe saw. **MCP tool** `lore_recall` (new, alongside reworded
-existing tools): description explicitly instructs agents to call it with the
-user's message *on every turn* and to expect (and respect) empty results —
+spike the probe saw. **MCP tool** `recall` (new, deliberately unprefixed,
+alongside reworded existing tools): description explicitly instructs agents
+to call it with the user's message *on every turn* and to expect (and respect)
+empty results —
 this text is a reviewed deliverable, not an afterthought.
 
 ## API contracts (agent, `/api/v1`)

@@ -4,9 +4,11 @@
 > embedding + vector + CRUD layer with Lore-owned typed metadata and query-time
 > filtered recall. Lore (the agent) owns extraction and lifecycle; `memoryd`'s
 > LLM reconciliation pass (002's Option C) is **retired**. Harness:
-> [`spike/probe_raw_store.py`](spike/probe_raw_store.py) (+ warm-latency and
-> expiry follow-ups); run against pinned `mem0ai==2.0.5`, Qdrant on-disk, Ollama
-> `nomic-embed-text` (768-dim) on 2026-07-15.
+> [`spike/probe_raw_store.py`](spike/probe_raw_store.py) +
+> [`spike/probe_warm_latency.py`](spike/probe_warm_latency.py); the expiry
+> check was an ad-hoc follow-up in the same session (same store and filters,
+> not a committed probe); run against pinned `mem0ai==2.0.5`, Qdrant on-disk,
+> Ollama `nomic-embed-text` (768-dim) on 2026-07-15.
 
 ## TL;DR
 
