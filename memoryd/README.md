@@ -13,10 +13,16 @@ launches it the same way.
 |---|---|
 | `GET /health` | liveness (`{"status":"ok"}`) |
 | `POST /config` | (re)initialize mem0 from a provider config |
-| `POST /memories` | add (extract + store + reconciliation pass) |
-| `POST /memories/search` | ranked semantic search |
-| `GET /memories` | list a user's memories (paged: `limit` + `offset`) |
-| `GET·PATCH·DELETE /memories/{id}` | single-item ops |
+| `POST /memories` | add — stores the text **verbatim** (`infer=False`, zero LLM calls) |
+| `POST /memories/search` | ranked semantic search (optional `filters`) |
+| `GET /memories` | list a user's memories (paged: `limit` + `offset`; optional `filters` JSON query param) |
+| `GET·PATCH·DELETE /memories/{id}` | single-item ops; `PATCH` takes `text` and/or `metadata` (metadata is merged key-by-key and always rewritten in full — the pinned mem0 wipes it on text-only updates) |
+
+memoryd runs mem0 as a **raw store** (v2-001): extraction belongs to the agent's
+distiller and lifecycle arbitration to its lifecycle engine, so memoryd itself
+never calls an LLM. Filters are a flat dict of `field: value` or
+`field: {op: value}` with ops `eq/ne/in/nin/gt/gte/lt/lte/contains/icontains`
+(what the pinned mem0 supports); anything else gets an actionable `400`.
 
 mem0 + Qdrant are **pinned** (`mem0ai==2.0.5`); the engine is built by
 [`mem0_factory.py`](lore_memoryd/mem0_factory.py) and reached only through the

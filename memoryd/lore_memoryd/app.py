@@ -20,16 +20,15 @@ from fastapi import FastAPI
 from .backend import Mem0Backend, MemoryBackend
 from .mem0_factory import build_memory
 from .models import ConfigRequest
-from .reconcile import Reconciler, make_llm_judge
 from .routes import router
 
 BackendFactory = Callable[[ConfigRequest], MemoryBackend]
 
 
 def _default_factory(cfg: ConfigRequest) -> MemoryBackend:
-    memory = build_memory(cfg)
-    reconciler = Reconciler(memory, make_llm_judge(memory))
-    return Mem0Backend(memory, reconciler)
+    # Raw-store mode (v2-001): the agent's distiller owns extraction and the
+    # agent's lifecycle engine owns reconciliation, so the backend is mem0 alone.
+    return Mem0Backend(build_memory(cfg))
 
 
 def create_app(backend_factory: BackendFactory | None = None) -> FastAPI:

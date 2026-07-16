@@ -45,8 +45,8 @@ You can also run the packaged `lore-memoryd.exe` (from an install's
 `resources/native/memoryd/`) with the same environment variables instead of a Python
 install.
 
-**The host needs to reach a model.** Extraction and embeddings run *on the server*,
-using the provider each device pushes (see step 2). So the host must be able to reach
+**The host needs to reach a model.** Embeddings run *on the server*, using the
+provider each device pushes (see step 2). So the host must be able to reach
 that provider — the cloud API over the internet, or, for a local model, an Ollama the
 host runs or can reach (`OLLAMA_HOST` / the provider `base_url`).
 
@@ -62,7 +62,7 @@ and front it with one of:
 - a **reverse proxy with TLS + auth** in front of port 7843.
 
 This matters because the agent sends your **provider config, including the model API
-key**, to the server so it can extract/embed (see [`privacy.md`](privacy.md)). Treat
+key**, to the server so it can embed (see [`privacy.md`](privacy.md)). Treat
 the link as carrying a secret.
 
 ## 2. Point each device at it

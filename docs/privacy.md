@@ -21,8 +21,8 @@ those seams.
 
 | # | Destination | Who configures it | Seam | When |
 |---|---|---|---|---|
-| 1 | The **model endpoint you configured** (`provider.type`: Anthropic / OpenAI / Gemini API, or your `openai_compatible` `base_url`) | User (`config.json → provider`) | `IInferenceBackend` (capture analysis) and `memoryd`/mem0 (memory extraction + embeddings) | Whenever capture distills an observation or memory extracts/embeds. With a local `openai_compatible` endpoint (e.g. Ollama) this is loopback only |
-| 2 | `memory.remote_url` (user-hosted mem0 server) | User (`config.json → memory.remote_url`) | `MemorydClient` | Only when `memory.engine: "remote"`; default `"embedded"` keeps memory on the machine. **Carries your provider config — including the model API key** — because extraction and embedding then run on *your* remote memoryd (see below) |
+| 1 | The **model endpoint you configured** (`provider.type`: Anthropic / OpenAI / Gemini API, or your `openai_compatible` `base_url`) | User (`config.json → provider`) | `IInferenceBackend` (capture analysis) and `memoryd`/mem0 (memory embeddings) | Whenever capture distills an observation or memory embeds. With a local `openai_compatible` endpoint (e.g. Ollama) this is loopback only |
+| 2 | `memory.remote_url` (user-hosted mem0 server) | User (`config.json → memory.remote_url`) | `MemorydClient` | Only when `memory.engine: "remote"`; default `"embedded"` keeps memory on the machine. **Carries your provider config — including the model API key** — because embedding then runs on *your* remote memoryd (see below) |
 
 **This list is closed.** The model endpoint in row 1 is the single destination
 for all model traffic — Lore never proxies inference and never ships a key (spec
@@ -39,7 +39,8 @@ service.
 `memory.engine: "remote"`, the agent applies your provider to the remote memoryd
 the same way it would a local one: it reads the key from the Windows Credential
 Manager and POSTs the provider config (**including the key**) to `remote_url`, so
-*your* remote memoryd can run extraction and embeddings server-side. That endpoint
+*your* remote memoryd can run embeddings server-side (mem0's config also requires
+the chat provider, though raw-store memoryd never invokes it). That endpoint
 is no longer loopback, so it is yours to secure — bind it to a trusted network or
 front it with a tunnel/VPN. See [`multi-device.md`](multi-device.md). Nothing in
 this path reaches a Lore-operated service.

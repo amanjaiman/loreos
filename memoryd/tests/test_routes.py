@@ -80,24 +80,92 @@ def test_search_is_user_scoped(client: TestClient, sample_config: dict[str, Any]
 
 def test_get_update_delete_lifecycle(client: TestClient, sample_config: dict[str, Any]) -> None:
     _configure(client, sample_config)
-    mem_id = client.post("/memories", json={"text": "User likes tea.", "user_id": "u1"}).json()[
-        "results"
-    ][0]["id"]
+    mem_id = client.post(
+        "/memories",
+        json={
+            "text": "User likes tea.",
+            "user_id": "u1",
+            "metadata": {"kind": "preference", "status": "active"},
+        },
+    ).json()["results"][0]["id"]
 
     got = client.get(f"/memories/{mem_id}")
     assert got.status_code == 200 and got.json()["memory"] == "User likes tea."
 
+    # Text-only patch must PRESERVE metadata (the mem0 wipe footgun — v2-001 spike Q4).
     patched = client.patch(f"/memories/{mem_id}", json={"text": "User likes coffee."})
     assert patched.status_code == 200 and patched.json()["memory"] == "User likes coffee."
+    assert patched.json()["metadata"] == {"kind": "preference", "status": "active"}
+
+    # Metadata-only patch merges keys and leaves the text alone.
+    patched = client.patch(f"/memories/{mem_id}", json={"metadata": {"status": "archived"}})
+    assert patched.status_code == 200
+    assert patched.json()["memory"] == "User likes coffee."
+    assert patched.json()["metadata"] == {"kind": "preference", "status": "archived"}
 
     assert client.delete(f"/memories/{mem_id}").status_code == 200
     assert client.get(f"/memories/{mem_id}").status_code == 404
+
+
+def test_patch_requires_text_or_metadata(client: TestClient, sample_config: dict[str, Any]) -> None:
+    _configure(client, sample_config)
+    mem_id = client.post("/memories", json={"text": "x", "user_id": "u1"}).json()["results"][0][
+        "id"
+    ]
+    assert client.patch(f"/memories/{mem_id}", json={}).status_code == 400
+
+
+def test_list_and_search_accept_metadata_filters(
+    client: TestClient, sample_config: dict[str, Any]
+) -> None:
+    _configure(client, sample_config)
+    client.post(
+        "/memories",
+        json={"text": "User visited France.", "user_id": "u1", "metadata": {"kind": "experience"}},
+    )
+    client.post(
+        "/memories",
+        json={"text": "User visited the dentist.", "user_id": "u1", "metadata": {"kind": "state"}},
+    )
+
+    listed = client.get(
+        "/memories", params={"user_id": "u1", "filters": '{"kind": "experience"}'}
+    ).json()["results"]
+    assert [m["memory"] for m in listed] == ["User visited France."]
+
+    found = client.post(
+        "/memories/search",
+        json={"query": "visited somewhere", "user_id": "u1", "filters": {"kind": "state"}},
+    ).json()["results"]
+    assert [m["memory"] for m in found] == ["User visited the dentist."]
+
+
+def test_unsupported_filters_return_400(client: TestClient, sample_config: dict[str, Any]) -> None:
+    _configure(client, sample_config)
+    # $-prefixed operator → actionable 400, not a deep mem0 ValueError.
+    resp = client.post(
+        "/memories/search",
+        json={"query": "q", "user_id": "u1", "filters": {"status": {"$ne": "archived"}}},
+    )
+    assert resp.status_code == 400 and "operator" in resp.json()["detail"]
+    # Boolean trees are not supported by the pinned mem0.
+    resp = client.post(
+        "/memories/search",
+        json={"query": "q", "user_id": "u1", "filters": {"AND": [{"kind": "state"}]}},
+    )
+    assert resp.status_code == 400
+    # Malformed list filters JSON → 400.
+    assert (
+        client.get("/memories", params={"user_id": "u1", "filters": "{not json"}).status_code == 400
+    )
 
 
 def test_missing_id_returns_404(client: TestClient, sample_config: dict[str, Any]) -> None:
     _configure(client, sample_config)
     assert client.get("/memories/nope").status_code == 404
     assert client.patch("/memories/nope", json={"text": "x"}).status_code == 404
+    meta_patch = client.patch("/memories/nope", json={"metadata": {"status": "archived"}})
+    assert meta_patch.status_code == 404
     assert client.delete("/memories/nope").status_code == 404
 
 

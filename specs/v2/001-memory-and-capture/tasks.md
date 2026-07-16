@@ -16,52 +16,52 @@
   metadata-preserving text patch, `ne`/`in`/`gt` filters, expiry exclusion.
   Backward-compatible with the current agent.
 
-- [x] **T003 — Agent: memory schema + seam.** `MemoryMetadata` (typed, plan
+- [ ] **T003 — Agent: memory schema + seam.** `MemoryMetadata` (typed, plan
   table) with serialization to/from the metadata dict; `IMemoryService` gains
   filtered search, metadata patch, and typed add; `MemorydClient` implements;
   sentinel/expiry helpers; unit tests incl. round-trip and non-null-keys
   invariant.
 
-- [x] **T004 — Agent: episode segmentation + stores.** `EpisodeBuilder` (pure
+- [ ] **T004 — Agent: episode segmentation + stores.** `EpisodeBuilder` (pure
   logic: continuity/close rules from plan, config thresholds),
   `Episode`/`EpisodeStore` + `decisions` table in the local SQLite,
   representative-sample selection; wire into the capture loop behind
   `capture.pipeline: "v2"` (flag off → old path untouched). Unit tests on
   recorded observation traces; flush-on-shutdown test.
 
-- [x] **T005 — Agent: skeptical distiller.** `prompts/distill.txt` (few-shot per
+- [ ] **T005 — Agent: skeptical distiller.** `prompts/distill.txt` (few-shot per
   plan), `Distiller` + `DistillParser` (malformed output → `distill_failed`
   decision, never a crash), ≤ 3 facts/episode cap. Tests with mocked
   `IInferenceBackend`: happy path, empty-is-normal, garbage output, cap.
 
-- [x] **T006 — Agent: lifecycle engine + budget.** Similarity-band routing
+- [ ] **T006 — Agent: lifecycle engine + budget.** Similarity-band routing
   (reinforce/promote/arbitrate/stage), `prompts/arbitrate.txt`, high-signal
   fast path, pinned/user-edited protection (`needs_confirmation` decision),
   `PromotionBudget` (SQLite counter, defer-not-drop), full decision-trail
   writes. Exhaustive routing-table unit tests with mocked seams (AC 3/4/5/7).
 
-- [x] **T007 — Agent: recall service + endpoint + golden corpus.**
+- [ ] **T007 — Agent: recall service + endpoint + golden corpus.**
   `RecallService`/`RecallScorer` (blend, floor, kind/temporal weights from
   config), `POST /recall`, post-batch warm-up query. Golden corpus JSON +
   deterministic fake embedder; contract tests encode spec AC 1/2/6 (including
   the empty-below-floor cases); calibrate bands/floor and record chosen values
   in plan.md (living spec).
 
-- [x] **T008 — Surfaces: MCP `recall` + CLI.** New MCP tool (deliberately
+- [ ] **T008 — Surfaces: MCP `recall` + CLI.** New MCP tool (deliberately
   unprefixed) with the
   every-turn description (reviewed copy, spec deliverable); reword existing
   tool descriptions to the memory-layer story; `lore recall "<query>"` CLI
   command (`--json`); `lore remember` routes through the lifecycle as
   high-signal. Contract tests for tool schemas + one stdio round-trip.
 
-- [x] **T009 — App-facing API.** `GET /memories` (kind/status/query filters,
+- [ ] **T009 — App-facing API.** `GET /memories` (kind/status/query filters,
   pagination), `PATCH /memories/{id}` (user authority semantics),
   `POST /memories/{id}/confirm`, `POST /staging/{id}/promote|dismiss`,
   `GET /episodes` / `GET /decisions`, `/system/status` economy counters;
   OpenAPI updated (constitution §5). Endpoint tests against a stubbed
   `IMemoryService`/stores.
 
-- [x] **T010 — Migration + E2E acceptance + flag default.** v1-row archive sweep
+- [ ] **T010 — Migration + E2E acceptance + flag default.** v1-row archive sweep
   (idempotent, logged, tested against a seeded v1-shaped store); E2E harness
   driving the wisdom-teeth and France journeys against live Ollama (documented
   as a local/pre-release check, not CI); flip `capture.pipeline` default to

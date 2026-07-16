@@ -6,8 +6,9 @@ namespace Lore.Agent.Memory;
 /// mem0-agnostic.</summary>
 public interface IMemoryService
 {
-    /// <summary>Store an observation. memoryd extracts, dedupes, and reconciles it,
-    /// returning the resulting memories (which may be zero, one, or several).</summary>
+    /// <summary>Store a fact. memoryd runs mem0 as a raw store (v2-001): the text is
+    /// stored verbatim — no extraction or reconciliation — so the caller supplies the
+    /// finished fact. The list return shape survives for wire compatibility.</summary>
     Task<IReadOnlyList<AddedMemory>> RememberAsync(
         string observation,
         string userId = "default",

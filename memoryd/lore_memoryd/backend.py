@@ -1,10 +1,19 @@
-"""The typed boundary over mem0.
+"""The typed boundary over mem0, running mem0 as a RAW STORE (v2-001 T002).
 
 `MemoryBackend` is the narrow surface memoryd's routes depend on. `Mem0Backend`
 implements it over a mem0 ``Memory``, translating method calls and normalizing
 mem0's loosely-typed dict results into our `MemoryItem` / `AddedMemory` models —
 so the untyped mem0 surface stops here and routes/tests speak only typed models.
-T003 hooks the post-add reconciliation pass into `Mem0Backend.add`.
+
+Raw-store rules (v2-001 spike, binding):
+- Every add passes ``infer=False``: the agent's distiller already produced the
+  fact, so mem0 must store it verbatim — no second extraction, no LLM call.
+- Every update re-sends the full **merged** metadata: mem0 2.0.5 wipes metadata
+  to ``{}`` on a text-only ``update()`` (spike Q4), so the merge here is what
+  keeps a text patch from destroying Lore's typed fields.
+- Search/list filters are validated against mem0 2.0.5's supported operator set
+  before they reach the engine, so callers get an actionable 400 instead of a
+  ValueError from deep inside mem0.
 """
 
 from __future__ import annotations
@@ -16,9 +25,41 @@ from typing import Any, Protocol
 from mem0 import Memory
 
 from .models import AddedMemory, MemoryItem
-from .reconcile import Reconciler
 
 _log = logging.getLogger(__name__)
+
+# mem0 2.0.5's supported per-field filter operators (spike Q3). `$`-prefixed
+# spellings and AND/OR trees are NOT supported by the pinned version.
+_ALLOWED_FILTER_OPS = frozenset(
+    {"eq", "ne", "in", "nin", "gt", "gte", "lt", "lte", "contains", "icontains"}
+)
+
+
+class FilterValidationError(ValueError):
+    """A caller-supplied filter has a shape/operator the pinned mem0 rejects."""
+
+
+def validate_filters(filters: dict[str, Any] | None) -> None:
+    """Reject filter shapes the pinned mem0 does not support, with guidance.
+
+    Valid: a flat dict of ``field: value`` (equality) or ``field: {op: value}``
+    with ops from `_ALLOWED_FILTER_OPS`. Raises `FilterValidationError` otherwise.
+    """
+    if not filters:
+        return
+    for field, value in filters.items():
+        if field in ("AND", "OR", "NOT"):
+            raise FilterValidationError(
+                f"unsupported filter {field!r}: the pinned mem0 takes a flat "
+                "{field: value} or {field: {op: value}} dict, not boolean trees"
+            )
+        if isinstance(value, dict):
+            unknown = set(value) - _ALLOWED_FILTER_OPS
+            if unknown:
+                raise FilterValidationError(
+                    f"unsupported filter operator(s) for field {field!r}: "
+                    f"{sorted(unknown)}; supported: {sorted(_ALLOWED_FILTER_OPS)}"
+                )
 
 
 class MemoryBackend(Protocol):
@@ -32,11 +73,15 @@ class MemoryBackend(Protocol):
         self, query: str, user_id: str, limit: int, filters: dict[str, Any] | None
     ) -> list[MemoryItem]: ...
 
-    def get_all(self, user_id: str, limit: int, offset: int) -> list[MemoryItem]: ...
+    def get_all(
+        self, user_id: str, limit: int, offset: int, filters: dict[str, Any] | None
+    ) -> list[MemoryItem]: ...
 
     def get(self, memory_id: str) -> MemoryItem | None: ...
 
-    def update(self, memory_id: str, text: str) -> MemoryItem | None: ...
+    def update(
+        self, memory_id: str, text: str | None, metadata: dict[str, Any] | None
+    ) -> MemoryItem | None: ...
 
     def delete(self, memory_id: str) -> bool: ...
 
@@ -59,15 +104,15 @@ def _to_item(d: dict[str, Any]) -> MemoryItem:
 
 
 class Mem0Backend:
-    """`MemoryBackend` over a mem0 ``Memory``."""
+    """`MemoryBackend` over a mem0 ``Memory`` in raw-store mode."""
 
-    def __init__(self, memory: Memory, reconciler: Reconciler | None = None) -> None:
+    def __init__(self, memory: Memory) -> None:
         self._mem = memory
-        self._reconciler = reconciler
 
     def add(self, text: str, user_id: str, metadata: dict[str, Any] | None) -> list[AddedMemory]:
-        raw = self._mem.add(text, user_id=user_id, metadata=metadata)
-        added = [
+        # infer=False: store the caller's fact verbatim, zero LLM calls (v2-001).
+        raw = self._mem.add(text, user_id=user_id, metadata=metadata, infer=False)
+        return [
             AddedMemory(
                 id=str(d.get("id", "")),
                 memory=str(d.get("memory", "")),
@@ -75,33 +120,27 @@ class Mem0Backend:
             )
             for d in _results(raw)
         ]
-        # Option C: mem0's add is additive-only, so converge duplicates/contradictions
-        # against existing memories before returning (spike T001 Finding 1).
-        if self._reconciler is not None:
-            try:
-                return self._reconciler.reconcile(added, user_id)
-            except Exception as exc:
-                _log.warning(
-                    "reconciliation failed (%s); returning un-reconciled memories",
-                    type(exc).__name__,
-                )
-        return added
 
     def search(
         self, query: str, user_id: str, limit: int, filters: dict[str, Any] | None
     ) -> list[MemoryItem]:
+        validate_filters(filters)
         merged: dict[str, Any] = {**(filters or {}), "user_id": user_id}
         raw = self._mem.search(query, filters=merged, top_k=limit)
         return [_to_item(d) for d in _results(raw)]
 
-    def get_all(self, user_id: str, limit: int, offset: int = 0) -> list[MemoryItem]:
+    def get_all(
+        self, user_id: str, limit: int, offset: int = 0, filters: dict[str, Any] | None = None
+    ) -> list[MemoryItem]:
         # mem0's get_all has no offset, so fetch through the requested window and
         # slice. Pagination lets the agent enumerate a whole store (MemorydClient
         # loops pages); a single huge top_k could otherwise hit an engine cap.
         # Trade-off: each page call fetches top_k = offset + limit items, so a full
         # enumeration over N items costs O(N²) in vector-store round-trips. Acceptable
         # at personal-assistant scale; a native cursor would eliminate this.
-        raw = self._mem.get_all(filters={"user_id": user_id}, top_k=offset + limit)
+        validate_filters(filters)
+        merged: dict[str, Any] = {**(filters or {}), "user_id": user_id}
+        raw = self._mem.get_all(filters=merged, top_k=offset + limit)
         window = _results(raw)[offset : offset + limit]
         return [_to_item(d) for d in window]
 
@@ -109,10 +148,17 @@ class Mem0Backend:
         raw = self._mem.get(memory_id)
         return _to_item(raw) if isinstance(raw, dict) and raw.get("id") else None
 
-    def update(self, memory_id: str, text: str) -> MemoryItem | None:
-        if self.get(memory_id) is None:
+    def update(
+        self, memory_id: str, text: str | None, metadata: dict[str, Any] | None
+    ) -> MemoryItem | None:
+        existing = self.get(memory_id)
+        if existing is None:
             return None
-        self._mem.update(memory_id, data=text)
+        # Always send text AND the full merged metadata: mem0 2.0.5 wipes
+        # metadata on a text-only update (spike Q4) — the merge is load-bearing.
+        new_text = text if text is not None else existing.memory
+        merged_meta = {**(existing.metadata or {}), **(metadata or {})}
+        self._mem.update(memory_id, data=new_text, metadata=merged_meta)
         return self.get(memory_id)
 
     def delete(self, memory_id: str) -> bool:

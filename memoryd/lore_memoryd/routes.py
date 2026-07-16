@@ -8,12 +8,14 @@ return 503 — the agent calls `/config` once at startup before first use.
 from __future__ import annotations
 
 import contextlib
+import json
 import logging
 import re
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
 
-from .backend import MemoryBackend
+from .backend import FilterValidationError, MemoryBackend
 from .mem0_factory import EmbedderConfigError
 from .models import (
     AddRequest,
@@ -85,17 +87,39 @@ def add_memory(request: Request, body: AddRequest) -> AddResponse:
 @router.post("/memories/search", response_model=SearchResponse)
 def search_memories(request: Request, body: SearchRequest) -> SearchResponse:
     backend = _require_backend(request)
-    return SearchResponse(
-        results=backend.search(body.query, body.user_id, body.limit, body.filters)
-    )
+    try:
+        results = backend.search(body.query, body.user_id, body.limit, body.filters)
+    except FilterValidationError as exc:  # unsupported filter shape/operator — caller error
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return SearchResponse(results=results)
 
 
 @router.get("/memories", response_model=MemoriesResponse)
 def list_memories(
-    request: Request, user_id: str = "default", limit: int = 100, offset: int = 0
+    request: Request,
+    user_id: str = "default",
+    limit: int = 100,
+    offset: int = 0,
+    filters: str | None = None,
 ) -> MemoriesResponse:
+    """List memories, optionally filtered. `filters` is a JSON object in the same
+    shape search accepts (e.g. `{"kind": "state", "status": {"ne": "archived"}}`)."""
     backend = _require_backend(request)
-    return MemoriesResponse(results=backend.get_all(user_id, limit, offset))
+    parsed: dict[str, Any] | None = None
+    if filters:
+        try:
+            parsed = json.loads(filters)
+        except json.JSONDecodeError as exc:
+            raise HTTPException(
+                status_code=400, detail=f"filters is not valid JSON: {exc}"
+            ) from exc
+        if not isinstance(parsed, dict):
+            raise HTTPException(status_code=400, detail="filters must be a JSON object")
+    try:
+        results = backend.get_all(user_id, limit, offset, parsed)
+    except FilterValidationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return MemoriesResponse(results=results)
 
 
 @router.get("/memories/{memory_id}", response_model=MemoryItem)
@@ -110,7 +134,9 @@ def get_memory(request: Request, memory_id: str) -> MemoryItem:
 @router.patch("/memories/{memory_id}", response_model=MemoryItem)
 def update_memory(request: Request, memory_id: str, body: UpdateRequest) -> MemoryItem:
     backend = _require_backend(request)
-    item = backend.update(memory_id, body.text)
+    if body.text is None and body.metadata is None:
+        raise HTTPException(status_code=400, detail="provide text and/or metadata to patch")
+    item = backend.update(memory_id, body.text, body.metadata)
     if item is None:
         raise HTTPException(status_code=404, detail=f"no memory with id {memory_id!r}")
     return item
