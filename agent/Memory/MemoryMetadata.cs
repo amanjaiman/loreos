@@ -35,6 +35,7 @@ public static class MemoryStatuses
 /// <summary>Why a memory last changed — provenance for the UI and decision trail.</summary>
 public static class MemoryUpdateReasons
 {
+    public const string Staged = "staged";
     public const string Promoted = "promoted";
     public const string Reinforced = "reinforced";
     public const string Revised = "revised";

@@ -201,6 +201,30 @@ public sealed class ActivityStore : IDisposable
             cancellationToken);
     }
 
+    /// <summary>Count decision rows with the given action at or after <paramref name="since"/> —
+    /// the promotion budget's daily counter (v2-001 T006).</summary>
+    public async Task<int> CountDecisionsSinceAsync(
+        string action, DateTimeOffset since, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(action);
+        int count = 0;
+        await ReadAsync(
+            command =>
+            {
+                command.CommandText =
+                    """
+                    SELECT COUNT(*) FROM decisions
+                    WHERE action = $action AND at >= $since LIMIT $limit;
+                    """;
+                command.Parameters.AddWithValue("$action", action);
+                command.Parameters.AddWithValue("$since", Iso(since));
+            },
+            1,
+            reader => count = reader.GetInt32(0),
+            cancellationToken).ConfigureAwait(false);
+        return count;
+    }
+
     /// <summary>The most recent decision-trail rows, newest first.</summary>
     public async Task<IReadOnlyList<DecisionEntry>> GetRecentDecisionsAsync(
         int limit = 100, CancellationToken cancellationToken = default)

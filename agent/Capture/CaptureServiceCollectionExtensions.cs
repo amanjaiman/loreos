@@ -61,11 +61,13 @@ public static class CaptureServiceCollectionExtensions
             return new ActivityStore(Path.Combine(memory.DataDir, "activity.db"));
         });
 
-        // v2 episode segmentation (behind capture.pipeline; T005/T006 replace the
-        // placeholder processor with the distiller + lifecycle engine).
+        // v2 pipeline (behind capture.pipeline): episode segmentation feeding the
+        // skeptical distiller and the lifecycle engine.
         services.AddSingleton(options.Episodes);
+        services.AddSingleton(options.Lifecycle);
         services.AddSingleton<Episodes.EpisodeBuilder>();
-        services.AddSingleton<Episodes.IEpisodeProcessor, Episodes.NullEpisodeProcessor>();
+        services.AddSingleton<Distill.Distiller>();
+        services.AddSingleton<Episodes.IEpisodeProcessor, Lifecycle.LifecycleEngine>();
 
         // Metrics, the readiness bridge to memoryd, and the loop.
         services.AddSingleton<CaptureMetrics>();

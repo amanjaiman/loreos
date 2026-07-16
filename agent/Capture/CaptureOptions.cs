@@ -28,6 +28,9 @@ public sealed class CaptureOptions
     /// <summary>Episode segmentation thresholds (v2 pipeline).</summary>
     public Episodes.EpisodeOptions Episodes { get; init; } = new();
 
+    /// <summary>Lifecycle routing thresholds and the daily promotion budget (v2 pipeline).</summary>
+    public Lifecycle.LifecycleOptions Lifecycle { get; init; } = new();
+
     /// <summary>Executables the user never wants captured.</summary>
     public IReadOnlyList<string> BlocklistApps { get; init; } = [];
 
