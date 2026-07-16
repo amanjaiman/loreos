@@ -23,7 +23,8 @@ loreos/
 ├── constitution.md      # the rules — read first, non-negotiable
 ├── AGENTS.md            # this file
 ├── specs/               # SDD specs, one folder per feature (NNN-name/)
-│   └── NNN-name/        #   specification.md · plan.md · tasks.md
+│   ├── NNN-name/        #   v1 specs: specification.md · plan.md · tasks.md
+│   └── v2/              #   v2 restart spec set — see specs/v2/README.md
 ├── agent/               # C# capture agent + MCP server + local API host
 ├── cli/                 # `lore` CLI (C#)
 ├── memoryd/             # Python FastAPI wrapper around mem0
