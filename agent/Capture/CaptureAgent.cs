@@ -102,7 +102,13 @@ public sealed class CaptureAgent : BackgroundService
             return; // shutting down before memory was ready
         }
 
-        _logger.LogInformation("capture loop started");
+        if (!IsV2 && !string.Equals(_options.Pipeline, "v1", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogWarning(
+                "unrecognized capture.pipeline value '{Pipeline}'; falling back to v1", _options.Pipeline);
+        }
+
+        _logger.LogInformation("capture loop started (pipeline: {Pipeline})", IsV2 ? "v2" : "v1");
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -139,10 +145,20 @@ public sealed class CaptureAgent : BackgroundService
         // Shutdown flush: the day's last episode is distilled, not lost (v2-001 T004).
         if (IsV2)
         {
-            Episode? last = _episodes.Flush();
-            if (last is not null)
+            try
             {
-                await HandleClosedEpisodeAsync(last, "shutdown_flush", CancellationToken.None).ConfigureAwait(false);
+                Episode? last = _episodes.Flush();
+                if (last is not null)
+                {
+                    await HandleClosedEpisodeAsync(last, "shutdown_flush", CancellationToken.None)
+                        .ConfigureAwait(false);
+                }
+            }
+#pragma warning disable CA1031 // a storage failure at shutdown degrades gracefully (criterion 6)
+            catch (Exception ex)
+#pragma warning restore CA1031
+            {
+                _logger.LogWarning(ex, "shutdown flush failed; the open episode could not be persisted");
             }
         }
 
@@ -223,7 +239,7 @@ public sealed class CaptureAgent : BackgroundService
         var observation = new CapturedObservation(
             _time.GetUtcNow(), window.ProcessExecutable, window.Title, text, type);
         Episode? closed = _episodes.Add(observation);
-        _metrics.Captured();
+        _metrics.Observed();
         if (closed is null)
         {
             return CaptureOutcome.Observed;
@@ -237,12 +253,15 @@ public sealed class CaptureAgent : BackgroundService
     private async Task HandleClosedEpisodeAsync(
         Episode episode, string reason, CancellationToken cancellationToken)
     {
-        await _activity.SaveEpisodeAsync(episode, cancellationToken).ConfigureAwait(false);
+        // A closed episode is already off the builder — persist it unconditionally so a
+        // cancellation mid-save can't lose it; only processing honors the caller's token.
+        await _activity.SaveEpisodeAsync(episode, CancellationToken.None).ConfigureAwait(false);
         await _activity.LogDecisionAsync(
             new DecisionEntry(
                 _time.GetUtcNow(), episode.Id, "closed", reason,
                 string.Empty, string.Empty, string.Empty),
-            cancellationToken).ConfigureAwait(false);
+            CancellationToken.None).ConfigureAwait(false);
+        _metrics.EpisodeClosed();
         try
         {
             await _episodeProcessor.ProcessAsync(episode, cancellationToken).ConfigureAwait(false);

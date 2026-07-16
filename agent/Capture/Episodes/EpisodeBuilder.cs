@@ -20,6 +20,26 @@ public sealed class EpisodeBuilder
     public EpisodeBuilder(EpisodeOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
+        if (options.MaxObservations < 2)
+        {
+            throw new ArgumentException("capture.episodes maxObservations must be at least 2", nameof(options));
+        }
+
+        if (options.MaxAge <= TimeSpan.Zero)
+        {
+            throw new ArgumentException("capture.episodes maxAge must be positive", nameof(options));
+        }
+
+        if (options.MaxSamples < 2)
+        {
+            throw new ArgumentException("capture.episodes maxSamples must be at least 2", nameof(options));
+        }
+
+        if (options.SampleMaxChars < 1)
+        {
+            throw new ArgumentException("capture.episodes sampleMaxChars must be at least 1", nameof(options));
+        }
+
         _options = options;
     }
 
@@ -36,7 +56,7 @@ public sealed class EpisodeBuilder
         Episode? closed = null;
         if (HasOpenEpisode && !Joins(observation))
         {
-            closed = CloseOpen(observation.At);
+            closed = CloseOpen(_lastAt);
         }
 
         if (!HasOpenEpisode)
@@ -49,11 +69,12 @@ public sealed class EpisodeBuilder
         }
 
         // Bounds are checked after the append so the triggering observation stays in
-        // the episode it grew — the next observation starts fresh.
+        // the episode it grew — the next observation starts fresh. A just-opened episode
+        // (count 1, age zero) can never trip a bound, so a continuity-break close and a
+        // bound close are mutually exclusive within one Add.
         if (_count >= _options.MaxObservations || _lastAt - _startedAt >= _options.MaxAge)
         {
-            Episode full = CloseOpen(_lastAt)!;
-            return closed ?? full; // both non-null only if continuity broke AND bound hit
+            return CloseOpen(_lastAt);
         }
 
         return closed;

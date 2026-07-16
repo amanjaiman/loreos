@@ -43,6 +43,20 @@ public sealed class CaptureMetricsTests
     }
 
     [Fact]
+    public void Counts_observations_and_closed_episodes_separately_from_captures()
+    {
+        var metrics = new CaptureMetrics();
+        metrics.Observed();
+        metrics.Observed();
+        metrics.EpisodeClosed();
+
+        CaptureMetricsSnapshot snapshot = metrics.Snapshot();
+        Assert.Equal(2, snapshot.Observed);
+        Assert.Equal(1, snapshot.EpisodesClosed);
+        Assert.Equal(0, snapshot.Captured);
+    }
+
+    [Fact]
     public void Counts_analysis_empty_and_memory_errors()
     {
         var metrics = new CaptureMetrics();

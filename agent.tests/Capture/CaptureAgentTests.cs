@@ -330,6 +330,8 @@ public sealed class CaptureAgentTests
         Assert.Equal(CaptureOutcome.Observed, outcome);
         Assert.Empty(h.Memory.Remembered); // no per-dwell RememberAsync in v2
         Assert.Empty(h.Episodes.Processed); // episode still open
+        Assert.Equal(1, h.Metrics.Snapshot().Observed);
+        Assert.Equal(0, h.Metrics.Snapshot().Captured); // v2 never counts as a stored memory
     }
 
     [Fact]
@@ -352,6 +354,7 @@ public sealed class CaptureAgentTests
         IReadOnlyList<DecisionEntry> decisions = await h.Activity.GetRecentDecisionsAsync();
         Assert.Equal("closed", Assert.Single(decisions).Action);
         Assert.Equal(episode.Id, decisions[0].EpisodeId);
+        Assert.Equal(1, h.Metrics.Snapshot().EpisodesClosed);
     }
 
     [Fact]
@@ -374,7 +377,7 @@ public sealed class CaptureAgentTests
         using Harness h = Build(options: V2Options());
 
         await h.Agent.StartAsync(CancellationToken.None);
-        await WaitUntilAsync(() => h.Metrics.Snapshot().Captured > 0, TimeSpan.FromSeconds(5));
+        await WaitUntilAsync(() => h.Metrics.Snapshot().Observed > 0, TimeSpan.FromSeconds(5));
         await h.Agent.StopAsync(CancellationToken.None);
 
         Assert.NotEmpty(h.Episodes.Processed); // flushed on stop, not lost

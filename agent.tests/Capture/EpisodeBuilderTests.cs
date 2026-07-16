@@ -68,6 +68,16 @@ public sealed class EpisodeBuilderTests
 
         Assert.NotNull(closed);
         Assert.Equal(1, closed.ObservationCount);
+        Assert.Equal(T0, closed.EndedAt); // ended at its own last activity, not the break
+    }
+
+    [Fact]
+    public void Options_with_degenerate_bounds_are_rejected()
+    {
+        Assert.Throws<ArgumentException>(() => Builder(new EpisodeOptions { MaxObservations = 1 }));
+        Assert.Throws<ArgumentException>(() => Builder(new EpisodeOptions { MaxAge = TimeSpan.Zero }));
+        Assert.Throws<ArgumentException>(() => Builder(new EpisodeOptions { MaxSamples = 1 }));
+        Assert.Throws<ArgumentException>(() => Builder(new EpisodeOptions { SampleMaxChars = 0 }));
     }
 
     [Fact]
