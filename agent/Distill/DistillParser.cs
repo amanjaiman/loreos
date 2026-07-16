@@ -16,6 +16,10 @@ public static class DistillParser
     /// <summary>Longest accepted statement, per the prompt's contract.</summary>
     public const int MaxStatementChars = 200;
 
+    /// <summary>Longest accepted state horizon; larger values are capped, non-positive
+    /// values are ignored.</summary>
+    public const int MaxHorizonDays = 365;
+
     private static readonly JsonDocumentOptions Tolerant = new()
     {
         AllowTrailingCommas = true,
@@ -98,9 +102,10 @@ public static class DistillParser
         if (kind == MemoryKinds.State
             && element.TryGetProperty("horizon_days", out JsonElement horizonElement)
             && horizonElement.ValueKind == JsonValueKind.Number
-            && horizonElement.TryGetInt32(out int days))
+            && horizonElement.TryGetInt32(out int days)
+            && days > 0)
         {
-            horizonDays = days;
+            horizonDays = Math.Min(days, MaxHorizonDays);
         }
 
         return new CandidateFact(statement, kind!, confidence, horizonDays);

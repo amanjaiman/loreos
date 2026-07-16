@@ -123,6 +123,23 @@ public sealed class DistillParserTests
     }
 
     [Fact]
+    public void Horizon_days_ignores_non_positive_and_caps_oversized_values()
+    {
+        IReadOnlyList<CandidateFact>? facts = DistillParser.Parse(
+            $$"""
+            {"facts": [
+              {"statement": "A", "kind": "state", "confidence": 0.9, "horizon_days": 0},
+              {"statement": "B", "kind": "state", "confidence": 0.8, "horizon_days": -14},
+              {"statement": "C", "kind": "state", "confidence": 0.7, "horizon_days": {{DistillParser.MaxHorizonDays + 1}}}
+            ]}
+            """);
+
+        Assert.Null(facts![0].HorizonDays);
+        Assert.Null(facts[1].HorizonDays);
+        Assert.Equal(DistillParser.MaxHorizonDays, facts[2].HorizonDays);
+    }
+
+    [Fact]
     public void Kind_matching_is_case_insensitive()
     {
         IReadOnlyList<CandidateFact>? facts = DistillParser.Parse(
