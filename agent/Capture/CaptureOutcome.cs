@@ -19,4 +19,11 @@ public enum CaptureOutcome
 
     /// <summary>A memory was stored.</summary>
     Captured,
+
+    /// <summary>v2 pipeline: the observation joined (or opened) the current episode.</summary>
+    Observed,
+
+    /// <summary>v2 pipeline: the observation closed an episode, which was persisted and
+    /// handed to the episode processor.</summary>
+    EpisodeClosed,
 }

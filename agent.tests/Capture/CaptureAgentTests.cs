@@ -101,12 +101,33 @@ public sealed class CaptureAgentTests
             Task.FromResult(false);
     }
 
+    private sealed class RecordingEpisodeProcessor : Lore.Agent.Capture.Episodes.IEpisodeProcessor
+    {
+        public List<Lore.Agent.Capture.Episodes.Episode> Processed { get; } = [];
+
+        public bool ThrowOnProcess { get; set; }
+
+        public Task ProcessAsync(
+            Lore.Agent.Capture.Episodes.Episode episode, CancellationToken cancellationToken = default)
+        {
+            if (ThrowOnProcess)
+            {
+                throw new InvalidOperationException("distiller exploded");
+            }
+
+            Processed.Add(episode);
+            return Task.CompletedTask;
+        }
+    }
+
     private sealed class Harness : IDisposable
     {
         public required FakeMemoryService Memory { get; init; }
         public required ActivityStore Activity { get; init; }
         public required CaptureMetrics Metrics { get; init; }
         public required CaptureAgent Agent { get; init; }
+        public required FakeTimeProvider Time { get; init; }
+        public required RecordingEpisodeProcessor Episodes { get; init; }
 
         public void Dispose() => Activity.Dispose();
     }
@@ -129,9 +150,11 @@ public sealed class CaptureAgentTests
         var gate = new SmartGate(new SmartGateOptions(), new RecentCaptureGate(20), time);
         var analyzer = new CaptureAnalyzer(new StubBackend(modelResponse));
         var monitor = new WindowMonitor(new FixedSource(Window), time, TimeSpan.Zero);
+        CaptureOptions captureOptions = options ?? new CaptureOptions();
+        var processor = new RecordingEpisodeProcessor();
 
         var agent = new CaptureAgent(
-            options ?? new CaptureOptions(),
+            captureOptions,
             monitor,
             new StubExtractor(extractedText),
             filter,
@@ -142,9 +165,19 @@ public sealed class CaptureAgentTests
             metrics,
             new ReadySignal(),
             time,
-            NullLogger<CaptureAgent>.Instance);
+            NullLogger<CaptureAgent>.Instance,
+            new Lore.Agent.Capture.Episodes.EpisodeBuilder(captureOptions.Episodes),
+            processor);
 
-        return new Harness { Memory = memory, Activity = activity, Metrics = metrics, Agent = agent };
+        return new Harness
+        {
+            Memory = memory,
+            Activity = activity,
+            Metrics = metrics,
+            Agent = agent,
+            Time = time,
+            Episodes = processor,
+        };
     }
 
     private sealed class FixedSource : IForegroundWindowSource
@@ -278,7 +311,88 @@ public sealed class CaptureAgentTests
             new StubExtractor("x"), new SensitivityFilter(Blocklist.Empty, new AllowProbe()),
             new SmartGate(new SmartGateOptions(), new RecentCaptureGate(1), new FakeTimeProvider()),
             new CaptureAnalyzer(new StubBackend(null)), new FakeMemoryService(), new ActivityStore(":memory:"),
-            new CaptureMetrics(), new ReadySignal(), new FakeTimeProvider(), NullLogger<CaptureAgent>.Instance));
+            new CaptureMetrics(), new ReadySignal(), new FakeTimeProvider(), NullLogger<CaptureAgent>.Instance,
+            new Lore.Agent.Capture.Episodes.EpisodeBuilder(new Lore.Agent.Capture.Episodes.EpisodeOptions()),
+            new RecordingEpisodeProcessor()));
+    }
+
+    // ── v2 pipeline (v2-001 T004): episodes, not per-dwell analysis ────────────────
+
+    private static CaptureOptions V2Options() => new() { Pipeline = "v2" };
+
+    [Fact]
+    public async Task V2_observation_joins_an_episode_and_never_calls_the_analyzer_or_store()
+    {
+        using Harness h = Build(options: V2Options());
+
+        CaptureOutcome outcome = await h.Agent.CaptureOnceAsync(Window, CancellationToken.None);
+
+        Assert.Equal(CaptureOutcome.Observed, outcome);
+        Assert.Empty(h.Memory.Remembered); // no per-dwell RememberAsync in v2
+        Assert.Empty(h.Episodes.Processed); // episode still open
+    }
+
+    [Fact]
+    public async Task V2_continuity_break_closes_persists_and_processes_the_episode()
+    {
+        using Harness h = Build(options: V2Options());
+
+        await h.Agent.CaptureOnceAsync(Window, CancellationToken.None);
+        h.Time.Now += TimeSpan.FromMinutes(10); // beyond the continuity gap
+        CaptureOutcome outcome = await h.Agent.CaptureOnceAsync(
+            new WindowSnapshot(2, "browser", "Totally unrelated news"), CancellationToken.None);
+
+        Assert.Equal(CaptureOutcome.EpisodeClosed, outcome);
+        Lore.Agent.Capture.Episodes.Episode episode = Assert.Single(h.Episodes.Processed);
+        Assert.Equal(1, episode.ObservationCount);
+
+        IReadOnlyList<Lore.Agent.Capture.Episodes.Episode> stored =
+            await h.Activity.GetRecentEpisodesAsync();
+        Assert.Equal(episode.Id, Assert.Single(stored).Id);
+        IReadOnlyList<DecisionEntry> decisions = await h.Activity.GetRecentDecisionsAsync();
+        Assert.Equal("closed", Assert.Single(decisions).Action);
+        Assert.Equal(episode.Id, decisions[0].EpisodeId);
+    }
+
+    [Fact]
+    public async Task V2_still_filters_before_anything_else()
+    {
+        using Harness h = Build(blockedApps: ["editor"], options: V2Options());
+
+        CaptureOutcome outcome = await h.Agent.CaptureOnceAsync(Window, CancellationToken.None);
+
+        Assert.Equal(CaptureOutcome.Filtered, outcome);
+        Assert.Empty(h.Episodes.Processed);
+        IReadOnlyList<Lore.Agent.Capture.Episodes.Episode> stored =
+            await h.Activity.GetRecentEpisodesAsync();
+        Assert.Empty(stored); // filtered text never reaches episode intake
+    }
+
+    [Fact]
+    public async Task V2_shutdown_flushes_the_open_episode()
+    {
+        using Harness h = Build(options: V2Options());
+
+        await h.Agent.StartAsync(CancellationToken.None);
+        await WaitUntilAsync(() => h.Metrics.Snapshot().Captured > 0, TimeSpan.FromSeconds(5));
+        await h.Agent.StopAsync(CancellationToken.None);
+
+        Assert.NotEmpty(h.Episodes.Processed); // flushed on stop, not lost
+    }
+
+    [Fact]
+    public async Task V2_processor_failure_never_kills_the_capture_path()
+    {
+        using Harness h = Build(options: V2Options());
+        h.Episodes.ThrowOnProcess = true;
+
+        await h.Agent.CaptureOnceAsync(Window, CancellationToken.None);
+        h.Time.Now += TimeSpan.FromMinutes(10);
+        CaptureOutcome outcome = await h.Agent.CaptureOnceAsync(
+            new WindowSnapshot(2, "browser", "Unrelated"), CancellationToken.None);
+
+        Assert.Equal(CaptureOutcome.EpisodeClosed, outcome); // failure logged, not thrown
+        Assert.Single(await h.Activity.GetRecentEpisodesAsync()); // episode persisted first
     }
 
     private static async Task WaitUntilAsync(Func<bool> condition, TimeSpan timeout)

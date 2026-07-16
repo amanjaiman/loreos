@@ -1,3 +1,4 @@
+using Lore.Agent.Capture.Episodes;
 using Lore.Agent.Memory;
 using Lore.Agent.Storage;
 using Microsoft.Extensions.Hosting;
@@ -30,6 +31,8 @@ public sealed class CaptureAgent : BackgroundService
     private readonly IReadinessSignal _readiness;
     private readonly TimeProvider _time;
     private readonly ILogger<CaptureAgent> _logger;
+    private readonly EpisodeBuilder _episodes;
+    private readonly IEpisodeProcessor _episodeProcessor;
 
     private string _lastProcessedKey = string.Empty;
     private DateTimeOffset _lastProcessedAt = DateTimeOffset.MinValue;
@@ -46,7 +49,9 @@ public sealed class CaptureAgent : BackgroundService
         CaptureMetrics metrics,
         IReadinessSignal readiness,
         TimeProvider time,
-        ILogger<CaptureAgent> logger)
+        ILogger<CaptureAgent> logger,
+        EpisodeBuilder episodes,
+        IEpisodeProcessor episodeProcessor)
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(monitor);
@@ -60,6 +65,8 @@ public sealed class CaptureAgent : BackgroundService
         ArgumentNullException.ThrowIfNull(readiness);
         ArgumentNullException.ThrowIfNull(time);
         ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(episodes);
+        ArgumentNullException.ThrowIfNull(episodeProcessor);
         _options = options;
         _monitor = monitor;
         _extractor = extractor;
@@ -72,7 +79,11 @@ public sealed class CaptureAgent : BackgroundService
         _readiness = readiness;
         _time = time;
         _logger = logger;
+        _episodes = episodes;
+        _episodeProcessor = episodeProcessor;
     }
+
+    private bool IsV2 => string.Equals(_options.Pipeline, "v2", StringComparison.OrdinalIgnoreCase);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -101,6 +112,15 @@ public sealed class CaptureAgent : BackgroundService
                 {
                     await CaptureOnceAsync(observation.Window, stoppingToken).ConfigureAwait(false);
                 }
+
+                if (IsV2)
+                {
+                    Episode? idle = _episodes.CloseIfIdle(_time.GetUtcNow());
+                    if (idle is not null)
+                    {
+                        await HandleClosedEpisodeAsync(idle, "idle_timeout", stoppingToken).ConfigureAwait(false);
+                    }
+                }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -114,6 +134,16 @@ public sealed class CaptureAgent : BackgroundService
             }
 
             await DelaySafe(_options.PollInterval, stoppingToken).ConfigureAwait(false);
+        }
+
+        // Shutdown flush: the day's last episode is distilled, not lost (v2-001 T004).
+        if (IsV2)
+        {
+            Episode? last = _episodes.Flush();
+            if (last is not null)
+            {
+                await HandleClosedEpisodeAsync(last, "shutdown_flush", CancellationToken.None).ConfigureAwait(false);
+            }
         }
 
         _logger.LogInformation("capture loop stopped");
@@ -136,6 +166,12 @@ public sealed class CaptureAgent : BackgroundService
         }
 
         ContentType type = ContentClassifier.Classify(window, filtered.Text);
+
+        if (IsV2)
+        {
+            return await ObserveForEpisodeAsync(window, type, filtered.Text, cancellationToken)
+                .ConfigureAwait(false);
+        }
 
         GateDecision gate = _gate.Evaluate(window, type, filtered.Text);
         if (!gate.ShouldCapture)
@@ -177,6 +213,50 @@ public sealed class CaptureAgent : BackgroundService
             .ConfigureAwait(false);
         _metrics.Captured();
         return CaptureOutcome.Captured;
+    }
+
+    // The v2 tail of one capture: the filtered observation joins the episode stream; a
+    // closed episode is persisted, logged, and handed to the distiller/lifecycle seam.
+    private async Task<CaptureOutcome> ObserveForEpisodeAsync(
+        WindowSnapshot window, ContentType type, string text, CancellationToken cancellationToken)
+    {
+        var observation = new CapturedObservation(
+            _time.GetUtcNow(), window.ProcessExecutable, window.Title, text, type);
+        Episode? closed = _episodes.Add(observation);
+        _metrics.Captured();
+        if (closed is null)
+        {
+            return CaptureOutcome.Observed;
+        }
+
+        await HandleClosedEpisodeAsync(closed, "continuity_break_or_bound", cancellationToken)
+            .ConfigureAwait(false);
+        return CaptureOutcome.EpisodeClosed;
+    }
+
+    private async Task HandleClosedEpisodeAsync(
+        Episode episode, string reason, CancellationToken cancellationToken)
+    {
+        await _activity.SaveEpisodeAsync(episode, cancellationToken).ConfigureAwait(false);
+        await _activity.LogDecisionAsync(
+            new DecisionEntry(
+                _time.GetUtcNow(), episode.Id, "closed", reason,
+                string.Empty, string.Empty, string.Empty),
+            cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await _episodeProcessor.ProcessAsync(episode, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+#pragma warning disable CA1031 // a bad distill/lifecycle round never kills the loop (criterion 6)
+        catch (Exception ex)
+#pragma warning restore CA1031
+        {
+            _logger.LogWarning(ex, "episode {Id} processing failed; episode is persisted", episode.Id);
+        }
     }
 
     // Process a window when it's newly in front, or when the re-capture interval has passed
