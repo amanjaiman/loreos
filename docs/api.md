@@ -28,7 +28,7 @@
 | `GET /memories` | List memories | Paged: `?limit=&offset=` → `{ items, total, limit, offset }` |
 | `POST /memories/search` | Semantic search | `{ query, limit?, user_id?, filters? }` → `{ results }` (scored). `filters` is reserved. |
 | `GET /memories/{id}` | One memory | `404` if absent |
-| `POST /memories` | Remember an observation | `{ text, user_id?, metadata? }` → `201 { results }` (the distilled memories) |
+| `POST /memories` | Remember an observation | `{ text, user_id?, metadata? }` → `201 { results }` (the stored memories) |
 | `PATCH /memories/{id}` | Replace text | `{ text }` → updated memory, `404` if absent |
 | `DELETE /memories/{id}` | Forget one | `204`, or `404` if absent |
 | `GET /recent` | Recent raw captures | Local telemetry (`?limit=`), newest first |

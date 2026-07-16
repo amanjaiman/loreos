@@ -80,8 +80,8 @@ ollama pull nomic-embed-text # the local embedding model memoryd uses by default
 ```
 
 With a local provider **and** the default `memory.engine: "embedded"`, Lore makes
-**zero non-loopback calls** — capture analysis, memory extraction, and embeddings
-all stay on your machine. (LM Studio, llama.cpp's server, and vLLM work the same
+**zero non-loopback calls** — capture analysis and memory embeddings both stay
+on your machine. (LM Studio, llama.cpp's server, and vLLM work the same
 way by their own `base_url`; set any `api_key_ref` if your server requires a key.)
 
 ## One provider, two consumers
@@ -90,8 +90,10 @@ The same `provider` block configures:
 
 1. **Capture analysis** — the `IInferenceBackend` the capture pipeline calls to
    distill an observation.
-2. **Memory** — `memoryd`/mem0's LLM (extraction) and embedder, applied via
-   `POST /config` once memoryd is healthy.
+2. **Memory** — `memoryd`/mem0's embedder, applied via `POST /config` once
+   memoryd is healthy. (The config also carries the chat provider because mem0
+   requires one, but memoryd runs mem0 as a raw store — since v2-001 it never
+   invokes that LLM.)
 
 The embedder follows the provider: when the provider has first-party embeddings
 (OpenAI), memoryd uses them; otherwise it falls back to the **validated local
