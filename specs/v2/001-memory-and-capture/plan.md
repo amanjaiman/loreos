@@ -57,18 +57,25 @@ footgun, spike rule 2); search validates the supported operator set and requires
 
 ## Episode segmentation (pure logic, no inference)
 
-`EpisodeBuilder` consumes post-filter `WindowObservation`s from the existing
-loop:
+`EpisodeBuilder` consumes post-filter observations (`CapturedObservation`) from
+the existing loop:
 
 - **Continuity:** an observation joins the open episode when same process, OR
   title Jaccard ≥ 0.4, OR text `TextSimilarity` ≥ 0.5 (existing util), AND gap
   since last observation < 3 min.
+- **Near-duplicates:** text Jaccard ≥ 0.9 vs the episode's latest observation is
+  counted but not kept as another sample.
 - **Close:** on 10 min inactivity, continuity break (new episode opens), 45 min
   max age, or 40-observation cap. Agent shutdown flushes open episodes.
-- **Episode record** (SQLite `episodes` table): id, start/end, app set, title
-  set, and up to 8 *representative* text samples (first/last + most mutually
-  dissimilar, each ≤ 600 chars) — bounded distiller input, auditable in the app.
-- All thresholds live in `CaptureOptions` (config, not code) — spec risk item.
+- **Episode record** (`episodes` table in the local activity store): id,
+  start/end, app set, title set, observation count, and up to 8 *representative*
+  text samples (first/last + most mutually dissimilar, each ≤ 600 chars) —
+  bounded distiller input, auditable in the app.
+- All thresholds live in `EpisodeOptions`, bound from `capture.episodes`
+  (config, not code) — spec risk item.
+- Closed episodes hand off through `IEpisodeProcessor` (the distiller/lifecycle
+  seam; null placeholder until T005/T006), and the loop writes a `closed`
+  decision row per episode regardless of processor outcome.
 
 ## Skeptical distillation (one inference call per closed episode)
 
@@ -105,7 +112,7 @@ per episode (take highest-confidence).
    SQLite. At cap, candidates **stay staged** (deferred, not dropped) and the
    decision trail says so.
 4. **Every step writes a decision row**: episode id, candidate statement,
-   action (`stored·reinforced·promoted·arbitrated·staged·deferred·
+   action (`closed·stored·reinforced·promoted·arbitrated·staged·deferred·
    distill_failed·skipped_gate·filtered`), reason, memory id. This table *is*
    the spec's explainability guarantee and the app's Activity feed.
 
@@ -160,7 +167,7 @@ invitation, not launch scope.
 ## File layout
 
 ```
-agent/Capture/Episodes/{Episode,EpisodeBuilder,EpisodeStore}.cs   (new)
+agent/Capture/Episodes/{Episode,EpisodeBuilder,EpisodeOptions,IEpisodeProcessor}.cs (new; episodes/decisions tables live in agent/Storage/ActivityStore.cs)
 agent/Distill/{Distiller,DistillPrompt,DistillParser,CandidateFact}.cs (new)
 agent/Lifecycle/{LifecycleEngine,ArbitrationPrompt,PromotionBudget,DecisionTrail}.cs (new)
 agent/Recall/{RecallService,RecallScorer,RecallOptions}.cs        (new)

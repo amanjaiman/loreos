@@ -4,11 +4,16 @@ using Lore.Agent.Inference;
 using Lore.Agent.Memory;
 using Lore.Agent.Storage;
 using Microsoft.Extensions.Logging.Abstractions;
+using Xunit.Abstractions;
 
 namespace Lore.Agent.Tests.Capture;
 
 public sealed class CaptureAgentTests
 {
+    private readonly ITestOutputHelper _output;
+
+    public CaptureAgentTests(ITestOutputHelper output) => _output = output;
+
     private sealed class FakeTimeProvider : TimeProvider
     {
         public DateTimeOffset Now { get; set; } = DateTimeOffset.UnixEpoch;
@@ -139,7 +144,9 @@ public sealed class CaptureAgentTests
         string? modelResponse = """{"observation": "I'm reading about replication", "category": "reading"}""",
         bool memoryThrows = false,
         IEnumerable<string>? blockedApps = null,
-        CaptureOptions? options = null)
+        CaptureOptions? options = null,
+        Func<FakeTimeProvider, IForegroundWindowSource>? windowSource = null,
+        ITextExtractor? extractor = null)
     {
         var time = new FakeTimeProvider();
         var memory = new FakeMemoryService(memoryThrows);
@@ -149,14 +156,15 @@ public sealed class CaptureAgentTests
             new Blocklist(blockedApps ?? [], []), new AllowProbe());
         var gate = new SmartGate(new SmartGateOptions(), new RecentCaptureGate(20), time);
         var analyzer = new CaptureAnalyzer(new StubBackend(modelResponse));
-        var monitor = new WindowMonitor(new FixedSource(Window), time, TimeSpan.Zero);
+        var monitor = new WindowMonitor(
+            windowSource?.Invoke(time) ?? new FixedSource(Window), time, TimeSpan.Zero);
         CaptureOptions captureOptions = options ?? new CaptureOptions();
         var processor = new RecordingEpisodeProcessor();
 
         var agent = new CaptureAgent(
             captureOptions,
             monitor,
-            new StubExtractor(extractedText),
+            extractor ?? new StubExtractor(extractedText),
             filter,
             gate,
             analyzer,
@@ -187,6 +195,43 @@ public sealed class CaptureAgentTests
         public FixedSource(WindowSnapshot window) => _window = window;
 
         public WindowSnapshot Current() => _window;
+    }
+
+    /// <summary>Replays a scripted trace: each poll advances the fake clock to the entry's
+    /// offset and surfaces its window; after the script there is no foreground window.</summary>
+    private sealed class ScriptedSource : IForegroundWindowSource
+    {
+        private readonly FakeTimeProvider _time;
+        private readonly Queue<(TimeSpan At, WindowSnapshot Window)> _script;
+
+        public ScriptedSource(FakeTimeProvider time, IEnumerable<(TimeSpan At, WindowSnapshot Window)> script)
+        {
+            _time = time;
+            _script = new(script);
+        }
+
+        public WindowSnapshot Current()
+        {
+            if (_script.Count == 0)
+            {
+                return WindowSnapshot.None;
+            }
+
+            (TimeSpan at, WindowSnapshot window) = _script.Dequeue();
+            _time.Now = DateTimeOffset.UnixEpoch + at;
+            return window;
+        }
+    }
+
+    private sealed class TitleMappedExtractor : ITextExtractor
+    {
+        private readonly IReadOnlyDictionary<string, string> _textByTitle;
+
+        public TitleMappedExtractor(IReadOnlyDictionary<string, string> textByTitle) =>
+            _textByTitle = textByTitle;
+
+        public Task<ExtractedText> ExtractAsync(WindowSnapshot window, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new ExtractedText(_textByTitle[window.Title], ExtractionSource.UiAutomation));
     }
 
     // ── Acceptance criterion 1: end-to-end capture produces a stored memory ───────
@@ -396,6 +441,102 @@ public sealed class CaptureAgentTests
 
         Assert.Equal(CaptureOutcome.EpisodeClosed, outcome); // failure logged, not thrown
         Assert.Single(await h.Activity.GetRecentEpisodesAsync()); // episode persisted first
+    }
+
+    // End-to-end trace through the hosted loop: a stretch of related reading, a blocked
+    // password vault, a switch to coding with a near-duplicate page, then shutdown. The
+    // persisted episodes + decisions tables are the observable outcome (v2-001 T004).
+    [Fact]
+    public async Task V2_day_trace_segments_into_persisted_episodes_with_a_decision_trail()
+    {
+        var texts = new Dictionary<string, string>
+        {
+            ["Wisdom tooth recovery — NHS"] = "aftercare instructions for wisdom tooth extraction bleeding and swelling basics",
+            ["Soft foods after tooth extraction"] = "soft foods list yogurt soup mashed potatoes for the first week of recovery",
+            ["KeePass — personal vault"] = "master password vault entries banking credentials",
+            ["Wisdom tooth recovery timeline"] = "recovery timeline day three swelling peaks then subsides with aftercare",
+            ["recall.rs — lore"] = "fn blend recency similarity weighted scores for memory recall ranking",
+            ["budget.rs — lore"] = "token budget arithmetic for prompt assembly in the distiller",
+            ["budget.rs — lore (2)"] = "token budget arithmetic for prompt assembly in the distiller",
+        };
+        (TimeSpan, WindowSnapshot)[] script =
+        [
+            (TimeSpan.Zero, new WindowSnapshot(1, "browser", "Wisdom tooth recovery — NHS")),
+            (TimeSpan.FromSeconds(45), new WindowSnapshot(2, "browser", "Soft foods after tooth extraction")),
+            (TimeSpan.FromSeconds(90), new WindowSnapshot(3, "keepass", "KeePass — personal vault")),
+            (TimeSpan.FromSeconds(135), new WindowSnapshot(4, "browser", "Wisdom tooth recovery timeline")),
+            (TimeSpan.FromSeconds(180), new WindowSnapshot(5, "code", "recall.rs — lore")),
+            (TimeSpan.FromSeconds(225), new WindowSnapshot(6, "code", "budget.rs — lore")),
+            (TimeSpan.FromSeconds(270), new WindowSnapshot(7, "code", "budget.rs — lore (2)")),
+        ];
+        using Harness h = Build(
+            blockedApps: ["keepass"],
+            options: new CaptureOptions { Pipeline = "v2", PollInterval = TimeSpan.FromMilliseconds(20) },
+            windowSource: time => new ScriptedSource(time, script),
+            extractor: new TitleMappedExtractor(texts));
+
+        await h.Agent.StartAsync(CancellationToken.None);
+        await WaitUntilAsync(() => h.Metrics.Snapshot().Observed >= 6, TimeSpan.FromSeconds(10));
+        await h.Agent.StopAsync(CancellationToken.None);
+
+        Assert.Empty(h.Memory.Remembered); // segmentation never called inference or memoryd
+
+        IReadOnlyList<Lore.Agent.Capture.Episodes.Episode> episodes =
+            await h.Activity.GetRecentEpisodesAsync();
+        Assert.Equal(2, episodes.Count); // newest first
+        Lore.Agent.Capture.Episodes.Episode coding = episodes[0];
+        Lore.Agent.Capture.Episodes.Episode reading = episodes[1];
+
+        Assert.Equal("browser", Assert.Single(reading.Executables));
+        Assert.Equal(3, reading.ObservationCount); // the vault window is not among them
+        Assert.Equal(3, reading.Samples.Count);
+        Assert.Equal(TimeSpan.FromSeconds(135), reading.EndedAt - reading.StartedAt);
+
+        Assert.Equal("code", Assert.Single(coding.Executables));
+        Assert.Equal(3, coding.ObservationCount);
+        Assert.Equal(2, coding.Samples.Count); // identical budget.rs text absorbed as a near-duplicate
+
+        Assert.All(episodes, e => Assert.DoesNotContain(
+            e.Titles.Concat(e.Samples).Concat(e.Executables),
+            s => s.Contains("vault", StringComparison.OrdinalIgnoreCase)
+                || s.Contains("keepass", StringComparison.OrdinalIgnoreCase)));
+
+        IReadOnlyList<DecisionEntry> decisions = await h.Activity.GetRecentDecisionsAsync();
+        Assert.Equal(2, decisions.Count); // newest first
+        Assert.All(decisions, d => Assert.Equal("closed", d.Action));
+        Assert.Equal("shutdown_flush", decisions[0].Reason);
+        Assert.Equal(coding.Id, decisions[0].EpisodeId);
+        Assert.Equal("continuity_break_or_bound", decisions[1].Reason);
+        Assert.Equal(reading.Id, decisions[1].EpisodeId);
+
+        ActivityLogEntry filteredRow = Assert.Single(
+            await h.Activity.GetRecentActivityAsync(), a => a.Decision == ActivityDecision.Filtered);
+        Assert.Equal("keepass", filteredRow.Executable);
+
+        Assert.Equal(2, h.Episodes.Processed.Count); // both handed through the processor seam
+
+        _output.WriteLine("episodes table (newest first):");
+        foreach (Lore.Agent.Capture.Episodes.Episode e in episodes)
+        {
+            _output.WriteLine(
+                $"  {e.Id}  {e.StartedAt:HH:mm:ss}-{e.EndedAt:HH:mm:ss}  " +
+                $"apps=[{string.Join(", ", e.Executables)}] observations={e.ObservationCount}");
+            foreach (string title in e.Titles)
+            {
+                _output.WriteLine($"    title:  {title}");
+            }
+
+            foreach (string sample in e.Samples)
+            {
+                _output.WriteLine($"    sample: {sample}");
+            }
+        }
+
+        _output.WriteLine("decisions table (newest first):");
+        foreach (DecisionEntry d in decisions)
+        {
+            _output.WriteLine($"  {d.At:HH:mm:ss}  episode={d.EpisodeId} action={d.Action} reason={d.Reason}");
+        }
     }
 
     private static async Task WaitUntilAsync(Func<bool> condition, TimeSpan timeout)
