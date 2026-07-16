@@ -29,7 +29,7 @@
 | `POST /memories/search` | Semantic search | `{ query, limit?, user_id?, filters? }` → `{ results }` (scored). `filters` is reserved. |
 | `GET /memories/{id}` | One memory | `404` if absent |
 | `POST /memories` | Remember an observation | `{ text, user_id?, metadata? }` → `201 { results }` (the stored memories) |
-| `PATCH /memories/{id}` | Replace text | `{ text }` → updated memory, `404` if absent |
+| `PATCH /memories/{id}` | User-authority edit | `{ text?, pinned?, kind? }` → updated memory (stamps `user_edit`; text edits set confidence 1.0), `404` if absent |
 | `DELETE /memories/{id}` | Forget one | `204`, or `404` if absent |
 | `GET /recent` | Recent raw captures | Local telemetry (`?limit=`), newest first |
 | `GET /activity` | Activity log | What Lore did per window (`?limit=`), newest first |
@@ -41,7 +41,13 @@
 | `DELETE /system/data` | Reset memory | Forgets every memory (the activity log is left intact) |
 | `GET /export/json` | Export everything (JSON) | `{ exported_at, count, memories }` |
 | `GET /export/markdown` | Export everything (Markdown) | `text/markdown` |
-| `POST /import` | *(reserved)* | `501 Not Implemented` until spec 009 fills it |
+| `POST /recall` | The every-turn memory check | `{ query, k?, kinds? }` → `{ results }` of typed facts above the relevance floor (often, correctly, empty); zero generative calls |
+| `POST /memories/{id}/confirm` | Still-true confirmation | Pushes a `state` fact's horizon out; re-stamps others |
+| `POST /staging/{id}/promote` | Keep a staged candidate | User authority — ignores the daily budget; `409` if not staged |
+| `POST /staging/{id}/dismiss` | Dismiss a staged candidate | Archives it; `409` if not staged |
+| `GET /episodes` · `GET /episodes/{id}` | What the distiller saw | Provenance for memories (`?limit=`) |
+| `GET /decisions` | The decision trail | Why Lore did/didn't remember something (`?limit=`) |
+| `GET /system/economy` | Today's capture economy | Decision counts since UTC midnight vs the promotion budget |
 
 ### Secrets
 

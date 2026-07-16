@@ -100,7 +100,6 @@ public static class ApiHost
         app.MapRecentEndpoints();
         app.MapConfigEndpoints();
         app.MapProviderEndpoints(); // POST /providers/test (from 004)
-        app.MapImportEndpoints();   // reserved POST /import placeholder (501; 009 fills it)
         app.MapSystemEndpoints();   // /system/status, /system/log, DELETE /system/data
         app.MapExportEndpoints();   // /export/json, /export/markdown
 

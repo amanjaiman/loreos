@@ -22,7 +22,7 @@ skill, and a REST API. Local-first, zero-telemetry, bring-your-own-model.
 loreos/
 ├── constitution.md      # the rules — read first, non-negotiable
 ├── AGENTS.md            # this file
-├── specs/               # SDD specs, one folder per feature (NNN-name/)
+├── specs/               # SDD specs — specs/v2 is active; specs/v1-archive is provenance
 │   ├── NNN-name/        #   v1 specs: specification.md · plan.md · tasks.md
 │   └── v2/              #   v2 restart spec set — see specs/v2/README.md
 ├── agent/               # C# capture agent + MCP server + local API host

@@ -1,31 +1,27 @@
 using Lore.Agent.Capture.Episodes;
-using Lore.Agent.Memory;
 using Lore.Agent.Storage;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace Lore.Agent.Capture;
 
-/// <summary>The capture loop, hosted in the 002 agent (constitution §3.3). Each tick:
-/// poll the foreground window → once dwelled, extract → filter (before anything else) →
-/// classify → gate → analyze → <see cref="IMemoryService.RememberAsync"/> → activity log.
-/// Filtering happens before any analysis, storage, or egress; the smart gate keeps
-/// inference proportional to genuine activity.
+/// <summary>The capture loop (constitution §3.3), v2-only since the v2-002 reset. Each
+/// tick: poll the foreground window → once dwelled, extract → filter (before anything
+/// else) → classify → episode intake. Closed episodes are persisted, recorded in the
+/// decision trail, and handed to the distiller/lifecycle seam
+/// (<see cref="IEpisodeProcessor"/>). Segmentation makes no inference calls.
 ///
-/// <para>Resilience (acceptance criterion 6): the whole tick is wrapped so one bad window,
-/// extraction, or model response never kills the loop, and a memoryd outage is handled
-/// gracefully — the observation is dropped with a logged, recoverable warning and the loop
-/// keeps running. The loop waits for memoryd's readiness gate before its first tick.</para>
-/// </summary>
+/// <para>Resilience: the whole tick is wrapped so one bad window, extraction, or
+/// processing round never kills the loop; a closed episode is persisted before
+/// processing so nothing is lost when the model or memoryd misbehaves. The loop waits
+/// for memoryd's readiness gate before its first tick and flushes the open episode on
+/// shutdown.</para></summary>
 public sealed class CaptureAgent : BackgroundService
 {
     private readonly CaptureOptions _options;
     private readonly WindowMonitor _monitor;
     private readonly ITextExtractor _extractor;
     private readonly SensitivityFilter _filter;
-    private readonly SmartGate _gate;
-    private readonly CaptureAnalyzer _analyzer;
-    private readonly IMemoryService _memory;
     private readonly ActivityStore _activity;
     private readonly CaptureMetrics _metrics;
     private readonly IReadinessSignal _readiness;
@@ -42,9 +38,6 @@ public sealed class CaptureAgent : BackgroundService
         WindowMonitor monitor,
         ITextExtractor extractor,
         SensitivityFilter filter,
-        SmartGate gate,
-        CaptureAnalyzer analyzer,
-        IMemoryService memory,
         ActivityStore activity,
         CaptureMetrics metrics,
         IReadinessSignal readiness,
@@ -57,9 +50,6 @@ public sealed class CaptureAgent : BackgroundService
         ArgumentNullException.ThrowIfNull(monitor);
         ArgumentNullException.ThrowIfNull(extractor);
         ArgumentNullException.ThrowIfNull(filter);
-        ArgumentNullException.ThrowIfNull(gate);
-        ArgumentNullException.ThrowIfNull(analyzer);
-        ArgumentNullException.ThrowIfNull(memory);
         ArgumentNullException.ThrowIfNull(activity);
         ArgumentNullException.ThrowIfNull(metrics);
         ArgumentNullException.ThrowIfNull(readiness);
@@ -71,9 +61,6 @@ public sealed class CaptureAgent : BackgroundService
         _monitor = monitor;
         _extractor = extractor;
         _filter = filter;
-        _gate = gate;
-        _analyzer = analyzer;
-        _memory = memory;
         _activity = activity;
         _metrics = metrics;
         _readiness = readiness;
@@ -82,8 +69,6 @@ public sealed class CaptureAgent : BackgroundService
         _episodes = episodes;
         _episodeProcessor = episodeProcessor;
     }
-
-    private bool IsV2 => string.Equals(_options.Pipeline, "v2", StringComparison.OrdinalIgnoreCase);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -102,13 +87,7 @@ public sealed class CaptureAgent : BackgroundService
             return; // shutting down before memory was ready
         }
 
-        if (!IsV2 && !string.Equals(_options.Pipeline, "v1", StringComparison.OrdinalIgnoreCase))
-        {
-            _logger.LogWarning(
-                "unrecognized capture.pipeline value '{Pipeline}'; falling back to v1", _options.Pipeline);
-        }
-
-        _logger.LogInformation("capture loop started (pipeline: {Pipeline})", IsV2 ? "v2" : "v1");
+        _logger.LogInformation("capture loop started");
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -119,13 +98,10 @@ public sealed class CaptureAgent : BackgroundService
                     await CaptureOnceAsync(observation.Window, stoppingToken).ConfigureAwait(false);
                 }
 
-                if (IsV2)
+                Episode? idle = _episodes.CloseIfIdle(_time.GetUtcNow());
+                if (idle is not null)
                 {
-                    Episode? idle = _episodes.CloseIfIdle(_time.GetUtcNow());
-                    if (idle is not null)
-                    {
-                        await HandleClosedEpisodeAsync(idle, "idle_timeout", stoppingToken).ConfigureAwait(false);
-                    }
+                    await HandleClosedEpisodeAsync(idle, "idle_timeout", stoppingToken).ConfigureAwait(false);
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -143,30 +119,27 @@ public sealed class CaptureAgent : BackgroundService
         }
 
         // Shutdown flush: the day's last episode is distilled, not lost (v2-001 T004).
-        if (IsV2)
+        try
         {
-            try
+            Episode? last = _episodes.Flush();
+            if (last is not null)
             {
-                Episode? last = _episodes.Flush();
-                if (last is not null)
-                {
-                    await HandleClosedEpisodeAsync(last, "shutdown_flush", CancellationToken.None)
-                        .ConfigureAwait(false);
-                }
+                await HandleClosedEpisodeAsync(last, "shutdown_flush", CancellationToken.None)
+                    .ConfigureAwait(false);
             }
+        }
 #pragma warning disable CA1031 // a storage failure at shutdown degrades gracefully (criterion 6)
-            catch (Exception ex)
+        catch (Exception ex)
 #pragma warning restore CA1031
-            {
-                _logger.LogWarning(ex, "shutdown flush failed; the open episode could not be persisted");
-            }
+        {
+            _logger.LogWarning(ex, "shutdown flush failed; the open episode could not be persisted");
         }
 
         _logger.LogInformation("capture loop stopped");
     }
 
-    /// <summary>Run one window through the full pipeline. Returns what happened; never
-    /// throws for an ordinary failure (a memoryd outage is logged and recoverable).</summary>
+    /// <summary>Run one window through the pipeline: extract → filter → episode intake.
+    /// Returns what happened; never throws for an ordinary failure.</summary>
     internal async Task<CaptureOutcome> CaptureOnceAsync(WindowSnapshot window, CancellationToken cancellationToken)
     {
         ExtractedText extracted = await _extractor.ExtractAsync(window, cancellationToken).ConfigureAwait(false);
@@ -182,62 +155,8 @@ public sealed class CaptureAgent : BackgroundService
         }
 
         ContentType type = ContentClassifier.Classify(window, filtered.Text);
-
-        if (IsV2)
-        {
-            return await ObserveForEpisodeAsync(window, type, filtered.Text, cancellationToken)
-                .ConfigureAwait(false);
-        }
-
-        GateDecision gate = _gate.Evaluate(window, type, filtered.Text);
-        if (!gate.ShouldCapture)
-        {
-            _metrics.Skipped(gate.Reason);
-            return CaptureOutcome.Skipped;
-        }
-
-        CaptureAnalysis? analysis =
-            await _analyzer.AnalyzeAsync(window.Title, filtered.Text, cancellationToken).ConfigureAwait(false);
-        if (analysis is null)
-        {
-            _metrics.AnalysisEmpty();
-            return CaptureOutcome.AnalysisEmpty;
-        }
-
-        try
-        {
-            await _memory.RememberAsync(
-                analysis.Observation,
-                metadata: new Dictionary<string, object?> { ["category"] = analysis.Category },
-                cancellationToken: cancellationToken).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-#pragma warning disable CA1031 // a memoryd outage must be recoverable, not fatal (criterion 6)
-        catch (Exception ex)
-#pragma warning restore CA1031
-        {
-            _logger.LogWarning(ex, "could not store observation; memoryd may be restarting — dropping this one");
-            _metrics.MemoryError();
-            return CaptureOutcome.MemoryError;
-        }
-
-        _gate.Record(window, type, filtered.Text);
-        await LogCaptureAsync(window, type, extracted.Source, filtered.Text, analysis, cancellationToken)
-            .ConfigureAwait(false);
-        _metrics.Captured();
-        return CaptureOutcome.Captured;
-    }
-
-    // The v2 tail of one capture: the filtered observation joins the episode stream; a
-    // closed episode is persisted, logged, and handed to the distiller/lifecycle seam.
-    private async Task<CaptureOutcome> ObserveForEpisodeAsync(
-        WindowSnapshot window, ContentType type, string text, CancellationToken cancellationToken)
-    {
         var observation = new CapturedObservation(
-            _time.GetUtcNow(), window.ProcessExecutable, window.Title, text, type);
+            _time.GetUtcNow(), window.ProcessExecutable, window.Title, filtered.Text, type);
         Episode? closed = _episodes.Add(observation);
         _metrics.Observed();
         if (closed is null)
@@ -282,7 +201,7 @@ public sealed class CaptureAgent : BackgroundService
     // for the same window — so a window held in focus isn't re-extracted on every poll.
     private bool ShouldProcess(WindowSnapshot window)
     {
-        string key = window.Handle + "" + window.Title;
+        string key = window.Handle + "" + window.Title;
         DateTimeOffset now = _time.GetUtcNow();
         if (key != _lastProcessedKey || now - _lastProcessedAt >= _options.RecaptureInterval)
         {
@@ -292,23 +211,6 @@ public sealed class CaptureAgent : BackgroundService
         }
 
         return false;
-    }
-
-    private Task LogCaptureAsync(
-        WindowSnapshot window, ContentType type, ExtractionSource source, string text,
-        CaptureAnalysis analysis, CancellationToken cancellationToken)
-    {
-        DateTimeOffset now = _time.GetUtcNow();
-        Task activity = _activity.LogActivityAsync(
-            new ActivityLogEntry(
-                now, window.ProcessExecutable, window.Title, ActivityDecision.Captured,
-                string.Empty, analysis.Observation, analysis.Category),
-            cancellationToken);
-        Task raw = _activity.LogRawCaptureAsync(
-            new RawCaptureEntry(
-                now, window.ProcessExecutable, window.Title, source.ToString(), type.ToString(), text),
-            cancellationToken);
-        return Task.WhenAll(activity, raw);
     }
 
     private Task LogActivityAsync(

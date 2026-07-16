@@ -276,26 +276,6 @@ export interface MemoryExport {
   memories: Memory[];
 }
 
-export interface ImportRequest {
-  path: string;
-  source?: string;
-}
-
-export interface ImportJob {
-  id: string;
-  document_id: string;
-  source: string;
-  status: string; // pending | running | completed | failed
-  progress: number;
-  total_chunks: number;
-  processed_chunks: number;
-  memories_created: number;
-  warning?: string;
-  error?: string;
-  created_at: string;
-  updated_at: string;
-}
-
 // ---- Transport ------------------------------------------------------------------
 
 type Query = Record<string, string | number | undefined>;
@@ -441,11 +421,6 @@ export const api = {
     return response.text();
   },
 
-  // Import (009)
-  startImport: (request: ImportRequest) =>
-    mutateJson<ImportJob>('POST', '/import', request),
-  getImport: (id: string) =>
-    getJson<ImportJob>(`/import/${encodeURIComponent(id)}`),
 };
 
 export type LoreApi = typeof api;

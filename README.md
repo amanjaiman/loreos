@@ -1,6 +1,6 @@
 # Lore
 
-**The open-source ambient capture agent for your personal memory layer.**
+**The open-source memory layer for every AI tool you use.**
 
 <!-- Demo GIF (spec 011 T004): record per docs/assets/README.md, save as
 docs/assets/demo.gif, then replace the line below with:
@@ -8,15 +8,18 @@ docs/assets/demo.gif, then replace the line below with:
 
 > 🎬 _Demo GIF coming._
 
-Lore watches what you do on your machine — locally, auditably, with aggressive
-filtering — distills what matters with a model *you* control, stores it in
-[mem0](https://github.com/mem0ai/mem0), and serves it to every AI tool you use
+Mention tooth pain this week; next week, when you ask any connected assistant
+about ordering dinner, it already knows to steer you toward soft foods. That's
+Lore: it watches what you do on your machine — locally, auditably, with
+aggressive filtering — and keeps a small set of **durable, typed facts about
+you** (never a log of your day), distilled skeptically by a model *you*
+control. Every AI tool you use can check that memory on **every message**
 through MCP, a CLI, an agent skill, and a documented REST API. No account, no
 telemetry, no Lore-operated server: your models, your keys, your disk, your
 memory. The rules that keep it that way live in
 [constitution.md](constitution.md).
 
-> **Status:** preparing the open-source launch (spec 011). One signed Windows
+> **Status:** the v2 memory-layer restart has landed (specs/v2). One signed Windows
 > installer bundles everything; the privacy and trust docs are the launch contract.
 
 ## Quickstart (Windows 10/11) — under ten minutes
@@ -52,12 +55,19 @@ REST/MCP surfaces are in [docs/integrations/](docs/integrations/).
 
 ## What Lore is
 
-Lore is the connective tissue between what you do and the AI tools you use. It runs a
-small **capture agent** that reads on-screen text, passes it through a
-heavily-tested **sensitivity filter chain** (blocklist → structural → regex) *before*
-anything is stored, and asks **your** model to distill the durable facts. Those go
-into a local [mem0](https://github.com/mem0ai/mem0) store and are exposed to every
-client through one loopback API.
+Lore is the connective tissue between what you do and the AI tools you use. A
+small **capture agent** reads on-screen text and passes it through a
+heavily-tested **sensitivity filter chain** (blocklist → structural → regex)
+*before* anything else sees it. Related activity groups into **episodes**; your
+model is asked one skeptical question per episode — *"what durable fact about
+the user does this support?"* — where **"nothing" is the expected answer**. Real
+facts stage first and are kept once a second episode supports them, capped by a
+daily budget. What's kept is typed (identity · preference · state · experience ·
+project), expires when it stops being true, lives in a local
+[mem0](https://github.com/mem0ai/mem0) store, and is **recalled by relevance on
+every message** through one loopback API — with a decision trail that always
+answers "why does (or doesn't) Lore know that?" The model and how it works:
+[docs/memory-model.md](docs/memory-model.md).
 
 What makes it trustworthy:
 
@@ -74,6 +84,7 @@ What makes it trustworthy:
 
 | Doc | What |
 |---|---|
+| [docs/memory-model.md](docs/memory-model.md) | What Lore remembers, how skeptical capture and recall work |
 | [docs/privacy.md](docs/privacy.md) | What's captured, the filter layers, the complete egress list |
 | [docs/architecture.md](docs/architecture.md) | The seams: capture, memory, providers, the local API |
 | [docs/providers.md](docs/providers.md) | Choosing and configuring your model |
@@ -114,7 +125,7 @@ electron-forge): [`installer/build.ps1`](installer/build.ps1) — see
 | `skills/` | Agent Skill packages (spec 008) |
 | `docs/` | Architecture, privacy, providers, integration guides |
 | `installer/` | Windows packaging (spec 011) |
-| `specs/` | Spec-driven development artifacts, one folder per feature |
+| `specs/v2/` | The active spec set (the v2 memory-layer restart); `specs/v1-archive/` keeps the retired v1 specs for provenance |
 
 ## Contributing
 
