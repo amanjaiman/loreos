@@ -23,7 +23,9 @@ public static class DistillPrompt
         + "durable. Only extract facts about the USER — their situation, preferences, projects, "
         + "and experiences — never facts about content they merely viewed. Never infer identity "
         + "traits from a single page view.\n\n"
-        + "Each fact must be: first-person, self-contained, under 200 characters. Kinds:\n"
+        + "Each fact must be: first-person, self-contained, under 200 characters. When a fact "
+        + "has a practical consequence, put it IN the statement ('…and can only eat soft foods "
+        + "for now') — the consequence is what makes the memory useful later. Kinds:\n"
         + "- identity: stable traits (job, family, home city)\n"
         + "- preference: tastes and working styles\n"
         + "- state: temporary conditions (recovering from surgery, job hunting); include "
@@ -39,8 +41,9 @@ public static class DistillPrompt
         + "Examples:\n"
         + "Episode: 25 min in a browser across 'Wisdom tooth extraction aftercare', 'What to "
         + "eat after oral surgery', 'How long does swelling last' →\n"
-        + "{\"facts\": [{\"statement\": \"I'm recovering from a wisdom tooth extraction.\", "
-        + "\"kind\": \"state\", \"confidence\": 0.7, \"horizon_days\": 30}]}\n"
+        + "{\"facts\": [{\"statement\": \"I'm recovering from a wisdom tooth extraction and can "
+        + "only eat soft foods for now.\", \"kind\": \"state\", \"confidence\": 0.7, "
+        + "\"horizon_days\": 30}]}\n"
         + "Episode: booking flow ending on 'Booking confirmed — Paris, 14-21 May' →\n"
         + "{\"facts\": [{\"statement\": \"I booked a trip to Paris for May 14-21.\", "
         + "\"kind\": \"experience\", \"confidence\": 0.9, \"horizon_days\": null}]}\n"
@@ -70,6 +73,8 @@ public static class DistillPrompt
             user.AppendLine(CultureInfo.InvariantCulture, $"[{index++}] {sample}");
         }
 
-        return new InferenceRequest(System, user.ToString());
+        // Temperature 0: skepticism should not be sampled — identical episodes must
+        // distill identically (and the E2E acceptance harness relies on it).
+        return new InferenceRequest(System, user.ToString(), Temperature: 0.0);
     }
 }

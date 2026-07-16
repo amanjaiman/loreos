@@ -89,6 +89,9 @@ internal static class Program
                 new FileLoggerProvider(LogTail.DefaultPath),
                 sp.GetRequiredService<SecretRegistry>()));
 
+        // v1 → v2 migration (v2-001 T010): stamp pre-schema rows as archived, once ready.
+        builder.Services.AddHostedService<V1ArchiveSweep>();
+
         // Recall (v2-001): the every-turn hot path behind POST /recall and the MCP tool.
         builder.Services.AddSingleton(
             builder.Configuration.GetSection("recall").Get<Lore.Agent.Recall.RecallOptions>()

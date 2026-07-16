@@ -158,7 +158,9 @@ public sealed class CaptureAgentTests
         var analyzer = new CaptureAnalyzer(new StubBackend(modelResponse));
         var monitor = new WindowMonitor(
             windowSource?.Invoke(time) ?? new FixedSource(Window), time, TimeSpan.Zero);
-        CaptureOptions captureOptions = options ?? new CaptureOptions();
+        // The default harness pins the legacy path (it still exists until v2-002's
+        // retirement PR); v2 tests opt in via V2Options().
+        CaptureOptions captureOptions = options ?? new CaptureOptions { Pipeline = "v1" };
         var processor = new RecordingEpisodeProcessor();
 
         var agent = new CaptureAgent(
@@ -326,7 +328,11 @@ public sealed class CaptureAgentTests
     [Fact]
     public async Task The_hosted_loop_polls_and_stores_a_memory_then_stops()
     {
-        using Harness h = Build(options: new CaptureOptions { PollInterval = TimeSpan.FromMilliseconds(10) });
+        using Harness h = Build(options: new CaptureOptions
+        {
+            Pipeline = "v1", // this test pins the legacy loop's store-per-dwell behavior
+            PollInterval = TimeSpan.FromMilliseconds(10),
+        });
 
         await h.Agent.StartAsync(CancellationToken.None);
         await WaitUntilAsync(() => h.Memory.Remembered.Count >= 1, TimeSpan.FromSeconds(5));

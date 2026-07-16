@@ -113,27 +113,28 @@ public sealed class LifecycleEngine : IEpisodeProcessor
         double bestScore = best?.Score ?? 0.0;
         MemoryMetadata? bestMeta = best is null ? null : MemoryMetadata.From(best);
 
-        if (best is not null && bestMeta is not null && bestScore >= _options.SameFactThreshold)
+        if (best is not null && bestMeta is not null)
         {
-            if (bestMeta.Status == MemoryStatuses.Active)
+            if (bestMeta.Status == MemoryStatuses.Active && bestScore >= _options.SameFactThreshold)
             {
                 await ReinforceAsync(episode, fact, best, bestMeta, now, ct).ConfigureAwait(false);
+                return;
             }
-            else
+
+            // A staged candidate promotes on same-TOPIC support: staging exists to
+            // accumulate evidence, and a second episode rarely words the fact
+            // identically — requiring the same-fact band here would stall promotion.
+            if (bestMeta.Status == MemoryStatuses.Staged && bestScore >= _options.SameTopicThreshold)
             {
                 await PromoteStagedAsync(episode, fact, best, bestMeta, now, ct).ConfigureAwait(false);
+                return;
             }
 
-            return;
-        }
-
-        if (best is not null
-            && bestMeta is not null
-            && bestScore >= _options.SameTopicThreshold
-            && bestMeta.Status == MemoryStatuses.Active)
-        {
-            await ArbitrateAsync(episode, fact, best, bestMeta, now, ct).ConfigureAwait(false);
-            return;
+            if (bestMeta.Status == MemoryStatuses.Active && bestScore >= _options.SameTopicThreshold)
+            {
+                await ArbitrateAsync(episode, fact, best, bestMeta, now, ct).ConfigureAwait(false);
+                return;
+            }
         }
 
         if (fact.Confidence >= _options.HighSignalConfidence)

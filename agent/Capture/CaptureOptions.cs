@@ -19,11 +19,11 @@ public sealed class CaptureOptions
     /// within this window are caught at the next re-examination and judged by the gate.</summary>
     public TimeSpan RecaptureInterval { get; init; } = TimeSpan.FromSeconds(30);
 
-    /// <summary>Which decision pipeline runs after the filter chain: <c>"v1"</c> is the
-    /// dwell-gate-analyze path; <c>"v2"</c> is episode segmentation + skeptical
-    /// distillation (v2-001). The default flips to v2 when the E2E harness is green
-    /// (v2-001 T010); the v1 path is deleted by v2-002 after that.</summary>
-    public string Pipeline { get; init; } = "v1";
+    /// <summary>Which decision pipeline runs after the filter chain: <c>"v2"</c> (the
+    /// default since v2-001 T010) is episode segmentation + skeptical distillation;
+    /// <c>"v1"</c> is the retired dwell-gate-analyze path, kept only until v2-002's
+    /// retirement PR deletes it.</summary>
+    public string Pipeline { get; init; } = "v2";
 
     /// <summary>Episode segmentation thresholds (v2 pipeline).</summary>
     public Episodes.EpisodeOptions Episodes { get; init; } = new();

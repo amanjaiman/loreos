@@ -80,20 +80,29 @@ ollama pull nomic-embed-text # the local embedding model memoryd uses by default
 ```
 
 With a local provider **and** the default `memory.engine: "embedded"`, Lore makes
-**zero non-loopback calls** — capture analysis and memory embeddings both stay
-on your machine. (LM Studio, llama.cpp's server, and vLLM work the same
+**zero non-loopback calls** — capture analysis, memory extraction, and embeddings
+all stay on your machine. (LM Studio, llama.cpp's server, and vLLM work the same
 way by their own `base_url`; set any `api_key_ref` if your server requires a key.)
 
 ## One provider, two consumers
 
 The same `provider` block configures:
 
-1. **Capture analysis** — the `IInferenceBackend` the capture pipeline calls to
-   distill an observation.
-2. **Memory** — `memoryd`/mem0's embedder, applied via `POST /config` once
-   memoryd is healthy. (The config also carries the chat provider because mem0
-   requires one, but memoryd runs mem0 as a raw store — since v2-001 it never
-   invokes that LLM.)
+1. **Capture** — the `IInferenceBackend` behind the v2 pipeline's skeptical
+   distiller ("what durable fact about the user does this episode support?") and
+   its lifecycle arbitration ("does this new fact supersede that memory?").
+2. **Memory** — `memoryd`'s embedder, applied via `POST /config` once memoryd is
+   healthy. Since v2-001, memoryd stores facts verbatim (`infer=False`) — the
+   chat model is configured but memoryd itself never calls it, and **recall makes
+   zero generative calls** (one embedding per query).
+
+### Minimum capable model
+
+Distillation quality is strongly model-bound (measured in the v2-001 spike): a
+~7B-class instruct model (e.g. `qwen2.5:7b-instruct`) or any hosted frontier
+model distills clean, self-contained facts; a ~2B model confabulates and will
+fill your memory with garbage. Point capture at the strongest model you're
+comfortable running — the daily promotion budget caps spend, not quality.
 
 The embedder follows the provider: when the provider has first-party embeddings
 (OpenAI), memoryd uses them; otherwise it falls back to the **validated local

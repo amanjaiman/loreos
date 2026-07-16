@@ -122,11 +122,16 @@ per episode (take highest-confidence).
 3. Floor: drop blended < 0.55 (config; calibrated on the golden set — floor
    errs toward empty, spec AC 6). Return ≤ k with statement, kind,
    established_at, score.
-   *Calibration note (T007):* the defaults survived the golden corpus as-is
-   (floor 0.55, state 1.15, experience 0.9 with 365-day decay). One emergent
-   property worth knowing: with the 0.6 decay floor, experience decay saturates
-   at ~187 days — older experiences all carry the same 0.54× factor, which is
-   the intent (gentle, never vanishing).
+   *Calibration note (T007/T010):* weights held (state 1.15, experience 0.9,
+   365-day decay; decay saturates at ~187 days by design). The floor was
+   re-calibrated against LIVE nomic-embed-text distributions in the T010 E2E
+   harness: nomic scores unrelated pairs ~0.45–0.50 absolute, so the original
+   0.55 floor dropped true cross-domain hits. Two changes: (1) floor default
+   0.47 (relevant hits blend ≥ ~0.50, unrelated ≤ ~0.44); (2) the distiller
+   prompt now asks for the practical consequence *inside* the statement
+   ("…and can only eat soft foods for now") — the consequence is what makes a
+   cross-domain query (takeout ↔ dental surgery) land in embedding space, on
+   any embedder.
 
 Zero generative calls; one embedding call (inside memoryd's search). Spike:
 36 ms warm end-to-end locally, so cloud-embedder p50 < 500 ms holds with room.

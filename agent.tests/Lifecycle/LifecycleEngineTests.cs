@@ -243,6 +243,24 @@ public sealed class LifecycleEngineTests : IDisposable
     }
 
     [Fact]
+    public async Task Same_topic_against_staged_also_promotes_evidence_accumulates()
+    {
+        // A second supporting episode rarely words the fact identically; staged
+        // candidates promote on the same-topic band, not the same-fact band.
+        _backend.DistillJson = FactJson(
+            statement: "My wisdom tooth removal is still healing.", confidence: 0.7);
+        _memory.SearchResults.Add(
+            Neighbor("m-staged", "I'm recovering from wisdom tooth extraction.", 0.8, MemoryStatuses.Staged));
+
+        await BuildEngine().ProcessAsync(Episode);
+
+        (string id, IReadOnlyDictionary<string, object?> patch) = Assert.Single(_memory.Patches);
+        Assert.Equal("m-staged", id);
+        Assert.Equal(MemoryStatuses.Active, patch["status"]);
+        Assert.Equal(0, _backend.ArbitrationCalls); // no arbitration for staged targets
+    }
+
+    [Fact]
     public async Task Same_topic_supersedes_archives_old_and_stores_revision()
     {
         _backend.DistillJson = FactJson(

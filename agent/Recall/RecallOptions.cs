@@ -13,8 +13,10 @@ public sealed class RecallOptions
     public int OverFetchMultiplier { get; init; } = 3;
 
     /// <summary>Blended score below which a hit is dropped. An empty result is the
-    /// common, correct case — the floor errs toward empty (spec AC 6).</summary>
-    public double Floor { get; init; } = 0.55;
+    /// common, correct case — the floor errs toward empty (spec AC 6). The default is
+    /// calibrated against live nomic-embed-text distributions (T010): relevant
+    /// cross-domain hits blend ≥ ~0.50, unrelated pairs ≤ ~0.44.</summary>
+    public double Floor { get; init; } = 0.47;
 
     /// <summary>Recall weight of a current <c>state</c> — the "wisdom teeth" boost.</summary>
     public double StateWeight { get; init; } = 1.15;
