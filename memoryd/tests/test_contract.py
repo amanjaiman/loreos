@@ -1,16 +1,20 @@
-"""Contract tests against the PINNED mem0 (spec 002 T007).
+"""Contract tests against the PINNED mem0 (spec 002 T007, reshaped by v2-001 T002).
 
 These pin the mem0 behaviors memoryd depends on, so bumping mem0 is a deliberate,
-test-guarded change. They run a real ``mem0.Memory`` + on-disk Qdrant but with
-deterministic in-process stand-ins for the LLM and embedder, so they need no Ollama,
-no network, and no torch — they run in CI.
+test-guarded change. They run a real ``mem0.Memory`` + on-disk Qdrant but with a
+deterministic in-process embedder, so they need no Ollama, no network, and no
+torch — they run in CI.
 
-What they guard:
-- add / get_all / search / update / delete round-trip through mem0 + Qdrant.
-- mem0's ``add()`` is *additive*: two semantically-equivalent facts both persist
-  (this is exactly why memoryd reconciles — spike Finding 1).
-- Acceptance criterion 3: a contradicting fact converges to ONE current memory via
-  memoryd's reconciliation pass (`Reconciler` over mem0's real search + delete).
+What they guard (v2-001 raw-store mode):
+- ``add(…, infer=False)`` stores the caller's text VERBATIM (no extraction) and
+  Lore's typed metadata round-trips intact.
+- mem0's storage layer is additive: semantically-equivalent facts both persist.
+  (This is why the agent's lifecycle engine — not the store — reconciles.)
+- ``Mem0Backend.update`` preserves metadata on a text-only patch: the pinned
+  mem0 wipes metadata to ``{}`` on a bare ``update()`` (spike Q4) and the
+  backend's fetch-merge-resend is what protects against it.
+- Query-time filters: equality, ``ne``, ``in``, numeric ``gt`` (the recall
+  path's expiry exclusion), and rejection of unsupported shapes.
 """
 
 from __future__ import annotations
@@ -23,13 +27,16 @@ from typing import Any
 import pytest
 from mem0 import Memory
 
-from lore_memoryd.models import AddedMemory
-from lore_memoryd.reconcile import Reconciler, Verdict
+from lore_memoryd.backend import Mem0Backend
 
 pytestmark = pytest.mark.contract
 
 _DIM = 16
 USER = "contract-user"
+
+# v2-001 sentinel for non-expiring memories (2100-01-01T00:00:00Z).
+_FAR_FUTURE = 4102444800
+_NOW = 1_800_000_000  # fixed "now" so tests are deterministic
 
 
 class _FakeEmbedder:
@@ -54,8 +61,8 @@ class _FakeEmbedder:
 def memory(tmp_path: Path) -> Iterator[Memory]:
     config = {
         "history_db_path": str(tmp_path / "history.db"),
-        # openai providers construct without any network call; we never invoke the
-        # LLM (adds use infer=False; reconciliation uses an injected judge).
+        # openai providers construct without any network call; raw-store adds
+        # (infer=False) never invoke the LLM at all.
         "llm": {"provider": "openai", "config": {"model": "gpt-4o-mini", "api_key": "sk-fake"}},
         "embedder": {
             "provider": "openai",
@@ -75,66 +82,121 @@ def memory(tmp_path: Path) -> Iterator[Memory]:
     yield mem
 
 
-def _items(result: object) -> list[dict[str, Any]]:
-    # mem0 returns either {"results": [...]} or a bare list; mirror backend._results.
-    items = result.get("results", []) if isinstance(result, dict) else result
-    return [i for i in items if isinstance(i, dict)] if isinstance(items, list) else []
+@pytest.fixture
+def backend(memory: Memory) -> Mem0Backend:
+    return Mem0Backend(memory)
 
 
-def _add(memory: Memory, text: str) -> str:
-    return str(_items(memory.add(text, user_id=USER, infer=False))[0]["id"])
+def _add(backend: Mem0Backend, text: str, metadata: dict[str, Any] | None = None) -> str:
+    results = backend.add(text, USER, metadata)
+    assert len(results) == 1
+    return results[0].id
 
 
-def _all_texts(memory: Memory) -> list[str]:
-    result = memory.get_all(filters={"user_id": USER}, top_k=100)
-    return [i["memory"] for i in _items(result)]
+def _all_texts(backend: Mem0Backend) -> list[str]:
+    return [m.memory for m in backend.get_all(USER, limit=100)]
 
 
-def test_add_get_search_update_delete_roundtrip(memory: Memory) -> None:
-    mem_id = _add(memory, "The user is allergic to penicillin")
+def test_raw_add_is_verbatim_and_metadata_roundtrips(backend: Mem0Backend) -> None:
+    meta = {
+        "kind": "state",
+        "status": "active",
+        "confidence": 0.8,
+        "expires_at": _NOW + 45 * 86400,
+        "episodes": ["ep-1", "ep-2"],
+    }
+    text = "I'm recovering from wisdom tooth extraction (mid-July 2026)."
+    mem_id = _add(backend, text, meta)
 
-    assert _all_texts(memory) == ["The user is allergic to penicillin"]
-
-    found = memory.search("penicillin allergy", filters={"user_id": USER}, top_k=5)
-    assert any("penicillin" in h["memory"] for h in _items(found))
-
-    memory.update(mem_id, data="The user is allergic to penicillin and aspirin")
-    assert "aspirin" in memory.get(mem_id)["memory"]
-
-    memory.delete(mem_id)
-    assert _all_texts(memory) == []
-
-
-def test_native_add_is_additive(memory: Memory) -> None:
-    # mem0 does not merge semantically-equivalent facts on its own — both persist.
-    # This is the contract that justifies memoryd's reconciliation pass.
-    #
-    # Intentional offline-testing boundary: this test uses infer=False (via _add) to
-    # pin mem0's STORAGE-layer additive behavior without requiring an LLM in CI.
-    # The production Mem0Backend.add path runs with infer=True (LLM extraction enabled);
-    # its additive behavior is exercised by the opt-in Ollama integration test
-    # (tests/test_integration_ollama.py), which proves end-to-end convergence.
-    _add(memory, "The user lives in Seattle")
-    _add(memory, "The user lives in Seattle, Washington")
-    assert len(_all_texts(memory)) == 2
+    got = backend.get(mem_id)
+    assert got is not None
+    assert got.memory == text  # verbatim: no extraction rewrote the fact
+    assert got.metadata == meta  # floats, ints, lists all intact
 
 
-def test_contradiction_converges_to_one_memory(memory: Memory) -> None:
-    # Acceptance criterion 3, via the reconciliation pass over mem0's real search +
-    # delete. The judge is injected (supersedes) so the test is deterministic.
-    _add(memory, "The user lives in Seattle")
-    austin_id = _add(memory, "The user just moved to Austin")
+def test_storage_is_additive_lifecycle_reconciles_elsewhere(backend: Mem0Backend) -> None:
+    # mem0 does not merge semantically-equivalent facts in raw mode — both
+    # persist. The agent's lifecycle engine (v2-001 T006) owns reconciliation;
+    # this pin documents why the store cannot be trusted to do it.
+    _add(backend, "The user lives in Seattle")
+    _add(backend, "The user lives in Seattle, Washington")
+    assert len(_all_texts(backend)) == 2
 
-    def judge(_new: str, _existing: str) -> Verdict:
-        return "supersedes"
 
-    reconciler = Reconciler(memory, judge, threshold=0.0)
-    survivors = reconciler.reconcile(
-        [AddedMemory(id=austin_id, memory="The user just moved to Austin", event="ADD")], USER
+def test_text_only_patch_preserves_metadata(backend: Mem0Backend) -> None:
+    meta = {"kind": "preference", "status": "active", "confidence": 0.7}
+    mem_id = _add(backend, "The user prefers tea over coffee.", meta)
+
+    updated = backend.update(mem_id, "The user prefers oolong tea.", None)
+    assert updated is not None
+    assert updated.memory == "The user prefers oolong tea."
+    # The pinned mem0 wipes metadata on a bare update(); the backend's
+    # fetch-merge-resend must preserve it.
+    assert updated.metadata == meta
+
+
+def test_metadata_only_patch_merges_keys(backend: Mem0Backend) -> None:
+    mem_id = _add(backend, "The user is job hunting.", {"kind": "state", "status": "staged"})
+
+    updated = backend.update(mem_id, None, {"status": "active", "confidence": 0.9})
+    assert updated is not None
+    assert updated.memory == "The user is job hunting."  # text untouched
+    assert updated.metadata == {"kind": "state", "status": "active", "confidence": 0.9}
+
+
+def test_equality_ne_and_in_filters(backend: Mem0Backend) -> None:
+    _add(backend, "I visited France in spring 2026.", {"kind": "experience", "status": "active"})
+    _add(backend, "I am recovering from surgery.", {"kind": "state", "status": "active"})
+    _add(backend, "I used to use VS Code.", {"kind": "preference", "status": "archived"})
+
+    hits = backend.search("visited places trips", USER, 10, {"kind": "experience"})
+    assert [h.memory for h in hits] == ["I visited France in spring 2026."]
+
+    active = backend.search("anything about me", USER, 10, {"status": {"ne": "archived"}})
+    assert all((h.metadata or {}).get("status") == "active" for h in active)
+
+    subset = backend.get_all(USER, 10, 0, {"kind": {"in": ["experience", "state"]}})
+    assert {(m.metadata or {}).get("kind") for m in subset} == {"experience", "state"}
+
+
+def test_expiry_exclusion_via_numeric_gt(backend: Mem0Backend) -> None:
+    # The recall path's contract: expired state never surfaces; sentinel-dated
+    # kinds always survive the expires_at gt-now filter.
+    _add(
+        backend,
+        "I am training for a marathon.",
+        {"kind": "state", "status": "active", "expires_at": _NOW + 90 * 86400},
+    )
+    _add(
+        backend,
+        "I was on crutches after a sprained ankle.",
+        {"kind": "state", "status": "active", "expires_at": _NOW - 10 * 86400},
+    )
+    _add(
+        backend,
+        "I live in Boston.",
+        {"kind": "identity", "status": "active", "expires_at": _FAR_FUTURE},
     )
 
-    texts = _all_texts(memory)
-    assert len(texts) == 1
-    assert "Austin" in texts[0]
-    assert "Seattle" not in texts[0]
-    assert survivors[0].event == "UPDATE"
+    # The fake embedder is whitespace-split bag-of-words, so the query repeats
+    # each memory's tokens verbatim (punctuation included) — this test is about
+    # the expiry FILTER, not semantic ranking.
+    hits = backend.search("marathon. crutches Boston.", USER, 10, {"expires_at": {"gt": _NOW}})
+    texts = [h.memory for h in hits]
+    assert not any("crutches" in t for t in texts)  # expired excluded
+    assert any("marathon" in t for t in texts)  # unexpired state present
+    assert any("Boston" in t for t in texts)  # sentinel identity present
+
+
+def test_unsupported_filter_shapes_raise_before_reaching_mem0(backend: Mem0Backend) -> None:
+    with pytest.raises(ValueError, match="operator"):
+        backend.search("q", USER, 5, {"status": {"$ne": "archived"}})
+    with pytest.raises(ValueError, match="boolean"):
+        backend.search("q", USER, 5, {"AND": [{"kind": "state"}]})
+
+
+def test_delete_roundtrip(backend: Mem0Backend) -> None:
+    mem_id = _add(backend, "Ephemeral fact.")
+    assert backend.delete(mem_id) is True
+    assert backend.get(mem_id) is None
+    assert backend.delete(mem_id) is False

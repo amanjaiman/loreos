@@ -1,9 +1,9 @@
 """Translate a Lore provider config into a mem0 ``Memory``.
 
-This is the only place mem0's configuration vocabulary lives. T002 establishes the
-translation and the on-disk layout; T003 completes the `follow_provider` embedder
-policy (prefer the provider's first-party embeddings, fall back to a local model)
-and adds the reconciliation pass (`reconcile.py`).
+This is the only place mem0's configuration vocabulary lives: the provider/embedder
+mapping, the `follow_provider` embedder policy, and the on-disk layout. Since
+v2-001, memoryd runs mem0 as a raw store (`infer=False` adds) — the chat provider
+is still configured (mem0 requires it) but is never invoked by memoryd.
 """
 
 from __future__ import annotations

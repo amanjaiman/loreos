@@ -76,7 +76,9 @@ class MemoryItem(BaseModel):
 
 
 class AddedMemory(BaseModel):
-    """One outcome of an add: mem0 may extract several memories from one text."""
+    """One outcome of an add. In raw-store mode (v2-001) an add stores exactly the
+    caller's text, so this is a single-item list with event ADD; the event field
+    survives for wire compatibility."""
 
     id: str
     memory: str
@@ -109,7 +111,14 @@ class MemoriesResponse(BaseModel):
 
 
 class UpdateRequest(BaseModel):
-    text: str
+    """Patch a memory's text and/or metadata. At least one must be present.
+
+    Metadata is MERGED into the existing metadata key-by-key (send a key to
+    overwrite it); memoryd always rewrites the full merged dict because the
+    pinned mem0 wipes metadata on text-only updates (v2-001 spike Q4)."""
+
+    text: str | None = None
+    metadata: dict[str, Any] | None = None
 
 
 class StatusResponse(BaseModel):

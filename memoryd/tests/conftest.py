@@ -41,29 +41,54 @@ class FakeBackend:
     def search(
         self, query: str, user_id: str, limit: int, filters: dict[str, Any] | None
     ) -> list[MemoryItem]:
+        from lore_memoryd.backend import validate_filters
+
+        validate_filters(filters)
         terms = {t for t in query.lower().split() if len(t) > 2}
         hits = [
             self._item(d, score=1.0)
             for d in self._store.values()
-            if d["user_id"] == user_id and any(t in d["memory"].lower() for t in terms)
+            if d["user_id"] == user_id
+            and any(t in d["memory"].lower() for t in terms)
+            and self._matches(d, filters)
         ]
         return hits[:limit]
 
-    def get_all(self, user_id: str, limit: int, offset: int = 0) -> list[MemoryItem]:
-        items = [self._item(d) for d in self._store.values() if d["user_id"] == user_id]
+    def get_all(
+        self, user_id: str, limit: int, offset: int = 0, filters: dict[str, Any] | None = None
+    ) -> list[MemoryItem]:
+        from lore_memoryd.backend import validate_filters
+
+        validate_filters(filters)
+        items = [
+            self._item(d)
+            for d in self._store.values()
+            if d["user_id"] == user_id and self._matches(d, filters)
+        ]
         return items[offset : offset + limit]
 
     def get(self, memory_id: str) -> MemoryItem | None:
         d = self._store.get(memory_id)
         return self._item(d) if d else None
 
-    def update(self, memory_id: str, text: str) -> MemoryItem | None:
+    def update(
+        self, memory_id: str, text: str | None, metadata: dict[str, Any] | None
+    ) -> MemoryItem | None:
         d = self._store.get(memory_id)
         if d is None:
             return None
-        d["memory"] = text
+        if text is not None:
+            d["memory"] = text
+        # Mirror Mem0Backend: metadata is merged, never wiped by a text-only patch.
+        d["metadata"] = {**(d.get("metadata") or {}), **(metadata or {})}
         d["updated_at"] = datetime.now(UTC).isoformat()
         return self._item(d)
+
+    @staticmethod
+    def _matches(d: dict[str, Any], filters: dict[str, Any] | None) -> bool:
+        """Equality-only filter support — enough for route-level tests."""
+        meta = d.get("metadata") or {}
+        return all(meta.get(k) == v for k, v in (filters or {}).items() if not isinstance(v, dict))
 
     def delete(self, memory_id: str) -> bool:
         return self._store.pop(memory_id, None) is not None
