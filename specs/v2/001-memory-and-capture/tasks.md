@@ -16,11 +16,11 @@
   metadata-preserving text patch, `ne`/`in`/`gt` filters, expiry exclusion.
   Backward-compatible with the current agent.
 
-- [ ] **T003 — Agent: memory schema + seam.** `MemoryMetadata` (typed, plan
+- [x] **T003 — Agent: memory schema + seam.** `MemoryMetadata` (typed, plan
   table) with serialization to/from the metadata dict; `IMemoryService` gains
-  filtered search, metadata patch, and typed add; `MemorydClient` implements;
-  sentinel/expiry helpers; unit tests incl. round-trip and non-null-keys
-  invariant.
+  filtered search, filtered paged list, metadata patch, and typed add;
+  `MemorydClient` implements; sentinel/expiry helpers; unit tests incl.
+  round-trip and non-null-keys invariant.
 
 - [ ] **T004 — Agent: episode segmentation + stores.** `EpisodeBuilder` (pure
   logic: continuity/close rules from plan, config thresholds),

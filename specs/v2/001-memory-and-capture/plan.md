@@ -42,7 +42,7 @@ One mem0 memory per fact. `memory` = the first-person statement. Metadata
 | `status` | `staged · active · archived` | recall filters `active`; `archived` covers superseded + user-deleted-by-revision; staging lives in mem0 (spike consequence) |
 | `confidence` | float 0–1 | promotion sets ≥0.6; reinforcement bumps by +0.1 capped 0.95; user edit/pin sets 1.0 |
 | `expires_at` | int epoch s | `state`: now + horizon (distiller suggests days, clamped 7–180; default 45). All other kinds: sentinel `4102444800`. Recall filters `gt now` |
-| `established_at` / `updated_reason` | int epoch s / string | provenance for UI; `updated_reason` ∈ `promoted·reinforced·revised·user_edit·confirmed` |
+| `established_at` / `updated_reason` | int epoch s / string | provenance for UI; `updated_reason` ∈ `promoted·reinforced·revised·user_edit·confirmed·v1_archive` |
 | `reinforced` | int | supporting-episode count beyond the first |
 | `episodes` | string[] | supporting episode ids (decision-trail join) |
 | `pinned` / `user_edited` | bool | user authority: when either is true the LifecycleEngine may only *reinforce*, never revise/archive; conflicts surface as a confirmation card instead |
