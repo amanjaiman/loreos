@@ -89,6 +89,12 @@ internal static class Program
                 new FileLoggerProvider(LogTail.DefaultPath),
                 sp.GetRequiredService<SecretRegistry>()));
 
+        // Recall (v2-001): the every-turn hot path behind POST /recall and the MCP tool.
+        builder.Services.AddSingleton(
+            builder.Configuration.GetSection("recall").Get<Lore.Agent.Recall.RecallOptions>()
+                ?? new Lore.Agent.Recall.RecallOptions());
+        builder.Services.AddTransient<Lore.Agent.Recall.RecallService>();
+
         // The generated OpenAPI contract surfaces pin to, served at /openapi.json (005 T007).
         ApiHost.AddOpenApi(builder.Services);
 

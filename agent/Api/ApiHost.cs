@@ -95,6 +95,7 @@ public static class ApiHost
         app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
         app.MapMemoryEndpoints();
+        app.MapRecallEndpoints(); // POST /recall — the v2-001 every-turn hot path
         app.MapRecentEndpoints();
         app.MapConfigEndpoints();
         app.MapProviderEndpoints(); // POST /providers/test (from 004)

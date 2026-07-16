@@ -131,6 +131,11 @@ per episode (take highest-confidence).
 3. Floor: drop blended < 0.47 (config; calibrated on the golden set — floor
    errs toward empty, spec AC 6). Return ≤ k with statement, kind,
    established_at, score.
+   *Calibration note (T007):* the defaults survived the golden corpus as-is
+   (floor 0.55, state 1.15, experience 0.9 with 365-day decay). One emergent
+   property worth knowing: with the 0.6 decay floor, experience decay saturates
+   at ~187 days — older experiences all carry the same 0.54× factor, which is
+   the intent (gentle, never vanishing).
 
 Zero generative calls; one embedding call (inside memoryd's search). Spike:
 36 ms warm end-to-end locally, so cloud-embedder p50 < 500 ms holds with room.
