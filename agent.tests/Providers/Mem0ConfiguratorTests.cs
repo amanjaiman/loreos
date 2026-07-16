@@ -96,7 +96,9 @@ public sealed class Mem0ConfiguratorTests : IDisposable
         store.Write("lore/embedder", "sk-embedder");
         var options = new ProviderOptions
         {
-            Type = "anthropic", Model = "claude-haiku-4-5", ApiKeyRef = "lore/provider",
+            Type = "anthropic",
+            Model = "claude-haiku-4-5",
+            ApiKeyRef = "lore/provider",
         };
         // Anthropic has no embeddings; the explicit embedder block is the supported path.
         var embedder = new EmbedderOptions

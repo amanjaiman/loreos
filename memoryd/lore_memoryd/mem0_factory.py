@@ -23,6 +23,7 @@ class EmbedderConfigError(ValueError):
     failure so the /config handler can surface the (redacted) message instead of the
     generic "check provider config and logs" (spec 013)."""
 
+
 # Host-controlled data dir override (spec 011 T005, self-hosted multi-device). Each
 # connecting agent sends its *own* local data_dir in /config; on a shared remote
 # memoryd that would let the last device to connect repoint the store (and a Windows
