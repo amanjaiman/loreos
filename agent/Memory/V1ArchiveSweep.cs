@@ -32,26 +32,59 @@ public sealed class V1ArchiveSweep : BackgroundService
         _logger = logger;
     }
 
+    /// <summary>How many times a failed sweep is retried before deferring to the next
+    /// start, and how long between attempts. Readiness only means memoryd is HEALTHY —
+    /// the provider configuration (POST /config) lands moments later, so the first
+    /// attempts can race it and see 503 "not configured". Retrying rides that out.</summary>
+    internal int MaxAttempts { get; init; } = 24;
+
+    internal TimeSpan RetryDelay { get; init; } = TimeSpan.FromSeconds(5);
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         try
         {
             await _readiness.WaitUntilReadyAsync(stoppingToken).ConfigureAwait(false);
-            int stamped = await SweepAsync(stoppingToken).ConfigureAwait(false);
-            if (stamped > 0)
+            for (int attempt = 1; attempt <= MaxAttempts; attempt++)
             {
-                _logger.LogInformation("archived {Count} v1 memories (read-only, never deleted)", stamped);
+                try
+                {
+                    int stamped = await SweepAsync(stoppingToken).ConfigureAwait(false);
+                    if (stamped > 0)
+                    {
+                        _logger.LogInformation(
+                            "archived {Count} v1 memories (read-only, never deleted)", stamped);
+                    }
+
+                    return;
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+#pragma warning disable CA1031 // migration must never take the agent down with it
+                catch (Exception ex)
+#pragma warning restore CA1031
+                {
+                    if (attempt == MaxAttempts)
+                    {
+                        _logger.LogWarning(ex, "v1 archive sweep failed; will retry on next start");
+                        return;
+                    }
+
+                    _logger.LogDebug(
+                        ex,
+                        "v1 archive sweep attempt {Attempt}/{Max} failed (memoryd may still be configuring); retrying",
+                        attempt,
+                        MaxAttempts);
+                }
+
+                await Task.Delay(RetryDelay, stoppingToken).ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException)
         {
             // shutting down; the sweep resumes on the next start
-        }
-#pragma warning disable CA1031 // migration must never take the agent down with it
-        catch (Exception ex)
-#pragma warning restore CA1031
-        {
-            _logger.LogWarning(ex, "v1 archive sweep failed; will retry on next start");
         }
     }
 
