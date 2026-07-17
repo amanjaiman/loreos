@@ -40,7 +40,10 @@ export class AgentProcess {
   start(): void {
     const exe = resolveAgentExe();
     if (!exe) {
-      console.log('[agent] no bundled agent (dev build); not spawning');
+      console.log(
+        '[agent] dev build — not spawning an agent; run one yourself ' +
+          '(`dotnet run --project agent`) and the app will find it on 127.0.0.1:7842',
+      );
       return;
     }
     this.spawn(exe);

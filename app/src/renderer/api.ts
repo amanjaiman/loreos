@@ -420,7 +420,6 @@ export const api = {
     const response = await send('/export/markdown');
     return response.text();
   },
-
 };
 
 export type LoreApi = typeof api;
