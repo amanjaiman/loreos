@@ -50,6 +50,51 @@ public static class ApiHost
         EnsureLoopbackOnly(configured);
     }
 
+    /// <summary>The webpack dev-server origin the renderer runs on during <c>npm start</c>
+    /// (Electron Forge's webpack plugin default port; nothing in <c>app/forge.config.ts</c>
+    /// overrides it). Only reachable in dev.</summary>
+    public const string DevRendererOrigin = "http://localhost:3000";
+
+    /// <summary>What Chromium sends as the <c>Origin</c> header for a <c>file://</c> page —
+    /// the packaged app's renderer. An opaque origin serializes to the literal string
+    /// <c>"null"</c>, not an absent header.</summary>
+    private const string FileOriginToken = "null";
+
+    /// <summary>The one CORS policy name, applied globally.</summary>
+    public const string CorsPolicyName = "LoreRenderer";
+
+    /// <summary>Register the CORS policy that lets the Electron renderer's <c>fetch</c> calls
+    /// actually read the API's responses. The renderer is the one client that runs inside a
+    /// browser engine and is therefore subject to CORS at all — the CLI, MCP clients, and
+    /// <c>curl</c> send no <c>Origin</c> header, so this middleware is a no-op for them.
+    ///
+    /// <para>The allow-list is deliberately narrow (<see cref="DevRendererOrigin"/> and the
+    /// packaged app's <c>file://</c> origin) rather than <c>AllowAnyOrigin</c>: this API can
+    /// read every memory and reset the whole store, and it binds loopback only, so the
+    /// meaningful threat is not a remote attacker but any other page already open in the
+    /// user's own browser probing <c>127.0.0.1</c> — a known attack class against local
+    /// dev-tool APIs. Origin allow-listing is the only gate (constitution: no account, no
+    /// auth), so it must stay tight.</para></summary>
+    public static void AddCors(IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        services.AddCors(options => options.AddPolicy(CorsPolicyName, policy => policy
+            .SetIsOriginAllowed(origin =>
+                string.Equals(origin, DevRendererOrigin, StringComparison.Ordinal)
+                || string.Equals(origin, FileOriginToken, StringComparison.Ordinal))
+            .AllowAnyMethod()
+            .AllowAnyHeader()));
+        // No AllowCredentials(): the renderer never sends cookies/auth, so origin match is the
+        // whole gate — and AllowCredentials would only widen the surface for no benefit.
+    }
+
+    /// <summary>Apply the CORS policy to the pipeline. Call before endpoints are mapped.</summary>
+    public static void UseCors(WebApplication app)
+    {
+        ArgumentNullException.ThrowIfNull(app);
+        app.UseCors(CorsPolicyName);
+    }
+
     /// <summary>The OpenAPI document name, which also fixes its served path: <c>/openapi.json</c>.</summary>
     public const string OpenApiDocumentName = "openapi";
 
