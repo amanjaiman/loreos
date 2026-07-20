@@ -93,6 +93,10 @@ internal static class Program
                 ?? new Lore.Agent.Recall.RecallOptions());
         builder.Services.AddTransient<Lore.Agent.Recall.RecallService>();
 
+        // Lets the Electron renderer's fetch calls actually read responses (it runs inside
+        // Chromium and is subject to CORS; the CLI/MCP clients are not and are unaffected).
+        ApiHost.AddCors(builder.Services);
+
         // The generated OpenAPI contract surfaces pin to, served at /openapi.json (005 T007).
         ApiHost.AddOpenApi(builder.Services);
 
@@ -103,6 +107,7 @@ internal static class Program
         WebApplication app = builder.Build();
 
         // Spec 005: every endpoint group is assembled onto this one host (constitution §3.1).
+        ApiHost.UseCors(app);
         ApiHost.UseOpenApi(app);
         app.MapLoreApi();
         app.MapLoreMcp(); // 006 T003: Streamable HTTP MCP endpoint at /mcp
