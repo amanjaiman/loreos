@@ -1,16 +1,13 @@
-import { Card, ThemeSelector } from '../../design-system';
+import { Card } from '../../design-system';
 
-/** Appearance settings: the theme switcher. Coastal (default) ⇄ Nocturne; the choice persists. */
+/** Appearance settings: the persistent header control is the single source of truth. */
 export function Appearance(): JSX.Element {
   return (
     <Card eyebrow="// appearance" title="Theme">
       <p className="set-subtle">
-        Coastal is calm and light; Nocturne is dark and crisp. Your choice is
-        remembered.
+        Switch between Coastal and Nocturne from the header. Lore remembers
+        your choice across restarts.
       </p>
-      <div className="set-theme">
-        <ThemeSelector />
-      </div>
     </Card>
   );
 }
