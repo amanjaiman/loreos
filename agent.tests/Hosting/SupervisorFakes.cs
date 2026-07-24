@@ -100,3 +100,28 @@ internal sealed class FakeHealthProbe : IMemorydHealthProbe
 
     public Task<bool> IsHealthyAsync(CancellationToken cancellationToken) => Task.FromResult(_isHealthy());
 }
+
+/// <summary>Simulates an orphaned prior instance still bound to the port: the very
+/// first health check "succeeds" (as if answered by that orphan) at the exact moment
+/// the supervisor's own freshly-spawned process independently dies (e.g. the real
+/// bind conflict this represents). Deterministic — no wall-clock race needed to
+/// exercise the TOCTOU gap between a health success and the owning process's exit.</summary>
+internal sealed class OrphanAnsweringHealthProbe : IMemorydHealthProbe
+{
+    private readonly FakeProcessRunner _runner;
+    private bool _armed = true;
+
+    public OrphanAnsweringHealthProbe(FakeProcessRunner runner) => _runner = runner;
+
+    public Task<bool> IsHealthyAsync(CancellationToken cancellationToken)
+    {
+        if (_armed && _runner.Started.Count > 0)
+        {
+            _armed = false;
+            _runner.Started[^1].SignalExit(3); // our own spawn dies before we trust "healthy"
+            return Task.FromResult(true);
+        }
+
+        return Task.FromResult(false);
+    }
+}
