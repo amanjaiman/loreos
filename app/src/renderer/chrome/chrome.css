@@ -254,14 +254,17 @@
   }
 
   .app-header__wordmark,
-  .app-header__status-copy,
-  .app-header__theme {
+  .app-header__status-copy {
     display: none;
   }
 
   .app-header__status {
     min-width: 0;
     padding: var(--space-1);
+  }
+
+  .app-header__theme .lore-themeselect__opt {
+    padding-inline: var(--space-1);
   }
 
   .app-content {
