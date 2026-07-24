@@ -5,8 +5,8 @@ export function Appearance(): JSX.Element {
   return (
     <Card eyebrow="// appearance" title="Theme">
       <p className="set-subtle">
-        Switch between Coastal and Nocturne from the header. Lore remembers
-        your choice across restarts.
+        Switch between Coastal and Nocturne from the header. Lore remembers your
+        choice across restarts.
       </p>
     </Card>
   );
