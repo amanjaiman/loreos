@@ -31,6 +31,16 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+::selection {
+  background: var(--primary-soft);
+  color: var(--text);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
 #root {
   min-height: 100%;
 }

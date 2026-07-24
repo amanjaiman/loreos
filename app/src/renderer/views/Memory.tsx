@@ -9,6 +9,7 @@ import {
   type MemoryKind,
   type MemoryMeta,
 } from '../api';
+import { PageHeader } from '../chrome/PageHeader';
 import {
   Badge,
   Button,
@@ -22,6 +23,7 @@ import {
   Textarea,
 } from '../design-system';
 import { formatRelative } from '../lib/format';
+import { Icon } from '../lib/Icon';
 import './memory.css';
 
 const KIND_LABELS: Record<string, string> = {
@@ -97,7 +99,20 @@ export function Memory(): JSX.Element {
 
   return (
     <div className="app-page">
-      <div className="mem-controls">
+      <PageHeader
+        eyebrow="// memory"
+        title="What Lore knows."
+        description="Every durable fact is visible, editable, and yours to remove."
+        action={
+          items !== null && !offline ? (
+            <span className="mem-total">
+              <strong>{items.length}</strong>
+              <span>{items.length === 1 ? 'memory' : 'memories'}</span>
+            </span>
+          ) : undefined
+        }
+      />
+      <div className="mem-toolbar">
         <Tabs
           tabs={[
             { value: 'profile', label: 'Profile' },
@@ -143,10 +158,15 @@ export function Memory(): JSX.Element {
         <>
           {groups.map(({ kind, memories }) => (
             <section key={kind} className="mem-group">
-              <p className="app-eyebrow">
-                {'// '}
-                {KIND_LABELS[kind] ?? kind}
-              </p>
+              <div className="mem-group__head">
+                <span className="mem-group__icon">
+                  <Icon name={kindIcon(kind)} size={15} />
+                </span>
+                <div>
+                  <h2>{KIND_LABELS[kind] ?? kind}</h2>
+                  <span>{memories.length}</span>
+                </div>
+              </div>
               <div className="mem-list">
                 {memories.map((m) => (
                   <MemoryCard
@@ -191,6 +211,23 @@ export function Memory(): JSX.Element {
       )}
     </div>
   );
+}
+
+function kindIcon(kind: string): string {
+  switch (kind) {
+    case 'identity':
+      return 'fingerprint';
+    case 'preference':
+      return 'heart';
+    case 'state':
+      return 'activity';
+    case 'experience':
+      return 'milestone';
+    case 'project':
+      return 'folder-kanban';
+    default:
+      return 'bookmark';
+  }
 }
 
 function MemoryCard({

@@ -35,7 +35,13 @@ export function ThemeSelector({
     let saved = null;
     try { saved = localStorage.getItem(storageKey); } catch (e) {}
     const valid = saved && themes.some((t) => t.id === saved);
-    return valid ? saved : defaultId || themes[0].id;
+    const followsDark =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-color-scheme: dark)").matches;
+    const systemTheme = followsDark
+      ? themes.find((t) => t.mode === "dark")
+      : themes.find((t) => t.mode === "light");
+    return valid ? saved : defaultId || systemTheme?.id || themes[0].id;
   });
 
   // Apply the active theme whenever it changes (and on mount).
