@@ -54,6 +54,11 @@ public sealed class MemorydSupervisor : BackgroundService
             return;
         }
 
+        if (await AdoptIfAlreadyHealthyAsync(stoppingToken).ConfigureAwait(false))
+        {
+            return;
+        }
+
         while (!stoppingToken.IsCancellationRequested)
         {
             IManagedProcess? process = null;
@@ -68,7 +73,7 @@ public sealed class MemorydSupervisor : BackgroundService
                 // Race the health gate against process exit so a startup crash (port in
                 // use, import error) is detected immediately rather than after the full
                 // health-gate timeout.
-                bool healthy = await WaitForHealthyAsync(stoppingToken, exited).ConfigureAwait(false);
+                bool healthy = await WaitForHealthyAsync(stoppingToken, process, exited).ConfigureAwait(false);
                 if (stoppingToken.IsCancellationRequested)
                 {
                     break;
@@ -123,6 +128,32 @@ public sealed class MemorydSupervisor : BackgroundService
         _logger.LogInformation("memoryd supervisor stopped");
     }
 
+    /// <summary>Checked exactly once, before spawning anything: is something already
+    /// answering <c>/health</c> on the configured port? Most commonly this is a prior
+    /// instance orphaned by a forceful kill (constitution §3.3 assumes graceful
+    /// shutdown, which doesn't always happen — killing the agent process directly
+    /// leaves its spawned child running and still bound). Spawning our own process in
+    /// that case can only fail to bind, and — because the port never frees up — every
+    /// retry fails the same way: an unbreakable crash loop, not a transient hiccup.
+    ///
+    /// <para>We don't own the adopted process's lifecycle, so — matching the existing
+    /// remote-engine philosophy — we signal ready and stop actively supervising rather
+    /// than trying to kill or restart a process we didn't spawn.</para></summary>
+    private async Task<bool> AdoptIfAlreadyHealthyAsync(CancellationToken stoppingToken)
+    {
+        if (!await _health.IsHealthyAsync(stoppingToken).ConfigureAwait(false))
+        {
+            return false;
+        }
+
+        _logger.LogInformation(
+            "memoryd is already healthy at {BaseAddress}; adopting the existing instance " +
+            "instead of spawning a duplicate (it may be left over from a prior run)",
+            _options.BaseAddress);
+        _ready.TrySetResult();
+        return true;
+    }
+
     private async Task SuperviseRemoteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("memory engine is remote ({Url}); not spawning a sidecar", _options.BaseAddress);
@@ -150,7 +181,8 @@ public sealed class MemorydSupervisor : BackgroundService
         }
     }
 
-    private async Task<bool> WaitForHealthyAsync(CancellationToken stoppingToken, Task? exited = null)
+    private async Task<bool> WaitForHealthyAsync(
+        CancellationToken stoppingToken, IManagedProcess? process = null, Task? exited = null)
     {
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
         timeoutCts.CancelAfter(_options.HealthGateTimeout);
@@ -159,13 +191,29 @@ public sealed class MemorydSupervisor : BackgroundService
         {
             while (!token.IsCancellationRequested)
             {
-                if (exited is { IsCompleted: true })
+                if (process is { HasExited: true })
                 {
                     return false; // the process died during the gate
                 }
 
                 if (await _health.IsHealthyAsync(token).ConfigureAwait(false))
                 {
+                    // A health success can race our own process's exit: only one process
+                    // can hold the OS-level port binding at a time, so if something else
+                    // already occupies it (a prior instance orphaned by a forceful kill —
+                    // constitution §3.3 assumes graceful shutdown, which doesn't always
+                    // happen), ITS /health can answer for the very check meant to validate
+                    // OUR spawn, right as ours dies (e.g. a bind conflict). Re-check
+                    // immediately before trusting the result — via the process object's own
+                    // HasExited (a direct, synchronous OS query), NOT `exited.IsCompleted`:
+                    // the WaitForExitAsync task's completion is observed through a scheduled
+                    // continuation and is not guaranteed to have flipped yet at this exact
+                    // point, so it under-detects the very race this check exists to catch.
+                    if (process is { HasExited: true })
+                    {
+                        return false;
+                    }
+
                     return true;
                 }
 

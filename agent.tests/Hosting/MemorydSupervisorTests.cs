@@ -67,7 +67,9 @@ public sealed class MemorydSupervisorTests : IDisposable
     public async Task Embedded_restarts_after_an_unexpected_exit()
     {
         var runner = new FakeProcessRunner();
-        var probe = new FakeHealthProbe(() => true);
+        // Healthy only once OUR process has spawned — an unconditional () => true would
+        // be adopted at the pre-spawn check instead of exercising the spawn/restart path.
+        var probe = new FakeHealthProbe(() => runner.Started.Count > 0);
         MemorydSupervisor supervisor = Create(FastOptions(), runner, probe);
 
         await supervisor.StartAsync(CancellationToken.None);
@@ -84,7 +86,7 @@ public sealed class MemorydSupervisorTests : IDisposable
     public async Task Stopping_kills_the_process_and_does_not_restart()
     {
         var runner = new FakeProcessRunner();
-        var probe = new FakeHealthProbe(() => true);
+        var probe = new FakeHealthProbe(() => runner.Started.Count > 0);
         MemorydSupervisor supervisor = Create(FastOptions(), runner, probe);
 
         await supervisor.StartAsync(CancellationToken.None);
@@ -95,6 +97,25 @@ public sealed class MemorydSupervisorTests : IDisposable
 
         Assert.True(process.Killed);
         Assert.Single(runner.Started); // no restart after a clean stop
+    }
+
+    [Fact]
+    public async Task Embedded_adopts_an_already_healthy_instance_instead_of_spawning_a_duplicate()
+    {
+        // The field bug this fixes: a prior instance orphaned by a forceful kill is
+        // still bound to the port and already healthy before this supervisor even
+        // starts. Spawning a competing process would only fail to bind — since the
+        // port never frees up, every retry fails the same way, an unbreakable loop.
+        var runner = new FakeProcessRunner();
+        var probe = new FakeHealthProbe(() => true); // healthy from the very first check
+        MemorydSupervisor supervisor = Create(FastOptions(), runner, probe);
+
+        await supervisor.StartAsync(CancellationToken.None);
+        await supervisor.Ready.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.True(supervisor.Ready.IsCompletedSuccessfully);
+        Assert.Empty(runner.Started); // adopted, not spawned — no competing process
+        await supervisor.StopAsync(CancellationToken.None);
     }
 
     [Fact]
@@ -130,6 +151,25 @@ public sealed class MemorydSupervisorTests : IDisposable
     }
 
     [Fact]
+    public async Task A_health_success_racing_its_own_process_exit_is_not_trusted()
+    {
+        // Regression: a prior instance orphaned by a forceful kill can still be bound
+        // to the port and answer /health with 200 for the very check meant to
+        // validate a freshly-spawned process that is, in reality, dying (e.g. a bind
+        // conflict). The supervisor must not declare readiness off that false
+        // positive — it isn't the process it's actually supervising.
+        var runner = new FakeProcessRunner();
+        var probe = new OrphanAnsweringHealthProbe(runner);
+        MemorydSupervisor supervisor = Create(FastOptions(), runner, probe);
+
+        await supervisor.StartAsync(CancellationToken.None);
+
+        await WaitUntilAsync(() => runner.Started.Count >= 2, TimeSpan.FromSeconds(5));
+        Assert.False(supervisor.Ready.IsCompleted);
+        await supervisor.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
     public async Task Remote_retries_across_gate_timeouts_until_healthy()
     {
         MemorydOptions options = FastOptions("remote");
@@ -151,7 +191,7 @@ public sealed class MemorydSupervisorTests : IDisposable
     public async Task Spawn_failure_is_caught_and_retried()
     {
         var runner = new FakeProcessRunner { ThrowsBeforeSuccess = 1 }; // first launch throws
-        var probe = new FakeHealthProbe(() => true);
+        var probe = new FakeHealthProbe(() => runner.Started.Count > 0);
         MemorydSupervisor supervisor = Create(FastOptions(), runner, probe);
 
         await supervisor.StartAsync(CancellationToken.None);
@@ -191,7 +231,7 @@ public sealed class MemorydSupervisorTests : IDisposable
             MemorydOptions options = FastOptions();
             options.BaseDirectory = baseDir;
             var runner = new FakeProcessRunner();
-            var probe = new FakeHealthProbe(() => true);
+            var probe = new FakeHealthProbe(() => runner.Started.Count > 0);
             MemorydSupervisor supervisor = Create(options, runner, probe);
 
             await supervisor.StartAsync(CancellationToken.None);
@@ -214,7 +254,7 @@ public sealed class MemorydSupervisorTests : IDisposable
         // BaseDirectory points at a temp dir with no bundled exe -> dev fallback.
         options.BaseDirectory = Path.Combine(Path.GetTempPath(), "lore-nobundle-" + Guid.NewGuid().ToString("N"));
         var runner = new FakeProcessRunner();
-        var probe = new FakeHealthProbe(() => true);
+        var probe = new FakeHealthProbe(() => runner.Started.Count > 0);
         MemorydSupervisor supervisor = Create(options, runner, probe);
 
         await supervisor.StartAsync(CancellationToken.None);
@@ -236,7 +276,7 @@ public sealed class MemorydSupervisorTests : IDisposable
             MemorydOptions options = FastOptions();
             options.PackagedExecutable = exe;
             var runner = new FakeProcessRunner();
-            var probe = new FakeHealthProbe(() => true);
+            var probe = new FakeHealthProbe(() => runner.Started.Count > 0);
             MemorydSupervisor supervisor = Create(options, runner, probe);
 
             await supervisor.StartAsync(CancellationToken.None);
