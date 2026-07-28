@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { api, LoreOfflineError, type Decision, type Episode } from '../api';
+import { PageHeader } from '../chrome/PageHeader';
 import { Card, Spinner, Tabs, Tag } from '../design-system';
 import { formatRelative } from '../lib/format';
+import { Icon } from '../lib/Icon';
 import './activity.css';
 
 type Feed = 'decisions' | 'episodes';
@@ -55,14 +57,28 @@ export function Activity(): JSX.Element {
 
   return (
     <div className="app-page">
-      <Tabs
-        tabs={[
-          { value: 'decisions', label: 'Decisions' },
-          { value: 'episodes', label: 'Episodes' },
-        ]}
-        value={feed}
-        onChange={(v) => setFeed(v as Feed)}
+      <PageHeader
+        eyebrow="// timeline"
+        title="Every choice, in context."
+        description="See what Lore observed, why it acted, and why most activity never became a memory."
       />
+      <div className="act-toolbar">
+        <Tabs
+          tabs={[
+            { value: 'decisions', label: 'Decisions' },
+            { value: 'episodes', label: 'Episodes' },
+          ]}
+          value={feed}
+          onChange={(v) => setFeed(v as Feed)}
+        />
+        {!loading && !offline && (
+          <span className="act-toolbar__count">
+            {feed === 'decisions'
+              ? `${decisions.length} decisions`
+              : `${episodes.length} episodes`}
+          </span>
+        )}
+      </div>
 
       {loading ? (
         <div className="act-loading">
@@ -102,18 +118,39 @@ export function Activity(): JSX.Element {
 function DecisionRow({ decision }: { decision: Decision }): JSX.Element {
   return (
     <Card className="act-row">
-      <div className="act-row__head">
-        <Tag>{ACTION_LABELS[decision.action] ?? decision.action}</Tag>
-        <span className="act-row__time">{formatRelative(decision.at)}</span>
+      <span className={`act-row__marker act-row__marker--${decision.action}`}>
+        <Icon name={actionIcon(decision.action)} size={14} />
+      </span>
+      <div className="act-row__content">
+        <div className="act-row__head">
+          <Tag>{ACTION_LABELS[decision.action] ?? decision.action}</Tag>
+          <span className="act-row__time">{formatRelative(decision.at)}</span>
+        </div>
+        {decision.statement.length > 0 && (
+          <p className="act-row__statement">{decision.statement}</p>
+        )}
+        {decision.reason.length > 0 && (
+          <p className="act-row__reason">{decision.reason}</p>
+        )}
       </div>
-      {decision.statement.length > 0 && (
-        <p className="act-row__statement">{decision.statement}</p>
-      )}
-      {decision.reason.length > 0 && (
-        <p className="act-row__reason">{decision.reason}</p>
-      )}
     </Card>
   );
+}
+
+function actionIcon(action: string): string {
+  if (['promoted', 'user_promoted', 'reinforced', 'revised'].includes(action)) {
+    return 'bookmark-check';
+  }
+  if (action === 'staged' || action === 'needs_confirmation') {
+    return 'circle-dashed';
+  }
+  if (action.includes('failed')) {
+    return 'triangle-alert';
+  }
+  if (action.startsWith('deferred')) {
+    return 'clock-3';
+  }
+  return 'minus';
 }
 
 function EpisodeCard({ episode }: { episode: Episode }): JSX.Element {
@@ -141,8 +178,13 @@ function EpisodeCard({ episode }: { episode: Episode }): JSX.Element {
       }}
     >
       <div className="act-row__head">
-        <span className="act-episode__title">
-          {episode.titles[0] ?? episode.executables.join(', ')}
+        <span className="act-episode__heading">
+          <span className="act-episode__icon">
+            <Icon name="panels-top-left" size={15} />
+          </span>
+          <span className="act-episode__title">
+            {episode.titles[0] ?? episode.executables.join(', ')}
+          </span>
         </span>
         <span className="act-row__time">
           {formatRelative(episode.ended_at)}

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 
-import { Tabs } from '../../design-system';
+import { PageHeader } from '../../chrome/PageHeader';
 import { useConfig } from '../../lib/hooks';
+import { Icon } from '../../lib/Icon';
 import { About } from './About';
 import { Appearance } from './Appearance';
 import { CapturePrivacy } from './CapturePrivacy';
@@ -19,13 +20,13 @@ type SettingsTab =
   | 'about';
 
 const TABS = [
-  { value: 'model', label: 'Model & memory' },
-  { value: 'capture', label: 'Capture & privacy' },
-  { value: 'connections', label: 'Connections' },
-  { value: 'appearance', label: 'Appearance' },
-  { value: 'data', label: 'Data' },
-  { value: 'about', label: 'About' },
-];
+  { value: 'model', label: 'Model & memory', icon: 'brain-circuit' },
+  { value: 'capture', label: 'Capture & privacy', icon: 'scan-eye' },
+  { value: 'connections', label: 'Connections', icon: 'plug-zap' },
+  { value: 'appearance', label: 'Appearance', icon: 'palette' },
+  { value: 'data', label: 'Data', icon: 'database' },
+  { value: 'about', label: 'About', icon: 'info' },
+] as const;
 
 /**
  * Settings — Model & memory, Capture & privacy, Appearance, Data, About. Every section
@@ -38,21 +39,44 @@ export function Settings(): JSX.Element {
 
   return (
     <div className="app-page">
-      <Tabs
-        tabs={TABS}
-        value={tab}
-        onChange={(v) => setTab(v as SettingsTab)}
+      <PageHeader
+        eyebrow="// settings"
+        title="Make Lore yours."
+        description="Configure the local model, set clear boundaries, and choose how Lore meets your tools."
       />
-      {tab === 'model' && (
-        <ModelMemory config={config} onSaved={() => void refresh()} />
-      )}
-      {tab === 'capture' && (
-        <CapturePrivacy config={config} onSaved={() => void refresh()} />
-      )}
-      {tab === 'connections' && <Connections />}
-      {tab === 'appearance' && <Appearance />}
-      {tab === 'data' && <Data onReset={() => void refresh()} />}
-      {tab === 'about' && <About />}
+      <div className="set-layout">
+        <nav className="set-nav" aria-label="Settings sections">
+          {TABS.map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              className={
+                item.value === tab
+                  ? 'set-nav__item set-nav__item--active'
+                  : 'set-nav__item'
+              }
+              aria-current={item.value === tab ? 'page' : undefined}
+              onClick={() => setTab(item.value)}
+            >
+              <Icon name={item.icon} size={16} />
+              <span>{item.label}</span>
+              <Icon name="chevron-right" size={14} />
+            </button>
+          ))}
+        </nav>
+        <section className="set-content">
+          {tab === 'model' && (
+            <ModelMemory config={config} onSaved={() => void refresh()} />
+          )}
+          {tab === 'capture' && (
+            <CapturePrivacy config={config} onSaved={() => void refresh()} />
+          )}
+          {tab === 'connections' && <Connections />}
+          {tab === 'appearance' && <Appearance />}
+          {tab === 'data' && <Data onReset={() => void refresh()} />}
+          {tab === 'about' && <About />}
+        </section>
+      </div>
     </div>
   );
 }

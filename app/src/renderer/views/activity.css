@@ -1,15 +1,94 @@
-/* Activity — the decision trail and episode feed. Layout over tokens only. */
+.act-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: var(--border-width) solid var(--border);
+}
+
+.act-toolbar .lore-tabs {
+  border-bottom: 0;
+}
+
+.act-toolbar__count {
+  padding-bottom: var(--space-3);
+  color: var(--text-subtle);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+}
 
 .act-loading {
   display: flex;
   justify-content: center;
-  padding: var(--space-10) 0;
+  padding: var(--space-16) 0;
 }
 
 .act-list {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+}
+
+.act-list::before {
+  content: '';
+  position: absolute;
+  top: var(--space-6);
+  bottom: var(--space-6);
+  left: 20px;
+  width: var(--border-width);
+  background: var(--border);
+}
+
+.act-row.lore-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  border: 0;
+  border-radius: 0;
+  padding: var(--space-4) 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.act-row .lore-card__body {
+  display: contents;
+}
+
+.act-row__marker {
+  z-index: var(--z-base);
+  width: 40px;
+  height: 40px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--text-subtle);
+  box-shadow: var(--shadow-xs);
+}
+
+.act-row__marker--promoted,
+.act-row__marker--user_promoted,
+.act-row__marker--reinforced,
+.act-row__marker--revised {
+  border-color: color-mix(in srgb, var(--success) 32%, var(--border));
+  color: var(--success);
+}
+
+.act-row__marker--staged,
+.act-row__marker--needs_confirmation {
+  border-color: color-mix(in srgb, var(--primary) 32%, var(--border));
+  color: var(--primary);
+}
+
+.act-row__content {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-1) 0 var(--space-4);
 }
 
 .act-row__head {
@@ -20,9 +99,9 @@
 }
 
 .act-row__time {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
   color: var(--text-subtle);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
   white-space: nowrap;
 }
 
@@ -30,39 +109,69 @@
   margin: var(--space-3) 0 0;
   color: var(--text);
   font-size: var(--text-base);
+  line-height: var(--lh-relaxed);
 }
 
 .act-row__reason {
   margin: var(--space-2) 0 0;
   color: var(--text-muted);
   font-size: var(--text-sm);
+  line-height: var(--lh-relaxed);
 }
 
-.act-episode {
-  cursor: pointer;
+.act-episode.lore-card {
+  margin-bottom: var(--space-3);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-xs);
+}
+
+.act-list:has(.act-episode)::before {
+  display: none;
+}
+
+.act-episode .lore-card__body {
+  margin-top: 0;
+}
+
+.act-episode__heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.act-episode__icon {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  color: var(--text-muted);
 }
 
 .act-episode__title {
+  overflow: hidden;
   color: var(--text);
   font-weight: var(--fw-medium);
-  min-width: 0;
-  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .act-episode__stats {
-  margin: var(--space-2) 0 0;
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
+  margin: var(--space-3) 0 0 var(--space-10);
   color: var(--text-subtle);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
 }
 
 .act-episode__detail {
-  margin-top: var(--space-4);
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  margin: var(--space-5) 0 0 var(--space-10);
 }
 
 .act-episode__titles {
@@ -74,10 +183,10 @@
 
 .act-episode__sample {
   margin: 0;
-  padding: var(--space-3);
-  background: var(--surface-2);
+  padding: var(--space-4);
   border-radius: var(--radius-field);
+  background: var(--surface-2);
   color: var(--text-muted);
   font-size: var(--text-sm);
-  line-height: var(--leading-relaxed);
+  line-height: var(--lh-relaxed);
 }

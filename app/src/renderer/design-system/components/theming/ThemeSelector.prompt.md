@@ -8,4 +8,4 @@ Segmented control that switches the active Lore theme and persists it — drop i
 <ThemeSelector target={panelEl} onChange={(t) => console.log(t.id)} />
 ```
 
-Ships two themes via `LORE_THEMES`: **Coastal** (Palette 2 · Minimal · light) and **Nocturne** (Palette 3 · Techy · dark). Override with the `themes` prop, or apply a theme imperatively with `applyLoreTheme(theme, target)`. On mount it applies the saved theme (or `defaultId`), so the selected look survives reloads.
+Ships two themes via `LORE_THEMES`: **Coastal** (Palette 2 · Minimal · light) and **Nocturne** (Palette 3 · Techy · dark). Override with the `themes` prop, or apply a theme imperatively with `applyLoreTheme(theme, target)`. On mount it applies the saved theme so an explicit choice survives reloads; with no saved choice it uses `defaultId` if given, otherwise follows the OS `prefers-color-scheme` on first run.

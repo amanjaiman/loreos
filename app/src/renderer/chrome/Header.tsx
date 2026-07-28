@@ -1,23 +1,33 @@
-import { Badge } from '../design-system';
+import { ThemeSelector } from '../design-system';
+import { Icon } from '../lib/Icon';
 import { useRouter, type Route } from '../lib/router';
+import { LoreMark } from './LoreMark';
 
 /** Ambient capture state, surfaced in the header so it's legible at a glance. */
 export type AmbientStatus = 'listening' | 'paused' | 'offline';
 
 const NAV: Array<{ route: Route; label: string }> = [
-  { route: 'today', label: 'Today' },
+  { route: 'today', label: 'Home' },
   { route: 'memory', label: 'Memory' },
-  { route: 'activity', label: 'Activity' },
+  { route: 'activity', label: 'Timeline' },
   { route: 'settings', label: 'Settings' },
 ];
 
 const STATUS: Record<
   AmbientStatus,
-  { label: string; variant: 'success' | 'neutral' | 'warning' }
+  { label: string; detail: string; icon: string }
 > = {
-  listening: { label: 'Lore is listening', variant: 'success' },
-  paused: { label: 'Lore is paused', variant: 'neutral' },
-  offline: { label: "Lore isn't running", variant: 'warning' },
+  listening: {
+    label: 'Listening',
+    detail: 'Capture is active',
+    icon: 'audio-lines',
+  },
+  paused: { label: 'Paused', detail: 'Capture is paused', icon: 'pause' },
+  offline: {
+    label: 'Offline',
+    detail: "Lore isn't running",
+    icon: 'cloud-off',
+  },
 };
 
 /**
@@ -31,9 +41,10 @@ export function Header({ status }: { status: AmbientStatus }): JSX.Element {
   return (
     <header className="app-header">
       <div className="app-header__brand" aria-hidden="true">
-        <span className="app-header__wordmark">
-          Lore<span>.</span>
+        <span className="app-header__mark">
+          <LoreMark />
         </span>
+        <span className="app-header__wordmark">Lore</span>
       </div>
       <nav className="app-header__nav" aria-label="Primary">
         {NAV.map(({ route: r, label }) => (
@@ -48,9 +59,18 @@ export function Header({ status }: { status: AmbientStatus }): JSX.Element {
           </button>
         ))}
       </nav>
-      <Badge variant={s.variant} dot>
-        {s.label}
-      </Badge>
+      <div className={`app-header__status app-header__status--${status}`}>
+        <span className="app-header__status-icon">
+          <Icon name={s.icon} size={14} />
+        </span>
+        <span className="app-header__status-copy">
+          <span className="app-header__status-label">{s.label}</span>
+          <span className="app-header__status-detail">{s.detail}</span>
+        </span>
+      </div>
+      <div className="app-header__theme">
+        <ThemeSelector />
+      </div>
     </header>
   );
 }
