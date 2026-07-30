@@ -61,6 +61,17 @@ const config: ForgeConfig = {
     new AutoUnpackNativesPlugin({}),
     new WebpackPlugin({
       mainConfig,
+      // The dev server sends a Content-Security-Policy header; its default omits a
+      // connect-src, so it falls back to `default-src 'self'` and Chromium blocks the
+      // renderer's fetch() to the loopback API — the request never leaves the renderer,
+      // surfacing as LoreOfflineError ("Lore isn't running") no matter how the agent's
+      // CORS is configured. Allow the loopback API origin (and the webpack HMR socket)
+      // here; keep `script-src 'unsafe-eval'` so eval-source-map dev source maps work.
+      // Packaged builds load from file:// with no dev server, so this header is dev-only.
+      devContentSecurityPolicy:
+        "default-src 'self' 'unsafe-inline' data:; " +
+        "script-src 'self' 'unsafe-eval' 'unsafe-inline' data:; " +
+        "connect-src 'self' http://127.0.0.1:7842 ws://localhost:3000",
       renderer: {
         config: rendererConfig,
         entryPoints: [
