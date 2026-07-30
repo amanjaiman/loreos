@@ -29,7 +29,9 @@ public static class CaptureServiceCollectionExtensions
         services.AddSingleton<IForegroundWindowSource, Win32ForegroundWindowSource>();
         services.AddSingleton<IWindowSecurityProbe, UiaWindowSecurityProbe>();
 
-        // Extraction: UIA primary, OCR fallback, composed behind the one seam.
+        // Extraction: UIA primary, OCR fallback, composed behind the one seam. OCR captures
+        // pixels via Windows.Graphics.Capture (GPU/fullscreen-capable) and falls back to GDI.
+        services.AddSingleton<WgcWindowCapture>();
         services.AddSingleton<UiaTextExtractor>();
         services.AddSingleton<OcrTextExtractor>();
         services.AddSingleton<ITextExtractor>(sp => new CompositeTextExtractor(

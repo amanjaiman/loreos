@@ -58,6 +58,37 @@ public sealed class CompositeTextExtractorTests
     }
 
     [Fact]
+    public async Task Falls_through_to_ocr_when_uia_returns_only_the_window_title()
+    {
+        // A GPU/fullscreen window whose UIA tree exposes only the root window name (the title).
+        StubExtractor uia = Uia("doc"); // == Window.Title
+        StubExtractor ocr = Ocr("read from the pixels");
+        var composite = new CompositeTextExtractor(uia, ocr);
+
+        ExtractedText result = await composite.ExtractAsync(Window);
+
+        Assert.Equal("read from the pixels", result.Text);
+        Assert.Equal(ExtractionSource.Ocr, result.Source);
+        Assert.Equal(1, uia.Calls);
+        Assert.Equal(1, ocr.Calls); // OCR IS reached because UIA carried no content
+    }
+
+    [Fact]
+    public async Task Keeps_the_title_floor_when_ocr_also_finds_nothing()
+    {
+        // OCR black-frames (empty); the title-only UIA result is still returned, not lost.
+        StubExtractor uia = Uia("doc"); // == Window.Title
+        StubExtractor ocr = Nothing();
+        var composite = new CompositeTextExtractor(uia, ocr);
+
+        ExtractedText result = await composite.ExtractAsync(Window);
+
+        Assert.Equal("doc", result.Text);
+        Assert.Equal(ExtractionSource.UiAutomation, result.Source);
+        Assert.Equal(1, ocr.Calls); // OCR was still attempted
+    }
+
+    [Fact]
     public async Task Returns_empty_when_every_extractor_is_empty()
     {
         var composite = new CompositeTextExtractor(Nothing(), Nothing());
