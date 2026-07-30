@@ -2,79 +2,77 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { api, LoreOfflineError } from './api';
 import { AppShell } from './chrome/AppShell';
-import { OfflineNotice } from './chrome/OfflineNotice';
 import { Spinner } from './design-system';
 import { RouterProvider } from './lib/router';
 import { Onboarding } from './views/onboarding/Onboarding';
 
-type Phase = 'loading' | 'offline' | 'onboarding' | 'ready';
+type Gate = 'loading' | 'onboarding' | 'shell';
 
-// How often to quietly re-check while offline. Agent startup (memoryd cold start,
-// the health gate, provider configuration) routinely takes 10-30s and commonly
-// finishes after the window has already loaded — without this, a single
-// unlucky-timing check latches the app into "offline" forever with no way out
-// but a manual click, even once the agent is fully healthy.
-const OFFLINE_RETRY_MS = 2000;
+// How often to re-probe config while we don't yet have a config-backed answer.
+// Agent startup (memoryd cold start, the health gate, provider configuration)
+// routinely takes 10-30s and commonly finishes after the window has loaded.
+const PROBE_RETRY_MS = 2000;
 
 /**
- * App root. Decides what to show on launch by reading config through api.ts: the calm
- * offline state if Lore isn't running, first-run onboarding until it's complete, else the
- * shell. Onboarding gating lives here so onboarding owns the whole window when shown.
+ * App root. Decides what to show on launch by reading config through api.ts.
+ *
+ * The agent being down does NOT block the app: onboarding aside, we always render the
+ * shell, which is fully offline-resilient (the header shows a "Lore isn't running" badge
+ * and every view degrades to a calm inline notice). The user can still browse captures,
+ * settings, and the rest while the agent starts — rather than being stranded on a
+ * full-window error. Onboarding gating lives here so onboarding owns the whole window
+ * when shown; a first-run user who launched before the agent was up still lands in
+ * onboarding once it responds, because we keep probing until the decision is config-backed.
  */
 export function App(): JSX.Element {
-  const [phase, setPhase] = useState<Phase>('loading');
+  const [gate, setGate] = useState<Gate>('loading');
+  // True once we've made a definitive, config-backed decision. Until then we keep
+  // probing so a first-run user who launched while the agent was still starting is
+  // routed to onboarding once it responds, instead of being left in the shell with
+  // an unconfigured provider.
+  const [confirmed, setConfirmed] = useState(false);
 
-  const settle = useCallback(async (): Promise<Phase> => {
+  const probe = useCallback(async (): Promise<void> => {
     try {
       const config = await api.getConfig();
-      return config.onboarding?.completed === true ? 'ready' : 'onboarding';
+      setConfirmed(true);
+      setGate(config.onboarding?.completed === true ? 'shell' : 'onboarding');
     } catch (e) {
-      // Can't reach Lore → offline. Any other error → treat as not-yet-onboarded.
-      return e instanceof LoreOfflineError ? 'offline' : 'onboarding';
+      if (e instanceof LoreOfflineError) {
+        // Can't read onboarding state. Show the shell (offline-resilient) rather than
+        // block the whole app, and keep probing — the decision stays provisional.
+        setGate((prev) => (prev === 'loading' ? 'shell' : prev));
+      } else {
+        // Any other error → treat as not-yet-onboarded and stop probing.
+        setConfirmed(true);
+        setGate('onboarding');
+      }
     }
   }, []);
 
-  // The initial check and the manual "Try again" button both show the loading
-  // spinner while in flight — an explicit, user-initiated recheck.
-  const load = useCallback((): void => {
-    setPhase('loading');
-    void settle().then(setPhase);
-  }, [settle]);
-
   useEffect(() => {
-    void load();
-  }, [load]);
+    void probe();
+  }, [probe]);
 
-  // While offline, keep quietly rechecking in the background so the app recovers
-  // on its own once the agent finishes starting — no flash back to the loading
-  // spinner, and no need to click "Try again".
+  // Keep probing in the background until we have a config-backed answer, then stop —
+  // once the shell is up its own hooks track live offline status from there.
   useEffect(() => {
-    if (phase !== 'offline') {
+    if (confirmed) {
       return undefined;
     }
-
-    const id = window.setInterval(() => {
-      void settle().then((next) => {
-        if (next !== 'offline') {
-          setPhase(next);
-        }
-      });
-    }, OFFLINE_RETRY_MS);
+    const id = window.setInterval(() => void probe(), PROBE_RETRY_MS);
     return () => window.clearInterval(id);
-  }, [phase, settle]);
+  }, [confirmed, probe]);
 
-  if (phase === 'loading') {
+  if (gate === 'loading') {
     return (
       <div className="app-splash">
         <Spinner size={28} />
       </div>
     );
   }
-  if (phase === 'offline') {
-    return <OfflineNotice onRetry={load} />;
-  }
-  if (phase === 'onboarding') {
-    return <Onboarding onComplete={() => setPhase('ready')} />;
+  if (gate === 'onboarding') {
+    return <Onboarding onComplete={() => setGate('shell')} />;
   }
   return (
     <RouterProvider initial="today">

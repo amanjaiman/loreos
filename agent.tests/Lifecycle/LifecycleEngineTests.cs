@@ -56,6 +56,8 @@ public sealed class LifecycleEngineTests : IDisposable
 
         public List<(string Id, IReadOnlyDictionary<string, object?> Patch)> Patches { get; } = [];
 
+        public List<(string Id, string? Text, IReadOnlyDictionary<string, object?> Patch)> Updates { get; } = [];
+
         public IReadOnlyDictionary<string, object?>? LastSearchFilters { get; private set; }
 
         public Task<IReadOnlyList<AddedMemory>> RememberAsync(
@@ -104,7 +106,8 @@ public sealed class LifecycleEngineTests : IDisposable
             CancellationToken cancellationToken = default)
         {
             Patches.Add((id, metadataPatch!));
-            return Task.FromResult<MemoryRecord?>(new MemoryRecord(id, "patched"));
+            Updates.Add((id, text, metadataPatch!));
+            return Task.FromResult<MemoryRecord?>(new MemoryRecord(id, text ?? "patched"));
         }
 
         public Task<bool> DeleteAsync(string id, CancellationToken cancellationToken = default) =>
@@ -240,6 +243,80 @@ public sealed class LifecycleEngineTests : IDisposable
         Assert.Equal("m-staged", id);
         Assert.Equal(MemoryStatuses.Active, patch["status"]);
         Assert.Equal("promoted", (await Decisions())[0].Action);
+    }
+
+    [Fact]
+    public async Task Committed_action_refines_an_active_intent_into_one_memory()
+    {
+        // The booking confirmation lands on the active "considering a flight" intent.
+        _backend.DistillJson = FactJson(
+            statement: "I booked a United flight to San Diego for Sep 9-13.",
+            kind: "experience", confidence: 0.9, horizon: "null");
+        _memory.SearchResults.Add(Neighbor(
+            "m-active", "I'm considering booking a flight.", 0.95, MemoryStatuses.Active,
+            confidence: 0.6, kind: "state"));
+
+        await BuildEngine().ProcessAsync(Episode);
+
+        Assert.Empty(_memory.Stored); // merged into the existing memory, not a new row
+        (string id, string? text, IReadOnlyDictionary<string, object?> patch) = Assert.Single(_memory.Updates);
+        Assert.Equal("m-active", id);
+        Assert.Equal("I booked a United flight to San Diego for Sep 9-13.", text); // text adopted
+        Assert.Equal("experience", patch["kind"]);                                 // kind adopted
+        Assert.Equal(MemoryUpdateReasons.Revised, patch["updated_reason"]);
+        Assert.Equal("revised", (await Decisions())[0].Action);
+    }
+
+    [Fact]
+    public async Task Committed_action_refines_a_staged_intent_on_promotion()
+    {
+        _backend.DistillJson = FactJson(
+            statement: "I booked a flight to San Diego for Sep 9-13.",
+            kind: "experience", confidence: 0.9, horizon: "null");
+        _memory.SearchResults.Add(Neighbor(
+            "m-staged", "I'm considering booking a flight.", 0.8, MemoryStatuses.Staged,
+            confidence: 0.6, kind: "state"));
+
+        await BuildEngine().ProcessAsync(Episode);
+
+        (string id, string? text, IReadOnlyDictionary<string, object?> patch) = Assert.Single(_memory.Updates);
+        Assert.Equal("m-staged", id);
+        Assert.Equal(MemoryStatuses.Active, patch["status"]);
+        Assert.Equal("I booked a flight to San Diego for Sep 9-13.", text); // adopted on promotion
+        Assert.Equal("promoted", (await Decisions())[0].Action);
+    }
+
+    [Fact]
+    public async Task Ordinary_reinforcement_keeps_the_existing_text()
+    {
+        // A non-committed supporting fact (below the high-signal bar) must NOT rewrite the text.
+        _backend.DistillJson = FactJson(confidence: 0.7);
+        _memory.SearchResults.Add(Neighbor(
+            "m-active", "I'm recovering from wisdom tooth extraction.", 0.95, MemoryStatuses.Active,
+            confidence: 0.6));
+
+        await BuildEngine().ProcessAsync(Episode);
+
+        (_, string? text, IReadOnlyDictionary<string, object?> patch) = Assert.Single(_memory.Updates);
+        Assert.Null(text); // text left as-is
+        Assert.Equal(MemoryUpdateReasons.Reinforced, patch["updated_reason"]);
+    }
+
+    [Fact]
+    public async Task Committed_action_never_rewrites_a_pinned_memory()
+    {
+        _backend.DistillJson = FactJson(
+            statement: "I booked a flight.", kind: "experience", confidence: 0.9, horizon: "null");
+        _memory.SearchResults.Add(Neighbor(
+            "m-pinned", "I'm planning a flight.", 0.95, MemoryStatuses.Active,
+            pinned: true, confidence: 0.6));
+
+        await BuildEngine().ProcessAsync(Episode);
+
+        (_, string? text, IReadOnlyDictionary<string, object?> patch) = Assert.Single(_memory.Updates);
+        Assert.Null(text);                                                    // pinned text untouched
+        Assert.Equal(0.6, (double)patch["confidence"]!, precision: 10);       // and its confidence
+        Assert.Equal(MemoryUpdateReasons.Reinforced, patch["updated_reason"]);
     }
 
     [Fact]

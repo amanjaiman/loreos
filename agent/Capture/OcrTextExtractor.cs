@@ -28,6 +28,17 @@ public sealed partial class OcrTextExtractor : ITextExtractor
     private readonly Lazy<OcrEngine?> _engine = new(
         OcrEngine.TryCreateFromUserProfileLanguages, LazyThreadSafetyMode.ExecutionAndPublication);
 
+    // Windows.Graphics.Capture is the primary pixel source: it can grab GPU-composited and
+    // fullscreen windows that GDI PrintWindow renders black. GDI stays as the fallback for
+    // when WGC is unsupported or a window refuses capture.
+    private readonly WgcWindowCapture _wgc;
+
+    public OcrTextExtractor(WgcWindowCapture wgc)
+    {
+        ArgumentNullException.ThrowIfNull(wgc);
+        _wgc = wgc;
+    }
+
     public async Task<ExtractedText> ExtractAsync(
         WindowSnapshot window, CancellationToken cancellationToken = default)
     {
@@ -38,9 +49,16 @@ public sealed partial class OcrTextExtractor : ITextExtractor
             return ExtractedText.Empty;
         }
 
+        var hwnd = new IntPtr(window.Handle);
+        SoftwareBitmap? bitmap = null;
         try
         {
-            using SoftwareBitmap? bitmap = CaptureWindow(new IntPtr(window.Handle));
+            // WGC first (it reads GPU-composited and fullscreen surfaces that PrintWindow renders
+            // black); GDI PrintWindow as the fallback when WGC is unsupported or refuses capture.
+            bitmap = await _wgc.CaptureAsync(hwnd, cancellationToken).ConfigureAwait(false);
+#pragma warning disable CA2000 // the finally disposes bitmap on every path; CA2000 can't see it across the await
+            bitmap ??= CaptureWindow(hwnd);
+#pragma warning restore CA2000
             if (bitmap is null)
             {
                 return ExtractedText.Empty;
@@ -60,6 +78,10 @@ public sealed partial class OcrTextExtractor : ITextExtractor
 #pragma warning restore CA1031
         {
             return ExtractedText.Empty;
+        }
+        finally
+        {
+            bitmap?.Dispose();
         }
     }
 
