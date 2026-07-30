@@ -24,10 +24,14 @@ public static class ArbitrationPrompt
     private const string System =
         "You decide how a NEW fact about a user relates to an EXISTING memory of them. "
         + "Answer with exactly one word:\n"
-        + "- DUPLICATE: they assert the same fact, even if worded differently.\n"
-        + "- SUPERSEDES: the NEW fact updates, replaces, or contradicts the EXISTING one — "
-        + "the user's situation changed and NEW is the current truth.\n"
-        + "- COEXIST: they are related but independently true; neither replaces the other.";
+        + "- DUPLICATE: they assert the same fact at the same level of detail, even if worded "
+        + "differently.\n"
+        + "- SUPERSEDES: the NEW fact is the one to keep — it updates, replaces, or contradicts "
+        + "the EXISTING one, OR it is the SAME evolving intent captured with more detail or at a "
+        + "later stage (EXISTING 'planning to book a flight', NEW 'booked a United flight to San "
+        + "Diego for Sep 9-13' → SUPERSEDES: the specific, more-committed one wins).\n"
+        + "- COEXIST: they are genuinely distinct facts — related but independently true; neither "
+        + "replaces the other.";
 
     /// <summary>Build the arbitration request for one candidate/memory pair.</summary>
     public static InferenceRequest Build(string newFact, string existingMemory) =>

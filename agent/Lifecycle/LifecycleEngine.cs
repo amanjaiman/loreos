@@ -154,24 +154,59 @@ public sealed class LifecycleEngine : IEpisodeProcessor
         // Pinned/user-edited memories still reinforce — a confidence bump never
         // contradicts user authority; only their text/lifecycle is untouchable.
         var episodes = new List<string>(meta.Episodes ?? []) { episode.Id };
-        long expiresAt = meta.Kind == MemoryKinds.State
-            ? Math.Max(meta.ExpiresAt, now + HorizonSeconds(fact))
-            : meta.ExpiresAt;
-        await _memory.PatchMetadataAsync(
+
+        // A committed action landing on a memory that only recorded the INTENT rewrites that
+        // memory to the committed fact — "planning to book a flight" and "booked a flight to
+        // San Diego for Sep 9-13" collapse into one, instead of the stale intent lingering.
+        bool userOwned = meta.UserEdited || meta.Pinned;
+        bool refine = IsCommittedRefinement(fact, meta);
+
+        double confidence;
+        if (userOwned)
+        {
+            confidence = meta.Confidence;
+        }
+        else if (refine)
+        {
+            confidence = Math.Min(_options.ConfidenceCap, fact.Confidence);
+        }
+        else
+        {
+            confidence = Math.Min(_options.ConfidenceCap, meta.Confidence + _options.ReinforceBump);
+        }
+
+        long expiresAt;
+        if (refine)
+        {
+            expiresAt = ExpiryFor(fact, now); // the refined fact's kind sets the new lifespan
+        }
+        else if (meta.Kind == MemoryKinds.State)
+        {
+            expiresAt = Math.Max(meta.ExpiresAt, now + HorizonSeconds(fact));
+        }
+        else
+        {
+            expiresAt = meta.ExpiresAt;
+        }
+
+        await _memory.UpdateAsync(
             target.Id,
+            refine ? fact.Statement : null,
             new Dictionary<string, object?>
             {
                 ["reinforced"] = meta.Reinforced + 1,
-                ["confidence"] = meta.UserEdited || meta.Pinned
-                    ? meta.Confidence
-                    : Math.Min(_options.ConfidenceCap, meta.Confidence + _options.ReinforceBump),
+                ["confidence"] = confidence,
+                ["kind"] = refine ? fact.Kind : meta.Kind,
                 ["expires_at"] = expiresAt,
                 ["episodes"] = episodes,
-                ["updated_reason"] = MemoryUpdateReasons.Reinforced,
+                ["updated_reason"] = refine ? MemoryUpdateReasons.Revised : MemoryUpdateReasons.Reinforced,
             },
             ct).ConfigureAwait(false);
-        await LogAsync(episode.Id, "reinforced", $"score matched '{Trim(target.Memory)}'", fact, target.Id, ct)
-            .ConfigureAwait(false);
+        await LogAsync(
+            episode.Id,
+            refine ? "revised" : "reinforced",
+            refine ? $"committed action refined '{Trim(target.Memory)}'" : $"score matched '{Trim(target.Memory)}'",
+            fact, target.Id, ct).ConfigureAwait(false);
     }
 
     private async Task PromoteStagedAsync(
@@ -192,22 +227,32 @@ public sealed class LifecycleEngine : IEpisodeProcessor
         }
 
         var episodes = new List<string>(meta.Episodes ?? []) { episode.Id };
-        await _memory.PatchMetadataAsync(
+
+        // If the episode that promotes the staged candidate is itself a committed action,
+        // adopt its (more specific) statement so the promoted memory reflects what happened —
+        // e.g. a staged "considering a flight to San Diego" promotes into "booked a flight to
+        // San Diego for Sep 9-13" rather than staying at the tentative wording.
+        bool refine = IsCommittedRefinement(fact, meta);
+        await _memory.UpdateAsync(
             staged.Id,
+            refine ? fact.Statement : null,
             new Dictionary<string, object?>
             {
                 ["status"] = MemoryStatuses.Active,
                 ["confidence"] = Math.Min(
                     _options.ConfidenceCap,
                     Math.Max(meta.Confidence, fact.Confidence) + _options.ReinforceBump),
+                ["kind"] = refine ? fact.Kind : meta.Kind,
                 ["expires_at"] = ExpiryFor(fact, now),
                 ["established_at"] = now,
                 ["episodes"] = episodes,
                 ["updated_reason"] = MemoryUpdateReasons.Promoted,
             },
             ct).ConfigureAwait(false);
-        await LogAsync(episode.Id, "promoted", "second supporting episode", fact, staged.Id, ct)
-            .ConfigureAwait(false);
+        await LogAsync(
+            episode.Id, "promoted",
+            refine ? "committed action promoted and refined the staged intent" : "second supporting episode",
+            fact, staged.Id, ct).ConfigureAwait(false);
     }
 
     private async Task ArbitrateAsync(
@@ -325,6 +370,16 @@ public sealed class LifecycleEngine : IEpisodeProcessor
             .CountDecisionsSinceAsync("promoted", midnightUtc, ct).ConfigureAwait(false);
         return today < _options.DailyBudget;
     }
+
+    // A matched candidate is a "committed refinement" of an existing memory when it is itself a
+    // committed action (high-signal confidence) landing on a memory that still records only the
+    // intent (below that bar). That is the signal to rewrite the memory to the committed fact
+    // rather than merely reinforce the tentative one. User-authored memories are never rewritten.
+    private bool IsCommittedRefinement(CandidateFact fact, MemoryMetadata meta) =>
+        !meta.UserEdited
+        && !meta.Pinned
+        && fact.Confidence >= _options.HighSignalConfidence
+        && meta.Confidence < _options.HighSignalConfidence;
 
     private long HorizonSeconds(CandidateFact fact) =>
         DaysToSeconds(Math.Clamp(
