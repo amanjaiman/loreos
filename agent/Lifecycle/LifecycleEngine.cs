@@ -126,13 +126,34 @@ public sealed class LifecycleEngine : IEpisodeProcessor
             // identically — requiring the same-fact band here would stall promotion.
             if (bestMeta.Status == MemoryStatuses.Staged && bestScore >= _options.SameTopicThreshold)
             {
+                // Duplicate guard: a staged candidate can outscore an ACTIVE memory that already
+                // covers the same topic (a tentative wording matches a later episode more closely
+                // than the fuller, established memory). Promoting it as-is spawns a parallel active
+                // row — the bug that split one San Diego trip into two. So first reconcile against
+                // any active memory on the topic; if arbitration agrees it's the same fact, fold
+                // into that memory and retire the staged duplicate. If the active is genuinely
+                // distinct (coexist), the staged candidate is the real match — promote it.
+                MemoryRecord? activeMatch = FindActive(neighbors, _options.SameTopicThreshold);
+                if (activeMatch is not null
+                    && await ReconcileWithActiveAsync(episode, fact, activeMatch, now, ct).ConfigureAwait(false))
+                {
+                    await DedupeStagedAsync(episode, fact, best, activeMatch.Id, ct).ConfigureAwait(false);
+                    return;
+                }
+
                 await PromoteStagedAsync(episode, fact, best, bestMeta, now, ct).ConfigureAwait(false);
                 return;
             }
 
             if (bestMeta.Status == MemoryStatuses.Active && bestScore >= _options.SameTopicThreshold)
             {
-                await ArbitrateAsync(episode, fact, best, bestMeta, now, ct).ConfigureAwait(false);
+                if (await ReconcileWithActiveAsync(episode, fact, best, now, ct).ConfigureAwait(false))
+                {
+                    return;
+                }
+
+                // Coexist: genuinely distinct from the active neighbor — record it as new.
+                await StageAsync(episode, fact, now, ct).ConfigureAwait(false);
                 return;
             }
         }
@@ -255,7 +276,67 @@ public sealed class LifecycleEngine : IEpisodeProcessor
             fact, staged.Id, ct).ConfigureAwait(false);
     }
 
-    private async Task ArbitrateAsync(
+    // The highest-scoring ACTIVE neighbor at or above <paramref name="threshold"/>, or null.
+    // Neighbors arrive sorted by score, so the first active match is the strongest.
+    private static MemoryRecord? FindActive(IReadOnlyList<MemoryRecord> neighbors, double threshold)
+    {
+        foreach (MemoryRecord neighbor in neighbors)
+        {
+            if ((neighbor.Score ?? 0.0) < threshold)
+            {
+                continue;
+            }
+
+            MemoryMetadata? meta = MemoryMetadata.From(neighbor);
+            if (meta is not null && meta.Status == MemoryStatuses.Active)
+            {
+                return neighbor;
+            }
+        }
+
+        return null;
+    }
+
+    // Reconcile a candidate into an existing ACTIVE memory: reinforce when it is clearly the same
+    // fact, else let arbitration decide. Returns true when the candidate was absorbed (reinforced,
+    // superseded, or surfaced for confirmation); false only when arbitration says the two coexist,
+    // in which case the caller records the candidate separately.
+    private async Task<bool> ReconcileWithActiveAsync(
+        Episode episode, CandidateFact fact, MemoryRecord active, long now, CancellationToken ct)
+    {
+        MemoryMetadata meta = MemoryMetadata.From(active)!;
+        if ((active.Score ?? 0.0) >= _options.SameFactThreshold)
+        {
+            await ReinforceAsync(episode, fact, active, meta, now, ct).ConfigureAwait(false);
+            return true;
+        }
+
+        return await ArbitrateAsync(episode, fact, active, meta, now, ct).ConfigureAwait(false);
+    }
+
+    // Retire a staged candidate that duplicates a memory we just reconciled into an active row, so
+    // the two never surface as parallel entries.
+    private async Task DedupeStagedAsync(
+        Episode episode, CandidateFact fact, MemoryRecord staged, string keptId, CancellationToken ct)
+    {
+        await _memory.PatchMetadataAsync(
+            staged.Id,
+            new Dictionary<string, object?>
+            {
+                ["status"] = MemoryStatuses.Archived,
+                ["updated_reason"] = MemoryUpdateReasons.Deduped,
+            },
+            ct).ConfigureAwait(false);
+        await LogAsync(
+            episode.Id, "deduped",
+            $"folded into the existing memory it duplicated ({keptId})", fact, staged.Id, ct)
+            .ConfigureAwait(false);
+    }
+
+    // Decide how a candidate relates to a same-topic ACTIVE memory. Returns true when the candidate
+    // was absorbed into <paramref name="target"/> (duplicate/supersede) or surfaced for the user's
+    // confirmation; false when the verdict is coexist and the caller must record it separately.
+    private async Task<bool> ArbitrateAsync(
         Episode episode, CandidateFact fact, MemoryRecord target, MemoryMetadata meta, long now,
         CancellationToken ct)
     {
@@ -283,7 +364,7 @@ public sealed class LifecycleEngine : IEpisodeProcessor
         {
             case ArbitrationVerdict.Duplicate:
                 await ReinforceAsync(episode, fact, target, meta, now, ct).ConfigureAwait(false);
-                break;
+                return true;
 
             case ArbitrationVerdict.Supersedes when meta.Pinned || meta.UserEdited:
                 // User authority: never auto-archive their memory — surface it instead.
@@ -291,7 +372,7 @@ public sealed class LifecycleEngine : IEpisodeProcessor
                     episode.Id, "needs_confirmation",
                     $"new fact contradicts pinned/edited '{Trim(target.Memory)}'", fact, target.Id, ct)
                     .ConfigureAwait(false);
-                break;
+                return true;
 
             case ArbitrationVerdict.Supersedes:
                 await _memory.PatchMetadataAsync(
@@ -303,11 +384,10 @@ public sealed class LifecycleEngine : IEpisodeProcessor
                     },
                     ct).ConfigureAwait(false);
                 await StoreActiveAsync(episode, fact, supersedes: target.Id, now, ct).ConfigureAwait(false);
-                break;
+                return true;
 
             default:
-                await StageAsync(episode, fact, now, ct).ConfigureAwait(false);
-                break;
+                return false; // coexist — the caller records the candidate separately
         }
     }
 
