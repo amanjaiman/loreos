@@ -1,8 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState, type CSSProperties } from 'react';
 
 import { api } from '../api';
 import { useConfig, useRailSummary, useSystemStatus } from '../lib/hooks';
-import { useRouter } from '../lib/router';
+import { useRouter, type Route } from '../lib/router';
 import { useTitleBarSync } from '../lib/useTitleBarSync';
 import { Activity } from '../views/Activity';
 import { Memory } from '../views/Memory';
@@ -17,6 +17,9 @@ const VIEWS = {
   activity: Activity,
   settings: Settings,
 } as const;
+
+/** Rail order, so a route change knows which way the user travelled. */
+const ORDER: Route[] = ['today', 'memory', 'activity', 'settings'];
 
 /**
  * The v2-004 shell: a frameless window whose background is one continuous ground plane,
@@ -40,6 +43,12 @@ export function AppShell(): JSX.Element {
   const { config, refresh } = useConfig();
   const { staged, recent } = useRailSummary();
   const [busy, setBusy] = useState(false);
+
+  // Travel direction through the rail: moving down enters from below, up from above.
+  // Keyed off the previous route rather than history, since the router has none.
+  const previous = useRef<Route>(route);
+  const descending = ORDER.indexOf(route) >= ORDER.indexOf(previous.current);
+  previous.current = route;
 
   const paused = config?.capture?.enabled === false;
   const status: AmbientStatus = offline
@@ -73,8 +82,12 @@ export function AppShell(): JSX.Element {
         busy={busy}
       />
       <main className="app-card">
-        <div className="app-card__scroll">
-          <View />
+        <div
+          className="app-card__scroll"
+          style={{ '--dir': descending ? '12px' : '-12px' } as CSSProperties}
+        >
+          {/* Keyed on the route so the entrance animation replays on every change. */}
+          <View key={route} />
         </div>
       </main>
     </div>

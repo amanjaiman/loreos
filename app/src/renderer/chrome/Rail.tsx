@@ -1,3 +1,5 @@
+import { type CSSProperties } from 'react';
+
 import { ThemeSelector } from '../design-system';
 import { Icon } from '../lib/Icon';
 import { useRouter, type Route } from '../lib/router';
@@ -34,6 +36,11 @@ export function Rail({
   busy: boolean;
 }): JSX.Element {
   const { route, navigate } = useRouter();
+  // Drives the sliding pill's offset; -1 would be unreachable (every route is in NAV).
+  const activeIndex = Math.max(
+    0,
+    NAV.findIndex((item) => item.route === route),
+  );
 
   return (
     <div className="rail">
@@ -56,7 +63,12 @@ export function Rail({
         <span className="rail__kbd">Ctrl K</span>
       </button>
 
-      <nav className="rail__nav" aria-label="Primary">
+      <nav
+        className="rail__nav"
+        aria-label="Primary"
+        style={{ '--nav-i': activeIndex } as CSSProperties}
+      >
+        <span className="nav-ind" aria-hidden="true" />
         {NAV.map(({ route: r, label, icon }) => (
           <button
             key={r}

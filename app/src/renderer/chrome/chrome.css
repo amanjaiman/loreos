@@ -37,6 +37,9 @@
   transition:
     background-color var(--dur-slow) var(--ease),
     color var(--dur-slow) var(--ease);
+
+  /* a restrained spring: enough overshoot to feel physical, not enough to bounce */
+  --ease-spring: cubic-bezier(0.22, 1.18, 0.36, 1);
 }
 
 :root[data-mode='dark'] .app-ground {
@@ -153,18 +156,47 @@
   font-size: var(--text-2xs);
 }
 
+/* The active pill is one element that slides between items rather than a background
+   appearing and disappearing. Items are a fixed height so the offset is pure CSS —
+   no measurement, no layout read, nothing to go stale on a font swap. */
 .rail__nav {
+  position: relative;
   flex: none;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--nav-gap);
+
+  --nav-h: 38px;
+  --nav-gap: 2px;
+}
+
+.nav-ind {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: var(--nav-h);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--surface) 62%, transparent);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-xs);
+  pointer-events: none;
+  transform: translateY(
+    calc(var(--nav-i, 0) * (var(--nav-h) + var(--nav-gap)))
+  );
+  transition:
+    transform 460ms var(--ease-spring),
+    background-color var(--dur-slow) var(--ease);
 }
 
 .navitem {
+  position: relative;
+  z-index: var(--z-base);
+  height: var(--nav-h);
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
+  padding: 0 var(--space-3);
   border: none;
   border-radius: var(--radius-lg);
   background: transparent;
@@ -195,11 +227,10 @@
   box-shadow: var(--ring);
 }
 
+/* The pill itself is .nav-ind; the active item only changes ink. */
 .navitem--active {
-  background: color-mix(in srgb, var(--surface) 62%, transparent);
-  backdrop-filter: blur(12px);
+  background: transparent;
   color: var(--text);
-  box-shadow: var(--shadow-xs);
 }
 
 .navitem--active svg {
@@ -475,17 +506,20 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-8);
-  animation: page-enter var(--dur-slow) var(--ease-out);
+  animation: page-enter 440ms var(--ease-out) both;
 }
 
 .app-page--reading {
   max-width: 760px;
 }
 
+/* --dir is set by the shell from the direction of travel through the rail, so moving
+   down the nav enters from below and moving up enters from above. It costs one custom
+   property and gives the app a spatial model instead of a stack of unrelated screens. */
 @keyframes page-enter {
   from {
     opacity: 0;
-    transform: translateY(5px);
+    transform: translateY(var(--dir, 12px));
   }
 }
 
