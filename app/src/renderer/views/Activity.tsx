@@ -20,6 +20,7 @@ const ACTION_LABELS: Record<string, string> = {
   promoted: 'remembered',
   reinforced: 'reinforced',
   revised: 'revised',
+  deduped: 'merged into an existing memory',
   needs_confirmation: 'needs your confirmation',
   user_promoted: 'kept by you',
   user_dismissed: 'dismissed by you',

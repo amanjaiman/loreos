@@ -41,6 +41,7 @@ public static class MemoryUpdateReasons
     public const string Revised = "revised";
     public const string UserEdit = "user_edit";
     public const string Confirmed = "confirmed";
+    public const string Deduped = "deduped";
     public const string V1Archive = "v1_archive";
 }
 

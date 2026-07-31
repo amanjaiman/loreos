@@ -338,6 +338,57 @@ public sealed class LifecycleEngineTests : IDisposable
     }
 
     [Fact]
+    public async Task Staged_promotion_reconciles_into_an_existing_active_instead_of_duplicating()
+    {
+        // The candidate best-matches a staged near-duplicate, but an active memory already covers
+        // the topic. Reconcile into the active and retire the staged — no parallel active row.
+        _backend.DistillJson = FactJson(
+            statement: "I'm planning a trip to San Diego for a large group.", confidence: 0.7);
+        _backend.ArbitrationAnswer = "DUPLICATE";
+        _memory.SearchResults.Add(Neighbor(
+            "m-staged", "Planning a San Diego group trip.", 0.95, MemoryStatuses.Staged, confidence: 0.6));
+        _memory.SearchResults.Add(Neighbor(
+            "m-active", "I'm planning a trip to San Diego for a large group (9-10 adults).", 0.82,
+            MemoryStatuses.Active, confidence: 0.8));
+
+        await BuildEngine().ProcessAsync(Episode);
+
+        Assert.Empty(_memory.Stored); // no parallel memory created
+        Assert.Equal(
+            MemoryUpdateReasons.Reinforced,
+            _memory.Patches.Single(p => p.Id == "m-active").Patch["updated_reason"]);
+        (string _, IReadOnlyDictionary<string, object?> stagedPatch) =
+            _memory.Patches.Single(p => p.Id == "m-staged");
+        Assert.Equal(MemoryStatuses.Archived, stagedPatch["status"]);
+        Assert.Equal(MemoryUpdateReasons.Deduped, stagedPatch["updated_reason"]);
+        List<string> actions = (await Decisions()).Select(d => d.Action).ToList();
+        Assert.Contains("reinforced", actions);
+        Assert.Contains("deduped", actions);
+        Assert.Equal(1, _backend.ArbitrationCalls);
+    }
+
+    [Fact]
+    public async Task Staged_promotes_normally_when_the_active_neighbor_is_a_distinct_topic()
+    {
+        // The staged candidate is the real match; the active neighbor is a genuinely different fact.
+        _backend.DistillJson = FactJson(statement: "I'm planning a trip to San Diego.", confidence: 0.7);
+        _backend.ArbitrationAnswer = "COEXIST";
+        _memory.SearchResults.Add(Neighbor(
+            "m-staged", "Planning a San Diego trip.", 0.95, MemoryStatuses.Staged, confidence: 0.6));
+        _memory.SearchResults.Add(Neighbor(
+            "m-active", "I rented a car in San Diego last year.", 0.80, MemoryStatuses.Active,
+            confidence: 0.8, kind: "experience"));
+
+        await BuildEngine().ProcessAsync(Episode);
+
+        Assert.Equal(
+            MemoryStatuses.Active, _memory.Patches.Single(p => p.Id == "m-staged").Patch["status"]);
+        Assert.DoesNotContain(_memory.Patches, p => p.Id == "m-active"); // distinct active untouched
+        Assert.DoesNotContain(await Decisions(), d => d.Action == "deduped");
+        Assert.Equal(1, _backend.ArbitrationCalls);
+    }
+
+    [Fact]
     public async Task Same_topic_supersedes_archives_old_and_stores_revision()
     {
         _backend.DistillJson = FactJson(
