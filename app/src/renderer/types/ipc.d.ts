@@ -5,5 +5,7 @@ interface Window {
   lore: {
     /** Open a native PDF picker; resolves to an absolute path, or null if cancelled. */
     pickDocument: () => Promise<string | null>;
+    /** Recolour the native window-control overlay to match the active theme (v2-004). */
+    setTitleBar: (color: string, symbolColor: string) => void;
   };
 }

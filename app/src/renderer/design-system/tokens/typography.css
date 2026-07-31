@@ -18,18 +18,22 @@
   --fw-semibold: 600;  /* @kind font */
   --fw-bold: 700;      /* @kind font */
 
-  /* fluid-ish type scale (px) */
-  --text-2xs: 11px;
-  --text-xs: 12px;
-  --text-sm: 13px;
-  --text-base: 15px;
-  --text-md: 17px;
-  --text-lg: 20px;
-  --text-xl: 25px;
-  --text-2xl: 32px;
-  --text-3xl: 42px;
-  --text-4xl: 56px;
-  --text-5xl: 72px;
+  /* fluid-ish type scale (px). Raised one step across the working range in v2-004:
+     desktop reads larger than a dense web dashboard, and Manrope runs optically small.
+     Note the companion rule that made the real difference — --text-sm is for CONTROLS.
+     Content sets --text-base or above; it was 13px in 19 places, which is what made
+     the app feel small, not the scale itself. */
+  --text-2xs: 12px;
+  --text-xs: 13px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-md: 18px;
+  --text-lg: 22px;
+  --text-xl: 27px;
+  --text-2xl: 34px;
+  --text-3xl: 44px;
+  --text-4xl: 58px;
+  --text-5xl: 74px;
 
   /* line heights */
   --lh-tight: 1.05;    /* @kind other */

@@ -6,8 +6,16 @@ const React = window.React;
  */
 export const LORE_THEMES = [
   { id: "coastal", label: "Coastal", palette: "2", style: "minimal", mode: "light", dots: ["#0081af", "#f76c5e"] },
-  { id: "nocturne", label: "Nocturne", palette: "3", style: "techy", mode: "dark", dots: ["#344966", "#c9a74d"] },
+  { id: "coastal-dark", label: "Coastal Dark", palette: "2", style: "minimal", mode: "dark", dots: ["#35a8d0", "#ff8272"] },
 ];
+
+/**
+ * Nocturne (palette 3 · techy · dark) is retired as a shipped theme in v2-004: it
+ * changed the *style* as well as the mode — Space Grotesk, tighter tracking, hard-edged
+ * shadows — so it read as a different product rather than Coastal at night. Coastal Dark
+ * flips only the mode. The palette-3 and techy CSS remain defined in the token files;
+ * whether to strip that axis entirely is v2-004 T006.
+ */
 
 /** Imperatively apply a theme preset to an element (defaults to <html>). */
 export function applyLoreTheme(theme, target) {

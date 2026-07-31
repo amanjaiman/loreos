@@ -8,4 +8,12 @@ contextBridge.exposeInMainWorld('lore', {
   /** Open a native picker for a PDF to import; resolves to an absolute path, or null if cancelled. */
   pickDocument: (): Promise<string | null> =>
     ipcRenderer.invoke('lore:pick-document'),
+
+  /**
+   * Recolour the native window-control overlay to match the active theme. The overlay's
+   * colours are set when the window is built and do not follow CSS, so the renderer
+   * pushes them after each theme switch (v2-004). Main validates both values.
+   */
+  setTitleBar: (color: string, symbolColor: string): void =>
+    ipcRenderer.send('lore:set-titlebar', color, symbolColor),
 });

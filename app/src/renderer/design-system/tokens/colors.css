@@ -67,6 +67,16 @@
   --accent-soft: color-mix(in srgb, var(--accent) 14%, var(--surface));
   --on-primary-soft: color-mix(in srgb, var(--primary) 70%, var(--text));
 
+  /* ---- data-visualisation slots (v2-004) ----
+     Deliberately NOT --primary. Chart marks must sit inside the OKLCH lightness band
+     for their surface, and Coastal Dark's lifted primary (#35a8d0, L 0.685) is above
+     the dark band (0.48–0.67). Each mode therefore carries its own validated pair;
+     both pass the lightness / chroma / CVD-separation / contrast checks (plan.md).
+     --viz-rest is the de-emphasised remainder in part-to-whole marks, never a series. */
+  --viz-1: #0081af;
+  --viz-2: #f76c5e;
+  --viz-rest: var(--n-4);
+
   color-scheme: light;
 }
 
@@ -94,6 +104,44 @@
   --success: #4f9d7a;
   --warning: #c9a74d; --warning-fg: #1a1407;
   --danger:  #b5503f; --danger-fg: #ffffff;
+}
+
+/* ---- Coastal Dark (v2-004) ----------------------------------------------
+   The shipped dark theme. NOT a palette swap: palette stays Coastal, style stays
+   Minimal (Manrope, soft diffuse shadows, generous radii) and only the mode flips.
+   The base dark mapping below re-maps semantics onto whatever ramp is active, and
+   Coastal's ramp bottoms out at the cool Carbon #1B2021 — so this rule extends the
+   warm family downward (hue held near 38°) BEFORE the mapping reads it, giving a
+   lamp-lit room rather than a cold screen. Higher specificity than the base dark
+   block, so file ordering is not load-bearing. */
+:root:not([data-palette="3"])[data-mode="dark"] {
+  --n-6: #554c40;
+  --n-7: #322b23;
+  --n-8: #221d17;
+  --n-9: #17130e;
+
+  /* lifted for contrast on the dark ground; Wheat (--tone) is left alone — it is
+     what carries the Coastal feeling into the dark. */
+  --primary: #35a8d0;
+  --primary-fg: #06222d;
+  --accent: #ff8272;
+  --accent-fg: #2a0f0a;
+
+  --success: #4fb08a;
+  --danger: #e0705d;
+
+  /* lift with warm cream rather than pure white, so the surfaces stay in the family */
+  --surface: color-mix(in srgb, var(--n-8) 92%, #fbf7ef);
+  --surface-hover: color-mix(in srgb, #fbf7ef 6%, var(--surface));
+  --surface-active: color-mix(in srgb, #fbf7ef 10%, var(--surface));
+  --text: #fbf7ef;
+  --text-muted: #b3a894;
+  --text-subtle: #8a8071;
+
+  /* validated against the dark surface — see the table in plan.md */
+  --viz-1: #2499c2;
+  --viz-2: #df6250;
+  --viz-rest: var(--n-5);
 }
 
 /* ---- semantic mapping · DARK (re-maps onto whatever ramp is active) ---- */

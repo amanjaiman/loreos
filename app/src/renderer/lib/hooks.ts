@@ -58,6 +58,61 @@ export function useSystemStatus(pollMs = 5000): SystemStatusState {
   return state;
 }
 
+export interface RailSummary {
+  /** Memories awaiting the user's judgment — the rail's only badge. */
+  staged: number;
+  /** Statements of the last few memories Lore kept, newest first. */
+  recent: string[];
+}
+
+/**
+ * The small, rail-scoped read behind the staged badge and the ambient trace (v2-004).
+ * Kept separate from the Today view's fetch so the rail stays live on every route.
+ */
+export function useRailSummary(pollMs = 20000): RailSummary {
+  const [summary, setSummary] = useState<RailSummary>({
+    staged: 0,
+    recent: [],
+  });
+
+  useEffect(() => {
+    let alive = true;
+    const tick = async (): Promise<void> => {
+      try {
+        const [staged, decisions] = await Promise.all([
+          api.listMemories({ status: 'staged', limit: 50 }),
+          api.decisions(40),
+        ]);
+        if (!alive) {
+          return;
+        }
+        const recent = decisions.items
+          .filter(
+            (d) =>
+              d.action === 'promoted' ||
+              d.action === 'revised' ||
+              d.action === 'user_promoted',
+          )
+          .map((d) => d.statement)
+          .filter((s) => typeof s === 'string' && s.length > 0)
+          .slice(0, 3);
+        setSummary({ staged: staged.items.length, recent });
+      } catch {
+        // Offline is a normal state here: leave the last good summary in place rather
+        // than blanking the rail while the agent restarts.
+      }
+    };
+    void tick();
+    const id = window.setInterval(() => void tick(), pollMs);
+    return () => {
+      alive = false;
+      window.clearInterval(id);
+    };
+  }, [pollMs]);
+
+  return summary;
+}
+
 export interface ConfigState {
   config: LoreConfigShape | null;
   offline: boolean;
