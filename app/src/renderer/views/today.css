@@ -100,6 +100,29 @@
   transform: translateY(-2px);
 }
 
+/* Keep / dismiss collapses the card out so the queue heals itself. Duration is mirrored
+   by COLLAPSE_MS in Today.tsx, which waits for it before refetching. */
+.today-qcard--removing {
+  overflow: hidden;
+  pointer-events: none;
+  animation: today-collapse var(--dur-slow) var(--ease) forwards;
+}
+
+@keyframes today-collapse {
+  from {
+    opacity: 1;
+    max-height: 320px;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(14px);
+    max-height: 0;
+    margin-bottom: calc(var(--space-4) * -1);
+    padding-block: 0;
+    border-width: 0;
+  }
+}
+
 .today-qcard__mark {
   display: inline-flex;
   align-items: center;
@@ -155,6 +178,31 @@
 
 .today-rec:hover {
   background: var(--surface-hover);
+}
+
+/* A memory arriving — the one moment that is genuinely about what Lore does. The row
+   drops in with a soft ring in the viz hue that dissolves. Duration is mirrored by
+   LAND_MS in Today.tsx, which clears the class afterwards. */
+.today-rec--new {
+  animation: today-land 900ms var(--ease-out) both;
+}
+
+@keyframes today-land {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--viz-1) 55%, transparent);
+  }
+  55% {
+    opacity: 1;
+    transform: none;
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--viz-1) 20%, transparent);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+    box-shadow: 0 0 0 0 transparent;
+  }
 }
 
 .today-rec__dot {

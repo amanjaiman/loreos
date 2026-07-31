@@ -26,12 +26,14 @@ export function Rail({
   status,
   staged,
   recent,
+  watching,
   onToggleCapture,
   busy,
 }: {
   status: AmbientStatus;
   staged: number;
   recent: string[];
+  watching: string | null;
   onToggleCapture: () => void;
   busy: boolean;
 }): JSX.Element {
@@ -107,9 +109,7 @@ export function Rail({
 
       <LiveElement
         status={status}
-        // The active window title isn't exposed by the local API yet, so the live
-        // element reports capture state rather than inventing a target (v2-004 T008).
-        watching={null}
+        watching={watching}
         onToggle={onToggleCapture}
         busy={busy}
       />

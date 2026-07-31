@@ -547,11 +547,54 @@
   backdrop-filter: blur(20px) saturate(150%);
 }
 
+/* Condense once content passes underneath: the bar tightens and the page's own title
+   fades in beside the crumb, so context survives the hero scrolling away. Functional
+   motion — it replaces information that left the screen. */
+.app-card[data-scrolled='true'] .app-page__head {
+  padding-block: var(--space-2);
+}
+
+.app-page__head {
+  transition:
+    padding var(--dur) var(--ease),
+    background-color var(--dur-slow) var(--ease);
+}
+
 .app-page__crumb {
   font-size: var(--text-sm);
   font-weight: var(--fw-semibold);
   letter-spacing: var(--tracking-tight);
   color: var(--text);
+}
+
+.app-page__mini {
+  min-width: 0;
+  opacity: 0;
+  transform: translateY(5px);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  transition:
+    opacity var(--dur) var(--ease),
+    transform var(--dur) var(--ease-out);
+}
+
+.app-page__sep {
+  opacity: 0;
+  color: var(--border-strong);
+  transition: opacity var(--dur) var(--ease);
+}
+
+.app-card[data-scrolled='true'] .app-page__mini {
+  opacity: 1;
+  transform: none;
+}
+
+.app-card[data-scrolled='true'] .app-page__sep {
+  opacity: 1;
 }
 
 .app-page__acts {

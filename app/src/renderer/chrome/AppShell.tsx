@@ -41,8 +41,9 @@ export function AppShell(): JSX.Element {
 
   const { offline } = useSystemStatus();
   const { config, refresh } = useConfig();
-  const { staged, recent } = useRailSummary();
+  const { staged, recent, watching } = useRailSummary();
   const [busy, setBusy] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   // Travel direction through the rail: moving down enters from below, up from above.
   // Keyed off the previous route rather than history, since the router has none.
@@ -78,13 +79,17 @@ export function AppShell(): JSX.Element {
         status={status}
         staged={staged}
         recent={recent}
+        watching={watching}
         onToggleCapture={() => void toggleCapture()}
         busy={busy}
       />
-      <main className="app-card">
+      <main className="app-card" data-scrolled={scrolled ? 'true' : 'false'}>
         <div
           className="app-card__scroll"
           style={{ '--dir': descending ? '12px' : '-12px' } as CSSProperties}
+          // Drives the page header's condense-on-scroll. Read off the event target
+          // rather than a ref so it survives the keyed remount below.
+          onScroll={(event) => setScrolled(event.currentTarget.scrollTop > 28)}
         >
           {/* Keyed on the route so the entrance animation replays on every change. */}
           <View key={route} />

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   api,
@@ -22,6 +22,15 @@ interface TodayData {
   staged: Memory[];
   /** Active memories, used only for the composition breakdown. */
   active: Memory[];
+}
+
+/** Keep in step with the `land` / `collapse` keyframes in today.css. */
+const LAND_MS = 900;
+const COLLAPSE_MS = 340;
+
+/** Honour the OS setting for the two places we *wait* on an animation, not just style it. */
+function motionAllowed(): boolean {
+  return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 const KIND_LABELS: Record<MemoryKind, string> = {
@@ -48,6 +57,12 @@ export function Today(): JSX.Element {
   const [offline, setOffline] = useState(false);
   const { navigate } = useRouter();
 
+  // The signature moment: a memory *arriving*. Capture is the whole product and it was
+  // previously silent. `seen` is null until the first load so the initial paint doesn't
+  // animate the entire backlog as if it had all just landed.
+  const seen = useRef<Set<string> | null>(null);
+  const [fresh, setFresh] = useState<ReadonlySet<string>>(new Set());
+
   const load = useCallback(async (): Promise<void> => {
     try {
       const [economy, decisions, staged, active] = await Promise.all([
@@ -56,6 +71,22 @@ export function Today(): JSX.Element {
         api.listMemories({ status: 'staged', limit: 20 }),
         api.listMemories({ status: 'active', limit: 500 }),
       ]);
+
+      const keptIds = decisions.items.filter(isKept).map((d) => d.memory_id);
+      if (seen.current === null) {
+        seen.current = new Set(keptIds);
+      } else {
+        const previous = seen.current;
+        const arrived = keptIds.filter((id) => !previous.has(id));
+        for (const id of arrived) {
+          previous.add(id);
+        }
+        if (arrived.length > 0 && motionAllowed()) {
+          setFresh(new Set(arrived));
+          window.setTimeout(() => setFresh(new Set()), LAND_MS);
+        }
+      }
+
       setData({
         economy,
         decisions: decisions.items,
@@ -87,11 +118,7 @@ export function Today(): JSX.Element {
   }
 
   const kept = data.decisions.filter(
-    (decision) =>
-      (decision.action === 'promoted' ||
-        decision.action === 'revised' ||
-        decision.action === 'user_promoted') &&
-      isToday(decision.at),
+    (decision) => isKept(decision) && isToday(decision.at),
   );
 
   const counts = data.economy.decisions_today;
@@ -103,6 +130,12 @@ export function Today(): JSX.Element {
     <div className="app-page">
       <div className="app-page__head">
         <span className="app-page__crumb">Home</span>
+        <span className="app-page__sep">/</span>
+        <span className="app-page__mini">
+          {data.staged.length > 0
+            ? `${data.staged.length} awaiting your judgment`
+            : 'Nothing awaiting your judgment'}
+        </span>
         <div className="app-page__acts">
           <Button
             variant="secondary"
@@ -175,7 +208,11 @@ export function Today(): JSX.Element {
                 <div className="today-recs">
                   {kept.map((decision, index) => (
                     <div
-                      className="today-rec"
+                      className={
+                        fresh.has(decision.memory_id)
+                          ? 'today-rec today-rec--new'
+                          : 'today-rec'
+                      }
                       key={`${decision.memory_id}-${index}`}
                     >
                       <span className="today-rec__dot" aria-hidden="true" />
@@ -356,13 +393,22 @@ function QueueCard({
   onActed: () => Promise<void>;
 }): JSX.Element {
   const [busy, setBusy] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const meta = metaOf(memory);
 
+  // Collapse the card out of the list before refetching, so the queue visibly heals
+  // itself rather than an item blinking out from under the cursor.
   const act = async (fn: (id: string) => Promise<unknown>): Promise<void> => {
     setBusy(true);
     try {
       await fn(memory.id);
+      if (motionAllowed()) {
+        setRemoving(true);
+        await new Promise((resolve) => window.setTimeout(resolve, COLLAPSE_MS));
+      }
       await onActed();
+    } catch {
+      setRemoving(false);
     } finally {
       setBusy(false);
     }
@@ -383,7 +429,9 @@ function QueueCard({
     .join(' · ');
 
   return (
-    <article className="today-qcard">
+    <article
+      className={removing ? 'today-qcard today-qcard--removing' : 'today-qcard'}
+    >
       <span className="today-qcard__mark">
         <span aria-hidden="true" />
         {meta === null
@@ -411,6 +459,15 @@ function QueueCard({
         </Button>
       </div>
     </article>
+  );
+}
+
+/** The decision actions that mean "this ended up in memory". */
+function isKept(decision: Decision): boolean {
+  return (
+    decision.action === 'promoted' ||
+    decision.action === 'revised' ||
+    decision.action === 'user_promoted'
   );
 }
 
