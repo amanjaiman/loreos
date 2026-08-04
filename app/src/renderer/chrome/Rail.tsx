@@ -1,10 +1,10 @@
 import { type CSSProperties } from 'react';
 
-import { ThemeSelector } from '../design-system';
 import { Icon } from '../lib/Icon';
 import { useRouter, type Route } from '../lib/router';
 import { LiveElement, type AmbientStatus } from './LiveElement';
 import { LoreMark } from './LoreMark';
+import { ThemeToggle } from './ThemeToggle';
 
 const NAV: Array<{ route: Route; label: string; icon: string }> = [
   { route: 'today', label: 'Home', icon: 'house' },
@@ -115,7 +115,7 @@ export function Rail({
       />
 
       <div className="rail__themes">
-        <ThemeSelector />
+        <ThemeToggle />
       </div>
     </div>
   );

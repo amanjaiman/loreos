@@ -137,7 +137,9 @@ export function Today(): JSX.Element {
   const stagedToday = counts['staged'] ?? 0;
 
   return (
-    <div className="app-page">
+    // The header is a sibling of .app-page, not a child: it needs to span the full pane
+    // width and carry no margins (see the sticky note in chrome.css).
+    <>
       <div className="app-page__head">
         <span className="app-page__crumb">Home</span>
         <span className="app-page__sep">/</span>
@@ -158,143 +160,150 @@ export function Today(): JSX.Element {
         </div>
       </div>
 
-      {offline ? (
-        <section className="today-offline">
-          <span className="today-offline__icon">
-            <Icon name="moon" size={20} />
-          </span>
-          <div>
-            <strong>Lore is resting.</strong>
-            <p>
-              The local agent is not responding. This view will fill in when it
-              returns.
-            </p>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            icon="refresh-cw"
-            onClick={() => void load()}
-          >
-            Check again
-          </Button>
-        </section>
-      ) : (
-        <div className="today-layout">
-          <div className="today-work">
-            <section>
-              <div className="today-shead">
-                <h2>Needs your judgment</h2>
-                {data.staged.length > 0 && (
-                  <span className="today-chip">{data.staged.length}</span>
+      <div className="app-page">
+        {offline ? (
+          <section className="today-offline">
+            <span className="today-offline__icon">
+              <Icon name="moon" size={20} />
+            </span>
+            <div>
+              <strong>Lore is resting.</strong>
+              <p>
+                The local agent is not responding. This view will fill in when
+                it returns.
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              icon="refresh-cw"
+              onClick={() => void load()}
+            >
+              Check again
+            </Button>
+          </section>
+        ) : (
+          <div className="today-layout">
+            <div className="today-work">
+              <section>
+                <div className="today-shead">
+                  <h2>Needs your judgment</h2>
+                  {data.staged.length > 0 && (
+                    <span className="today-chip">{data.staged.length}</span>
+                  )}
+                </div>
+                {data.staged.length === 0 ? (
+                  <p className="app-empty">
+                    The staging area is clear. Uncertain memories wait here
+                    until more evidence arrives.
+                  </p>
+                ) : (
+                  <div className="today-queue">
+                    {data.staged.map((memory) => (
+                      <QueueCard
+                        key={memory.id}
+                        memory={memory}
+                        onActed={load}
+                      />
+                    ))}
+                  </div>
                 )}
-              </div>
-              {data.staged.length === 0 ? (
-                <p className="app-empty">
-                  The staging area is clear. Uncertain memories wait here until
-                  more evidence arrives.
-                </p>
-              ) : (
-                <div className="today-queue">
-                  {data.staged.map((memory) => (
-                    <QueueCard key={memory.id} memory={memory} onActed={load} />
-                  ))}
-                </div>
-              )}
-            </section>
+              </section>
 
-            <section className="today-record">
-              <div className="today-shead today-shead--quiet">
-                <h2>Kept today</h2>
-                <span className="today-shead__spacer" />
-                <span className="today-shead__count">{kept.length}</span>
-              </div>
-              {kept.length === 0 ? (
-                <p className="app-empty">
-                  Nothing new has earned a place yet. Lore is still paying
-                  attention.
-                </p>
-              ) : (
-                <div className="today-recs">
-                  {kept.map((decision, index) => (
-                    <div
-                      className={
-                        fresh.has(decision.memory_id)
-                          ? 'today-rec today-rec--new'
-                          : 'today-rec'
-                      }
-                      key={`${decision.memory_id}-${index}`}
-                    >
-                      <span className="today-rec__dot" aria-hidden="true" />
-                      <span className="today-rec__text">
-                        {decision.statement}
-                      </span>
-                      <span className="today-rec__kind">{decision.kind}</span>
-                      <span className="today-rec__time">
-                        {formatRelative(decision.at)}
-                      </span>
-                    </div>
-                  ))}
+              <section className="today-record">
+                <div className="today-shead today-shead--quiet">
+                  <h2>Kept today</h2>
+                  <span className="today-shead__spacer" />
+                  <span className="today-shead__count">{kept.length}</span>
                 </div>
-              )}
-            </section>
-          </div>
-
-          <aside className="today-ctx" aria-label="Today at a glance">
-            <div className="today-ctx__block">
-              <span className="today-vlabel">Today</span>
-              <dl className="today-dl">
-                <div>
-                  <dt>Episodes observed</dt>
-                  <dd>{episodes}</dd>
-                </div>
-                <div>
-                  <dt>Kept</dt>
-                  <dd>{data.economy.promoted_today}</dd>
-                </div>
-                <div>
-                  <dt>Passed over</dt>
-                  <dd>{passed}</dd>
-                </div>
-              </dl>
-              <Ratio
-                kept={data.economy.promoted_today}
-                staged={stagedToday}
-                passed={passed}
-              />
+                {kept.length === 0 ? (
+                  <p className="app-empty">
+                    Nothing new has earned a place yet. Lore is still paying
+                    attention.
+                  </p>
+                ) : (
+                  <div className="today-recs">
+                    {kept.map((decision, index) => (
+                      <div
+                        className={
+                          fresh.has(decision.memory_id)
+                            ? 'today-rec today-rec--new'
+                            : 'today-rec'
+                        }
+                        key={`${decision.memory_id}-${index}`}
+                      >
+                        <span className="today-rec__dot" aria-hidden="true" />
+                        <span className="today-rec__text">
+                          {decision.statement}
+                        </span>
+                        <span className="today-rec__kind">{decision.kind}</span>
+                        <span className="today-rec__time">
+                          {formatRelative(decision.at)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
             </div>
 
-            <div className="today-ctx__rule" />
-
-            <div className="today-ctx__block">
-              <span className="today-vlabel">Memory budget</span>
-              <dl className="today-dl">
-                <div>
-                  <dt>Used today</dt>
-                  <dd>
-                    {data.economy.promoted_today} of {data.economy.daily_budget}
-                  </dd>
-                </div>
-              </dl>
-              <div className="today-meter">
-                <span
-                  style={{
-                    width: `${budgetPercent(
-                      data.economy.promoted_today,
-                      data.economy.daily_budget,
-                    )}%`,
-                  }}
+            <aside className="today-ctx" aria-label="Today at a glance">
+              <div className="today-ctx__block">
+                <span className="today-vlabel">Today</span>
+                <dl className="today-dl">
+                  <div>
+                    <dt>Episodes observed</dt>
+                    <dd>{episodes}</dd>
+                  </div>
+                  <div>
+                    <dt>Kept</dt>
+                    <dd>{data.economy.promoted_today}</dd>
+                  </div>
+                  <div>
+                    <dt>Passed over</dt>
+                    <dd>{passed}</dd>
+                  </div>
+                </dl>
+                <Ratio
+                  kept={data.economy.promoted_today}
+                  staged={stagedToday}
+                  passed={passed}
                 />
               </div>
-            </div>
 
-            <div className="today-ctx__rule" />
+              <div className="today-ctx__rule" />
 
-            <Composition stats={data.stats} />
-          </aside>
-        </div>
-      )}
-    </div>
+              <div className="today-ctx__block">
+                <span className="today-vlabel">Memory budget</span>
+                <dl className="today-dl">
+                  <div>
+                    <dt>Used today</dt>
+                    <dd>
+                      {data.economy.promoted_today} of{' '}
+                      {data.economy.daily_budget}
+                    </dd>
+                  </div>
+                </dl>
+                <div className="today-meter">
+                  <span
+                    style={{
+                      width: `${budgetPercent(
+                        data.economy.promoted_today,
+                        data.economy.daily_budget,
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="today-ctx__rule" />
+
+              <Composition stats={data.stats} />
+            </aside>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 
