@@ -1,4 +1,4 @@
-Compact label for status or category. Uses the mono eyebrow treatment in techy style.
+Compact label for status or category. Uses the mono eyebrow treatment.
 
 ```jsx
 <Badge variant="success" dot>Live</Badge>

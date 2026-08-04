@@ -1,179 +1,644 @@
-/* The desktop frame: a compact glass rail over one focused, generous content plane. */
+/* The v2-004 desktop frame: one ground plane, a rail sitting on it, and the content
+   floating above it in an inset card. No OS title bar, no menu bar — the top strip of
+   ground is ours, and the native window controls sit in it. */
 
-.app-shell {
-  display: flex;
-  flex-direction: column;
+.app-ground {
   height: 100vh;
   overflow: hidden;
-  background: var(--bg);
+  display: grid;
+  grid-template-columns: var(--rail-w) 1fr;
+  grid-template-rows: var(--strip-h) 1fr;
+
+  /* Per-corner radii live here so the card and its sticky header can never drift
+     apart — see the backdrop-filter note on .app-card__head. */
+  --rail-w: 236px;
+  --strip-h: 44px;
+  --r-tl: var(--radius-2xl);
+  --r-tr: var(--radius-2xl);
+  --r-br: var(--radius-2xl);
+  --r-bl: var(--radius-2xl);
+
+  /* background-color is kept separate from background-image so a theme change can
+     cross-fade the ground: gradient stops can't be transitioned, a flat colour can.
+     Two low-alpha blobs rather than one — a blur over a flat fill reads as grey wash. */
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(
+      88% 66% at 2% 0%,
+      color-mix(in srgb, var(--tone) 40%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      70% 62% at 100% 100%,
+      color-mix(in srgb, var(--primary) 12%, transparent),
+      transparent 62%
+    );
+  color: var(--text);
+  transition:
+    background-color var(--dur-slow) var(--ease),
+    color var(--dur-slow) var(--ease);
+
+  /* a restrained spring: enough overshoot to feel physical, not enough to bounce */
+  --ease-spring: cubic-bezier(0.22, 1.18, 0.36, 1);
 }
 
-.app-header {
-  position: relative;
-  z-index: var(--z-sticky);
+:root[data-mode='dark'] .app-ground {
+  background-image:
+    radial-gradient(
+      88% 66% at 2% 0%,
+      color-mix(in srgb, var(--tone) 13%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      70% 62% at 100% 100%,
+      color-mix(in srgb, var(--primary) 11%, transparent),
+      transparent 62%
+    );
+}
+
+/* The drag surface. Everything interactive inside the frame opts back out. */
+.app-strip {
+  grid-column: 2;
+  grid-row: 1;
+  -webkit-app-region: drag;
+}
+
+/* ============================== rail ============================== */
+
+.rail {
+  grid-column: 1;
+  grid-row: 1 / 3;
   display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  min-height: 68px;
-  padding: var(--space-3) var(--space-5);
-  border-bottom: var(--border-width) solid var(--border);
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  backdrop-filter: blur(24px) saturate(140%);
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: 0 var(--space-3) var(--space-4) var(--space-4);
 }
 
-.app-header__brand {
+.rail__brand {
+  flex: none;
+  height: var(--strip-h);
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  width: 150px;
-  min-width: 0;
+  padding-inline: var(--space-2);
+  -webkit-app-region: drag;
 }
 
-.app-header__mark {
-  width: 32px;
-  height: 32px;
+.rail__mark {
+  width: 26px;
+  height: 26px;
+  flex: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   background: var(--text);
   box-shadow: var(--shadow-sm);
 }
 
-.app-header__mark svg {
-  width: 18px;
-  height: 18px;
+.rail__mark svg {
+  width: 15px;
+  height: 15px;
   color: var(--bg);
 }
 
-.app-header__wordmark {
+.rail__word {
   font-family: var(--font-display);
   font-weight: var(--fw-semibold);
-  font-size: var(--text-md);
+  font-size: var(--text-base);
   letter-spacing: var(--tracking-tight);
   color: var(--text);
+  white-space: nowrap;
 }
 
-.app-header__nav {
+.rail__search {
+  flex: none;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
-  flex: 1;
-}
-
-.app-tab {
-  min-width: 76px;
-  border: none;
-  background: transparent;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 var(--space-4);
   padding: var(--space-2) var(--space-3);
+  border: var(--border-width) solid var(--border);
   border-radius: var(--radius-lg);
-  color: var(--text-muted);
+  background: color-mix(in srgb, var(--surface) 45%, transparent);
+  backdrop-filter: blur(14px) saturate(130%);
+  color: var(--text-subtle);
   font-family: var(--font-sans);
   font-size: var(--text-sm);
-  font-weight: var(--fw-medium);
   cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+  -webkit-app-region: no-drag;
   transition:
     background var(--dur) var(--ease),
-    color var(--dur) var(--ease),
-    box-shadow var(--dur) var(--ease);
+    border-color var(--dur) var(--ease);
 }
 
-.app-tab:hover {
-  background: var(--surface-hover);
-  color: var(--text);
-}
-
-.app-tab--active {
+.rail__search:hover {
   background: var(--surface);
+  border-color: var(--border-strong);
   color: var(--text);
-  box-shadow: var(--shadow-xs);
 }
 
-.app-tab:focus-visible {
+.rail__search:focus-visible {
   outline: none;
   box-shadow: var(--ring);
 }
 
-.app-header__status {
+.rail__kbd {
+  margin-left: auto;
+  padding: 2px var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text-subtle);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+}
+
+/* The active pill is one element that slides between items rather than a background
+   appearing and disappearing. Items are a fixed height so the offset is pure CSS —
+   no measurement, no layout read, nothing to go stale on a font swap. */
+.rail__nav {
+  position: relative;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--nav-gap);
+
+  --nav-h: 38px;
+  --nav-gap: 2px;
+}
+
+.nav-ind {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: var(--nav-h);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--surface) 62%, transparent);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-xs);
+  pointer-events: none;
+  transform: translateY(
+    calc(var(--nav-i, 0) * (var(--nav-h) + var(--nav-gap)))
+  );
+  transition:
+    transform 460ms var(--ease-spring),
+    background-color var(--dur-slow) var(--ease);
+}
+
+.navitem {
+  position: relative;
+  z-index: var(--z-base);
+  height: var(--nav-h);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-3);
+  border: none;
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  transition:
+    background var(--dur) var(--ease),
+    color var(--dur) var(--ease);
+}
+
+.navitem svg {
+  flex: none;
+}
+
+.navitem:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.navitem:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+/* The pill itself is .nav-ind; the active item only changes ink. */
+.navitem--active {
+  background: transparent;
+  color: var(--text);
+}
+
+.navitem--active svg {
+  color: var(--primary);
+}
+
+.navitem__badge {
+  margin-left: auto;
+  min-width: 18px;
+  padding: 1px var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: var(--fw-medium);
+  text-align: center;
+}
+
+/* Pushes the ambient block to the bottom of the rail. */
+.rail__mid {
+  flex: 1;
+  min-height: var(--space-3);
+}
+
+/* ---- the trace: the live element continued downward in time ----
+   Deliberately not a feed. One line each, fading with age, hung off a hairline that
+   dissolves — it reads as evidence rather than content, which is what keeps it from
+   duplicating the Home pane's own "kept today" list. */
+.trace {
+  position: relative;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--space-1);
+}
+
+.trace::before {
+  content: '';
+  position: absolute;
+  left: 13px;
+  top: calc(var(--space-1) * -1);
+  bottom: var(--space-4);
+  width: 1px;
+  background: linear-gradient(var(--border-strong), transparent);
+}
+
+.trace__item {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-width: 134px;
-  padding: var(--space-2) var(--space-3);
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--surface) 74%, transparent);
+  width: 100%;
+  padding: var(--space-1) var(--space-2);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  font-family: var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  transition:
+    background var(--dur) var(--ease),
+    opacity var(--dur) var(--ease);
 }
 
-.app-header__status-icon {
-  width: 26px;
-  height: 26px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.trace__item:nth-child(1) {
+  opacity: 0.82;
+}
+
+.trace__item:nth-child(2) {
+  opacity: 0.58;
+}
+
+.trace__item:nth-child(3) {
+  opacity: 0.36;
+}
+
+.trace__item:hover {
+  background: var(--surface-hover);
+  opacity: 1;
+}
+
+.trace__item:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  opacity: 1;
+}
+
+.trace__dot {
+  width: 5px;
+  height: 5px;
+  flex: none;
+  margin-left: 5px;
   border-radius: var(--radius-full);
-  background: var(--surface-2);
+  background: var(--border-strong);
+}
+
+.trace__item:hover .trace__dot {
+  background: var(--primary);
+}
+
+.trace__text {
+  min-width: 0;
+  font-size: var(--text-2xs);
+  color: var(--text-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trace__item:hover .trace__text {
   color: var(--text-muted);
 }
 
-.app-header__status--listening .app-header__status-icon {
-  background: color-mix(in srgb, var(--success) 14%, var(--surface));
-  color: var(--success);
+/* ---- the live element ---- */
+
+.live {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--surface) 40%, transparent);
+  backdrop-filter: blur(14px) saturate(130%);
+  overflow: hidden;
 }
 
-.app-header__status--offline .app-header__status-icon {
-  background: color-mix(in srgb, var(--warning) 16%, var(--surface));
-  color: color-mix(in srgb, var(--warning) 76%, var(--text));
+.live__dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  margin-inline: 3px;
+  border-radius: var(--radius-full);
+  background: var(--success);
 }
 
-.app-header__status-copy {
+.live--listening .live__dot {
+  animation: live-pulse 2.8s var(--ease-out) infinite;
+}
+
+.live--paused .live__dot {
+  background: var(--warning);
+}
+
+.live--offline .live__dot {
+  background: var(--text-subtle);
+}
+
+@keyframes live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 50%, transparent);
+  }
+  60% {
+    box-shadow: 0 0 0 7px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+.live__body {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   line-height: var(--lh-snug);
 }
 
-.app-header__status-label {
-  color: var(--text);
-  font-size: var(--text-xs);
-  font-weight: var(--fw-semibold);
+.live__label {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--text-subtle);
 }
 
-.app-header__status-detail {
+.live__detail {
+  font-size: var(--text-2xs);
+  font-weight: var(--fw-medium);
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.live__pause {
+  margin-left: auto;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
   color: var(--text-subtle);
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  transition:
+    background var(--dur) var(--ease),
+    color var(--dur) var(--ease);
+}
+
+.live__pause:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.live__pause:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.live__pause:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.rail__themes {
+  flex: none;
+  display: flex;
+  margin-top: var(--space-2);
+  -webkit-app-region: no-drag;
+}
+
+.rail__themes .lore-themeselect {
+  width: 100%;
+}
+
+.rail__themes .lore-themeselect__opt {
+  flex: 1;
+  padding-inline: var(--space-2);
   font-size: var(--text-2xs);
 }
 
-.app-header__theme {
+/* ============================== card ============================== */
+
+.app-card {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+  margin: 0 var(--space-3) var(--space-3) 0;
+  border: var(--border-width) solid
+    color-mix(in srgb, var(--text) 9%, transparent);
+  border-radius: var(--r-tl) var(--r-tr) var(--r-br) var(--r-bl);
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  backdrop-filter: blur(22px) saturate(135%);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
   display: flex;
+  flex-direction: column;
+  transition:
+    background-color var(--dur-slow) var(--ease),
+    border-color var(--dur-slow) var(--ease);
 }
 
-.app-header__theme .lore-themeselect__opt {
-  padding-inline: var(--space-2);
-  font-size: 0;
-}
-
-.app-content {
+/* Named container so pages can respond to the PANE's width rather than the viewport's.
+   The rail consumes 236px before content sees any, so a viewport media query breaks at
+   the wrong moment (v2-004 T007). */
+.app-card__scroll {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-10) var(--space-8) var(--space-16);
+  padding: var(--space-8);
   scrollbar-gutter: stable;
+  container-type: inline-size;
+  container-name: pane;
 }
 
+/* The page is an app pane, not a reading column. A centred ~760px column with wide
+   empty margins is what made the content read as a pasted document; routes that are
+   genuinely long-form opt back in with .app-page--reading. */
 .app-page {
-  width: min(100%, 1040px);
+  width: 100%;
+  max-width: 1120px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: var(--space-8);
-  animation: page-enter var(--dur-slow) var(--ease-out);
+  animation: page-enter 440ms var(--ease-out) both;
 }
 
+.app-page--reading {
+  max-width: 760px;
+}
+
+/* --dir is set by the shell from the direction of travel through the rail, so moving
+   down the nav enters from below and moving up enters from above. It costs one custom
+   property and gives the app a spatial model instead of a stack of unrelated screens. */
 @keyframes page-enter {
   from {
     opacity: 0;
-    transform: translateY(5px);
+    transform: translateY(var(--dir, 12px));
   }
+}
+
+/* NOTE — the backdrop-filter clip bug. In Chromium an element with backdrop-filter
+   escapes its ancestor's overflow:hidden + border-radius clip and repaints SQUARE
+   corners over it, which flattens the card's top edge. The header therefore carries its
+   own top radii, so it paints the right shape whether or not the ancestor clip applies.
+   Any future blurred element pinned to the card's edge needs the same treatment. */
+/* top: 0 is correct here — a sticky element's offset is measured from the scrollport,
+   and for an overflow:auto box the scrollport starts at the padding box. So 0 pins the
+   header flush to the card's inner top edge, which is what the negative margins above
+   line it up with. A negative offset would let it slide under the card's clip. */
+.app-page__head {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: calc(var(--space-8) * -1) calc(var(--space-8) * -1) var(--space-6);
+  padding: var(--space-3) var(--space-5);
+  border-bottom: var(--border-width) solid var(--border);
+  border-radius: var(--r-tl) var(--r-tr) 0 0;
+  background: color-mix(in srgb, var(--surface) 62%, transparent);
+  backdrop-filter: blur(20px) saturate(150%);
+}
+
+/* Condense once content passes underneath: the bar tightens and the page's own title
+   fades in beside the crumb, so context survives the hero scrolling away. Functional
+   motion — it replaces information that left the screen. */
+.app-card[data-scrolled='true'] .app-page__head {
+  padding-block: var(--space-2);
+}
+
+.app-page__head {
+  transition:
+    padding var(--dur) var(--ease),
+    background-color var(--dur-slow) var(--ease);
+}
+
+.app-page__crumb {
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text);
+}
+
+.app-page__mini {
+  min-width: 0;
+  opacity: 0;
+  transform: translateY(5px);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  transition:
+    opacity var(--dur) var(--ease),
+    transform var(--dur) var(--ease-out);
+}
+
+.app-page__sep {
+  opacity: 0;
+  color: var(--border-strong);
+  transition: opacity var(--dur) var(--ease);
+}
+
+.app-card[data-scrolled='true'] .app-page__mini {
+  opacity: 1;
+  transform: none;
+}
+
+.app-card[data-scrolled='true'] .app-page__sep {
+  opacity: 1;
+}
+
+.app-page__acts {
+  margin-left: auto;
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* ============================== shared page bits ============================== */
+
+.app-eyebrow {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--text-subtle);
+}
+
+.app-section__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text);
+}
+
+.app-empty {
+  margin: 0;
+  padding: var(--space-10);
+  border: var(--border-width) dashed var(--border-strong);
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--surface) 42%, transparent);
+  color: var(--text-muted);
+  font-size: var(--text-base);
+  text-align: center;
+  line-height: var(--lh-relaxed);
 }
 
 .page-header {
@@ -181,7 +646,7 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: var(--space-8);
-  padding: var(--space-4) 0 var(--space-2);
+  padding: var(--space-2) 0;
 }
 
 .page-header__copy {
@@ -217,69 +682,45 @@
   line-height: var(--lh-relaxed);
 }
 
-.app-eyebrow {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-  font-weight: var(--fw-medium);
-  letter-spacing: var(--tracking-eyebrow);
-  text-transform: uppercase;
-  color: var(--text-subtle);
+/* Below the rail's comfortable width the trace is the first thing to go — it is the
+   lowest-value element in the block and the one that makes the rail feel crowded. */
+@media (max-height: 680px) {
+  .trace {
+    display: none;
+  }
 }
 
-.app-section__title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: var(--text-lg);
-  font-weight: var(--fw-semibold);
-  letter-spacing: var(--tracking-tight);
-  color: var(--text);
-}
-
-.app-empty {
-  margin: 0;
-  padding: var(--space-10);
-  border: var(--border-width) dashed var(--border-strong);
-  border-radius: var(--radius-card);
-  background: color-mix(in srgb, var(--surface) 42%, transparent);
-  color: var(--text-muted);
-  font-size: var(--text-sm);
-  text-align: center;
-  line-height: var(--lh-relaxed);
-}
-
-@media (max-width: 880px) {
-  .app-header__brand {
-    width: auto;
+@media (max-width: 980px) {
+  .app-ground {
+    --rail-w: 72px;
   }
 
-  .app-header__wordmark,
-  .app-header__status-copy {
+  .rail__word,
+  .rail__kbd,
+  .navitem span,
+  .navitem__badge,
+  .live__body,
+  .trace {
     display: none;
   }
 
-  .app-header__status {
-    min-width: 0;
-    padding: var(--space-1);
+  .rail__search,
+  .navitem,
+  .live {
+    justify-content: center;
+    padding-inline: 0;
   }
 
-  .app-header__theme .lore-themeselect__opt {
+  .rail__themes .lore-themeselect__opt {
+    font-size: 0;
     padding-inline: var(--space-1);
   }
 
-  .app-content {
-    padding: var(--space-8) var(--space-5) var(--space-12);
-  }
-}
-
-@media (max-width: 640px) {
-  .app-tab {
-    min-width: 0;
-    padding-inline: var(--space-2);
+  .app-card__scroll {
+    padding: var(--space-5);
   }
 
-  .page-header {
-    align-items: flex-start;
-    flex-direction: column;
+  .app-page__head {
+    margin: calc(var(--space-5) * -1) calc(var(--space-5) * -1) var(--space-5);
   }
 }

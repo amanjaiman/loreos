@@ -138,10 +138,82 @@ public sealed class MemoryEndpointsTests
         Assert.Equal(HttpStatusCode.NotFound, second.StatusCode);
     }
 
+    [Fact]
+    public async Task Stats_counts_active_by_kind_with_every_kind_present()
+    {
+        var store = new FakeMemoryService();
+        store.Seed("a", metadata: Meta("active", "preference"));
+        store.Seed("b", metadata: Meta("active", "preference"));
+        store.Seed("c", metadata: Meta("active", "identity"));
+        store.Seed("staged one", metadata: Meta("staged", "state"));
+        store.Seed("staged two", metadata: Meta("staged", "project"));
+        store.Seed("gone", metadata: Meta("archived", "experience"));
+        await using LoreApiHarness harness = await StartAsync(store);
+
+        using JsonDocument doc = await GetJsonAsync(harness, "/memories/stats");
+        JsonElement root = doc.RootElement;
+        JsonElement active = root.GetProperty("active");
+
+        Assert.Equal(2, active.GetProperty("preference").GetInt32());
+        Assert.Equal(1, active.GetProperty("identity").GetInt32());
+        // Kinds with no active memory are present as 0, so the client never sees a missing field.
+        Assert.Equal(0, active.GetProperty("state").GetInt32());
+        Assert.Equal(0, active.GetProperty("experience").GetInt32());
+        Assert.Equal(0, active.GetProperty("project").GetInt32());
+        Assert.Equal(3, root.GetProperty("total_active").GetInt32());
+        Assert.Equal(2, root.GetProperty("staged").GetInt32());
+        Assert.Equal(1, root.GetProperty("archived").GetInt32());
+    }
+
+    [Fact]
+    public async Task Stats_on_an_empty_store_is_all_zero_not_404()
+    {
+        var store = new FakeMemoryService();
+        await using LoreApiHarness harness = await StartAsync(store);
+
+        using JsonDocument doc = await GetJsonAsync(harness, "/memories/stats");
+        JsonElement root = doc.RootElement;
+
+        Assert.Equal(0, root.GetProperty("total_active").GetInt32());
+        Assert.Equal(0, root.GetProperty("staged").GetInt32());
+        Assert.Equal(0, root.GetProperty("archived").GetInt32());
+        JsonElement active = root.GetProperty("active");
+        foreach (string kind in new[] { "identity", "preference", "state", "experience", "project" })
+        {
+            Assert.Equal(0, active.GetProperty(kind).GetInt32());
+        }
+    }
+
+    [Fact]
+    public async Task Stats_total_active_agrees_with_the_filtered_memories_list()
+    {
+        var store = new FakeMemoryService();
+        store.Seed("a", metadata: Meta("active", "preference"));
+        store.Seed("b", metadata: Meta("active", "state"));
+        store.Seed("c", metadata: Meta("staged", "project"));
+        await using LoreApiHarness harness = await StartAsync(store);
+
+        using JsonDocument stats = await GetJsonAsync(harness, "/memories/stats");
+        using JsonDocument list = await GetJsonAsync(harness, "/memories?status=active&limit=500");
+
+        Assert.Equal(
+            list.RootElement.GetProperty("total").GetInt32(),
+            stats.RootElement.GetProperty("total_active").GetInt32());
+    }
+
     private static async Task<JsonDocument> GetJsonAsync(LoreApiHarness harness, string path)
     {
         HttpResponseMessage response = await harness.Client.GetAsync(new Uri(path, UriKind.Relative));
         response.EnsureSuccessStatusCode();
         return JsonDocument.Parse(await response.Content.ReadAsStringAsync());
     }
+
+    // A v2-shaped metadata dict (the `v` key is what MemoryMetadata.From requires to parse a row).
+    private static Dictionary<string, JsonElement> Meta(string status, string kind) =>
+        new Dictionary<string, JsonElement>
+        {
+            ["v"] = JsonSerializer.SerializeToElement(1),
+            ["status"] = JsonSerializer.SerializeToElement(status),
+            ["kind"] = JsonSerializer.SerializeToElement(kind),
+        };
 }

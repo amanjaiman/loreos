@@ -22,6 +22,7 @@ public sealed class CaptureAgent : BackgroundService
     private readonly WindowMonitor _monitor;
     private readonly ITextExtractor _extractor;
     private readonly SensitivityFilter _filter;
+    private readonly CaptureStatusTracker _captureStatus;
     private readonly ActivityStore _activity;
     private readonly CaptureMetrics _metrics;
     private readonly IReadinessSignal _readiness;
@@ -38,6 +39,7 @@ public sealed class CaptureAgent : BackgroundService
         WindowMonitor monitor,
         ITextExtractor extractor,
         SensitivityFilter filter,
+        CaptureStatusTracker captureStatus,
         ActivityStore activity,
         CaptureMetrics metrics,
         IReadinessSignal readiness,
@@ -50,6 +52,7 @@ public sealed class CaptureAgent : BackgroundService
         ArgumentNullException.ThrowIfNull(monitor);
         ArgumentNullException.ThrowIfNull(extractor);
         ArgumentNullException.ThrowIfNull(filter);
+        ArgumentNullException.ThrowIfNull(captureStatus);
         ArgumentNullException.ThrowIfNull(activity);
         ArgumentNullException.ThrowIfNull(metrics);
         ArgumentNullException.ThrowIfNull(readiness);
@@ -61,6 +64,7 @@ public sealed class CaptureAgent : BackgroundService
         _monitor = monitor;
         _extractor = extractor;
         _filter = filter;
+        _captureStatus = captureStatus;
         _activity = activity;
         _metrics = metrics;
         _readiness = readiness;
@@ -149,14 +153,24 @@ public sealed class CaptureAgent : BackgroundService
         if (filtered.Blocked)
         {
             _metrics.Filtered(filtered.Reason);
+            // The current window is excluded — drop it from the "watching" signal so a blocklisted
+            // title can never surface in the always-visible rail (spec 005 R2, binding rule 1).
+            _captureStatus.RecordExcluded();
             await LogActivityAsync(window, ActivityDecision.Filtered, filtered.Reason.ToString(), cancellationToken)
                 .ConfigureAwait(false);
             return CaptureOutcome.Filtered;
         }
 
+        DateTimeOffset now = _time.GetUtcNow();
+
+        // The window cleared the whole filter chain, so its title survived the same screening
+        // capture uses (blocklist keyword + sensitive pattern) — safe to surface as the redacted
+        // "watching" title (spec 005 R2). Only the current window is ever held here.
+        _captureStatus.RecordCaptured(window.Title, now);
+
         ContentType type = ContentClassifier.Classify(window, filtered.Text);
         var observation = new CapturedObservation(
-            _time.GetUtcNow(), window.ProcessExecutable, window.Title, filtered.Text, type);
+            now, window.ProcessExecutable, window.Title, filtered.Text, type);
         Episode? closed = _episodes.Add(observation);
         _metrics.Observed();
         if (closed is null)

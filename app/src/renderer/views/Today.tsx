@@ -1,15 +1,18 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   api,
   metaOf,
   LoreOfflineError,
+  MEMORY_KINDS,
   type Decision,
   type Economy,
+  type Episode,
   type Memory,
+  type MemoryKind,
+  type MemoryStats,
 } from '../api';
-import { PageHeader } from '../chrome/PageHeader';
-import { Button, Spinner, Tag } from '../design-system';
+import { Button, Spinner } from '../design-system';
 import { formatRelative } from '../lib/format';
 import { Icon } from '../lib/Icon';
 import { useRouter } from '../lib/router';
@@ -19,21 +22,87 @@ interface TodayData {
   economy: Economy;
   decisions: Decision[];
   staged: Memory[];
+  stats: MemoryStats;
 }
 
+const EMPTY_STATS: MemoryStats = {
+  active: {},
+  staged: 0,
+  archived: 0,
+  total_active: 0,
+};
+
+/** Keep in step with the `land` / `collapse` keyframes in today.css. */
+const LAND_MS = 900;
+const COLLAPSE_MS = 340;
+
+/** Honour the OS setting for the two places we *wait* on an animation, not just style it. */
+function motionAllowed(): boolean {
+  return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+const KIND_LABELS: Record<MemoryKind, string> = {
+  identity: 'Identity',
+  preference: 'Preference',
+  state: 'State',
+  experience: 'Experience',
+  project: 'Project',
+};
+
+/**
+ * Home (v2-004). A two-column app pane, not a document:
+ *
+ *   left  — the work, in priority order. The staged queue leads because it is the only
+ *           thing on this screen that requires the user; the day's kept memories follow
+ *           as a dense, deliberately recessive record.
+ *   right — context you glance at and never operate on. Nothing here is a control, which
+ *           is what makes the split legible.
+ *
+ * Numbers live here and only here; the rail carries capture *state* (v2-004 AC 6).
+ */
 export function Today(): JSX.Element {
   const [data, setData] = useState<TodayData | null>(null);
   const [offline, setOffline] = useState(false);
   const { navigate } = useRouter();
 
+  // The signature moment: a memory *arriving*. Capture is the whole product and it was
+  // previously silent. `seen` is null until the first load so the initial paint doesn't
+  // animate the entire backlog as if it had all just landed.
+  const seen = useRef<Set<string> | null>(null);
+  const [fresh, setFresh] = useState<ReadonlySet<string>>(new Set());
+
   const load = useCallback(async (): Promise<void> => {
     try {
-      const [economy, decisions, staged] = await Promise.all([
+      // Composition comes from the counts endpoint (v2-005 R1). This used to fetch 500
+      // active memories and tally them in the browser purely to draw a five-row bar.
+      const [economy, decisions, staged, stats] = await Promise.all([
         api.economy(),
         api.decisions(100),
         api.listMemories({ status: 'staged', limit: 20 }),
+        api.memoryStats(),
       ]);
-      setData({ economy, decisions: decisions.items, staged: staged.items });
+
+      const keptIds = decisions.items.filter(isKept).map((d) => d.memory_id);
+      if (seen.current === null) {
+        seen.current = new Set(keptIds);
+      } else {
+        const previous = seen.current;
+        const arrived = keptIds.filter((id) => !previous.has(id));
+        for (const id of arrived) {
+          previous.add(id);
+        }
+        if (arrived.length > 0 && motionAllowed()) {
+          setFresh(new Set(arrived));
+          window.setTimeout(() => setFresh(new Set()), LAND_MS);
+        }
+      }
+
+      setData({
+        economy,
+        decisions: decisions.items,
+        staged: staged.items,
+        stats,
+      });
       setOffline(false);
     } catch (e) {
       setOffline(e instanceof LoreOfflineError);
@@ -41,6 +110,7 @@ export function Today(): JSX.Element {
         economy: { decisions_today: {}, promoted_today: 0, daily_budget: 0 },
         decisions: [],
         staged: [],
+        stats: EMPTY_STATS,
       });
     }
   }, []);
@@ -57,25 +127,26 @@ export function Today(): JSX.Element {
     );
   }
 
-  const remembered = data.decisions.filter(
-    (decision) =>
-      (decision.action === 'promoted' ||
-        decision.action === 'revised' ||
-        decision.action === 'user_promoted') &&
-      isToday(decision.at),
+  const kept = data.decisions.filter(
+    (decision) => isKept(decision) && isToday(decision.at),
   );
+
   const counts = data.economy.decisions_today;
   const episodes = counts['closed'] ?? 0;
-  const stagedToday = counts['staged'] ?? 0;
   const passed = counts['no_facts'] ?? 0;
+  const stagedToday = counts['staged'] ?? 0;
 
   return (
     <div className="app-page">
-      <PageHeader
-        eyebrow="// overview"
-        title="Memory, kept warm."
-        description="A quiet view of what Lore noticed, what it kept, and what still needs your judgment."
-        action={
+      <div className="app-page__head">
+        <span className="app-page__crumb">Home</span>
+        <span className="app-page__sep">/</span>
+        <span className="app-page__mini">
+          {data.staged.length > 0
+            ? `${data.staged.length} awaiting your judgment`
+            : 'Nothing awaiting your judgment'}
+        </span>
+        <div className="app-page__acts">
           <Button
             variant="secondary"
             size="sm"
@@ -84,8 +155,8 @@ export function Today(): JSX.Element {
           >
             Search memory
           </Button>
-        }
-      />
+        </div>
+      </div>
 
       {offline ? (
         <section className="today-offline">
@@ -109,40 +180,103 @@ export function Today(): JSX.Element {
           </Button>
         </section>
       ) : (
-        <>
-          <section className="today-brief">
-            <div className="today-brief__lead">
-              <span className="today-brief__pulse" aria-hidden="true">
-                <span />
-              </span>
-              <div>
-                <span className="today-brief__label">Today</span>
-                <h2>
-                  {remembered.length === 0
-                    ? 'Lore is listening for what lasts.'
-                    : `Lore remembered ${remembered.length} ${remembered.length === 1 ? 'thing' : 'things'}.`}
-                </h2>
-                <p>
-                  {remembered.length === 0
-                    ? 'Ordinary activity stays out of your memory until it earns a place.'
-                    : 'Each memory was supported by the activity Lore observed today.'}
+        <div className="today-layout">
+          <div className="today-work">
+            <section>
+              <div className="today-shead">
+                <h2>Needs your judgment</h2>
+                {data.staged.length > 0 && (
+                  <span className="today-chip">{data.staged.length}</span>
+                )}
+              </div>
+              {data.staged.length === 0 ? (
+                <p className="app-empty">
+                  The staging area is clear. Uncertain memories wait here until
+                  more evidence arrives.
                 </p>
+              ) : (
+                <div className="today-queue">
+                  {data.staged.map((memory) => (
+                    <QueueCard key={memory.id} memory={memory} onActed={load} />
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section className="today-record">
+              <div className="today-shead today-shead--quiet">
+                <h2>Kept today</h2>
+                <span className="today-shead__spacer" />
+                <span className="today-shead__count">{kept.length}</span>
               </div>
+              {kept.length === 0 ? (
+                <p className="app-empty">
+                  Nothing new has earned a place yet. Lore is still paying
+                  attention.
+                </p>
+              ) : (
+                <div className="today-recs">
+                  {kept.map((decision, index) => (
+                    <div
+                      className={
+                        fresh.has(decision.memory_id)
+                          ? 'today-rec today-rec--new'
+                          : 'today-rec'
+                      }
+                      key={`${decision.memory_id}-${index}`}
+                    >
+                      <span className="today-rec__dot" aria-hidden="true" />
+                      <span className="today-rec__text">
+                        {decision.statement}
+                      </span>
+                      <span className="today-rec__kind">{decision.kind}</span>
+                      <span className="today-rec__time">
+                        {formatRelative(decision.at)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
+
+          <aside className="today-ctx" aria-label="Today at a glance">
+            <div className="today-ctx__block">
+              <span className="today-vlabel">Today</span>
+              <dl className="today-dl">
+                <div>
+                  <dt>Episodes observed</dt>
+                  <dd>{episodes}</dd>
+                </div>
+                <div>
+                  <dt>Kept</dt>
+                  <dd>{data.economy.promoted_today}</dd>
+                </div>
+                <div>
+                  <dt>Passed over</dt>
+                  <dd>{passed}</dd>
+                </div>
+              </dl>
+              <Ratio
+                kept={data.economy.promoted_today}
+                staged={stagedToday}
+                passed={passed}
+              />
             </div>
-            <div className="today-metrics" aria-label="Today’s capture summary">
-              <Metric value={episodes} label="Episodes" />
-              <Metric value={stagedToday} label="Staged" />
-              <Metric value={data.economy.promoted_today} label="Remembered" />
-              <Metric value={passed} label="Passed over" />
-            </div>
-            <div className="today-budget">
-              <div className="today-budget__copy">
-                <span>Daily memory budget</span>
-                <span>
-                  {data.economy.promoted_today} / {data.economy.daily_budget}
-                </span>
-              </div>
-              <div className="today-budget__track">
+
+            <div className="today-ctx__rule" />
+
+            <div className="today-ctx__block">
+              <span className="today-vlabel">Memory budget</span>
+              <dl className="today-dl">
+                <div>
+                  <dt>Used today</dt>
+                  <dd>
+                    {data.economy.promoted_today} of {data.economy.daily_budget}
+                  </dd>
+                </div>
+              </dl>
+              <div className="today-meter">
                 <span
                   style={{
                     width: `${budgetPercent(
@@ -153,105 +287,104 @@ export function Today(): JSX.Element {
                 />
               </div>
             </div>
-          </section>
 
-          <section className="today-section">
-            <SectionHeading
-              title="Remembered today"
-              detail={`${remembered.length} ${remembered.length === 1 ? 'memory' : 'memories'}`}
-              icon="sparkles"
-            />
-            {remembered.length === 0 ? (
-              <p className="app-empty">
-                Nothing new has earned a place yet. Lore is still paying
-                attention.
-              </p>
-            ) : (
-              <div className="today-list">
-                {remembered.map((decision, index) => (
-                  <article
-                    key={`${decision.memory_id}-${index}`}
-                    className="today-memory"
-                  >
-                    <span className="today-memory__glyph">
-                      <Icon name="bookmark" size={16} />
-                    </span>
-                    <div className="today-memory__body">
-                      <p>{decision.statement}</p>
-                      <div className="today-memory__meta">
-                        <Tag>{decision.kind}</Tag>
-                        <span>{formatRelative(decision.at)}</span>
-                      </div>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            )}
-          </section>
+            <div className="today-ctx__rule" />
 
-          <section className="today-section">
-            <SectionHeading
-              title="Awaiting your judgment"
-              detail={`${data.staged.length} staged`}
-              icon="inbox"
-            />
-            {data.staged.length === 0 ? (
-              <p className="app-empty">
-                The staging area is clear. Uncertain memories wait here until
-                more evidence arrives.
-              </p>
-            ) : (
-              <div className="today-list">
-                {data.staged.map((memory) => (
-                  <StagedCard key={memory.id} memory={memory} onActed={load} />
-                ))}
+            <Composition stats={data.stats} />
+          </aside>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The day's selectivity, as a part-to-whole bar. Two hues plus a neutral remainder —
+ * "passed over" is grey because it genuinely *is* the context, not a third series. The
+ * numbers are direct-labelled above, so nothing is readable only from the colour.
+ */
+function Ratio({
+  kept,
+  staged,
+  passed,
+}: {
+  kept: number;
+  staged: number;
+  passed: number;
+}): JSX.Element | null {
+  const total = kept + staged + passed;
+  if (total === 0) {
+    return null;
+  }
+  const pct = (n: number): string => `${(n / total) * 100}%`;
+  return (
+    <>
+      <div
+        className="today-ratio"
+        role="img"
+        aria-label={`Of ${total} episodes today: ${kept} kept, ${staged} staged, ${passed} passed over`}
+      >
+        {kept > 0 && (
+          <span style={{ width: pct(kept), background: 'var(--viz-1)' }} />
+        )}
+        {staged > 0 && (
+          <span style={{ width: pct(staged), background: 'var(--viz-2)' }} />
+        )}
+        {passed > 0 && (
+          <span style={{ width: pct(passed), background: 'var(--viz-rest)' }} />
+        )}
+      </div>
+      <span className="today-vnote">
+        Lore kept {kept} of the {total} episodes it saw today.
+      </span>
+    </>
+  );
+}
+
+/** What Lore knows, by kind: magnitude, one hue, every bar direct-labelled. */
+function Composition({ stats }: { stats: MemoryStats }): JSX.Element {
+  const rows = MEMORY_KINDS.map((kind) => ({
+    kind,
+    n: stats.active[kind] ?? 0,
+  }))
+    .filter((row) => row.n > 0)
+    .sort((a, b) => b.n - a.n);
+  const max = rows.length === 0 ? 0 : rows[0].n;
+
+  return (
+    <div className="today-ctx__block">
+      <span className="today-vlabel">What Lore knows</span>
+      {rows.length === 0 ? (
+        <span className="today-vnote">Nothing kept yet.</span>
+      ) : (
+        <>
+          <div className="today-kinds">
+            {rows.map(({ kind, n }) => (
+              <div className="today-kind" key={kind}>
+                <span>{KIND_LABELS[kind]}</span>
+                <span className="today-kind__track">
+                  <span style={{ width: `${(n / max) * 100}%` }} />
+                </span>
+                <span className="today-kind__n">{n}</span>
               </div>
-            )}
-          </section>
+            ))}
+          </div>
+          <span className="today-vnote">
+            {stats.total_active} active{' '}
+            {stats.total_active === 1 ? 'memory' : 'memories'} in total.
+          </span>
         </>
       )}
     </div>
   );
 }
 
-function Metric({
-  value,
-  label,
-}: {
-  value: number;
-  label: string;
-}): JSX.Element {
-  return (
-    <div className="today-metric">
-      <strong>{value}</strong>
-      <span>{label}</span>
-    </div>
-  );
-}
-
-function SectionHeading({
-  title,
-  detail,
-  icon,
-}: {
-  title: string;
-  detail: string;
-  icon: string;
-}): JSX.Element {
-  return (
-    <div className="today-section__head">
-      <div className="today-section__title">
-        <span>
-          <Icon name={icon} size={16} />
-        </span>
-        <h2>{title}</h2>
-      </div>
-      <span className="today-section__detail">{detail}</span>
-    </div>
-  );
-}
-
-function StagedCard({
+/**
+ * A staged memory, as something you operate on. The evidence line answers the question
+ * you actually have when judging one of these — "why does Lore think this?" — which the
+ * previous list-row treatment left unanswerable.
+ */
+function QueueCard({
   memory,
   onActed,
 }: {
@@ -259,31 +392,55 @@ function StagedCard({
   onActed: () => Promise<void>;
 }): JSX.Element {
   const [busy, setBusy] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const meta = metaOf(memory);
 
+  // Collapse the card out of the list before refetching, so the queue visibly heals
+  // itself rather than an item blinking out from under the cursor.
   const act = async (fn: (id: string) => Promise<unknown>): Promise<void> => {
     setBusy(true);
     try {
       await fn(memory.id);
+      if (motionAllowed()) {
+        setRemoving(true);
+        await new Promise((resolve) => window.setTimeout(resolve, COLLAPSE_MS));
+      }
       await onActed();
+    } catch {
+      setRemoving(false);
     } finally {
       setBusy(false);
     }
   };
 
+  const episodes = meta?.episodes.length ?? 0;
+  const evidence = [
+    episodes > 0
+      ? `Seen in ${episodes} ${episodes === 1 ? 'episode' : 'episodes'}`
+      : 'Not yet corroborated',
+    meta !== null && meta.established_at > 0
+      ? `first noticed ${formatRelative(
+          new Date(meta.established_at * 1000).toISOString(),
+        )}`
+      : null,
+  ]
+    .filter((part): part is string => part !== null)
+    .join(' · ');
+
   return (
-    <article className="today-memory today-memory--staged">
-      <span className="today-memory__glyph">
-        <Icon name="circle-dashed" size={16} />
+    <article
+      className={removing ? 'today-qcard today-qcard--removing' : 'today-qcard'}
+    >
+      <span className="today-qcard__mark">
+        <span aria-hidden="true" />
+        {meta === null
+          ? 'Awaiting evidence'
+          : `${meta.kind} · awaiting evidence`}
       </span>
-      <div className="today-memory__body">
-        <p>{memory.memory}</p>
-        <div className="today-memory__meta">
-          {meta !== null && <Tag>{meta.kind}</Tag>}
-          <span>Waiting for evidence</span>
-        </div>
-      </div>
-      <div className="today-memory__actions">
+      <p>{memory.memory}</p>
+      <p className="today-qcard__why">{evidence}</p>
+      {episodes > 0 && <Evidence memoryId={memory.id} />}
+      <div className="today-qcard__foot">
         <Button
           size="sm"
           variant="primary"
@@ -302,6 +459,87 @@ function StagedCard({
         </Button>
       </div>
     </article>
+  );
+}
+
+/**
+ * The episodes that support a staged memory (v2-004 T009), fetched on demand from
+ * v2-005 R3. This answers the question the evidence *line* only summarises — "why does
+ * Lore think this?" — without which judging a staged memory is guesswork.
+ *
+ * Titles here come from the same filter chain capture applies, so nothing appears that
+ * Lore would not have captured in the first place.
+ */
+function Evidence({ memoryId }: { memoryId: string }): JSX.Element {
+  const [open, setOpen] = useState(false);
+  const [episodes, setEpisodes] = useState<Episode[] | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  const toggle = async (): Promise<void> => {
+    const next = !open;
+    setOpen(next);
+    if (!next || episodes !== null) {
+      return;
+    }
+    try {
+      const result = await api.memoryEvidence(memoryId);
+      setEpisodes(result.episodes);
+      setFailed(false);
+    } catch {
+      setFailed(true);
+    }
+  };
+
+  return (
+    <div className="today-evidence">
+      <button
+        type="button"
+        className="today-evidence__toggle"
+        aria-expanded={open}
+        onClick={() => void toggle()}
+      >
+        <Icon name={open ? 'chevron-down' : 'chevron-right'} size={13} />
+        {open ? 'Hide evidence' : 'Show evidence'}
+      </button>
+      {open && (
+        <div className="today-evidence__body">
+          {failed ? (
+            <span className="today-vnote">
+              Evidence isn&rsquo;t available right now.
+            </span>
+          ) : episodes === null ? (
+            <span className="today-vnote">Loading&hellip;</span>
+          ) : episodes.length === 0 ? (
+            <span className="today-vnote">
+              The supporting episodes are no longer stored.
+            </span>
+          ) : (
+            episodes.map((episode) => (
+              <div className="today-evidence__row" key={episode.id}>
+                <span className="today-evidence__app">
+                  {episode.executables.join(', ') || 'Unknown app'}
+                </span>
+                <span className="today-evidence__title">
+                  {episode.titles[0] ?? 'No window title'}
+                </span>
+                <span className="today-evidence__when">
+                  {formatRelative(episode.started_at)}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** The decision actions that mean "this ended up in memory". */
+function isKept(decision: Decision): boolean {
+  return (
+    decision.action === 'promoted' ||
+    decision.action === 'revised' ||
+    decision.action === 'user_promoted'
   );
 }
 

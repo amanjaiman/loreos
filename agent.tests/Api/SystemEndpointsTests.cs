@@ -3,9 +3,12 @@ using System.Net.Http;
 using System.Text.Json;
 using Lore.Agent.Api;
 using Lore.Agent.Api.Endpoints;
+using Lore.Agent.Capture;
+using Lore.Agent.Config;
 using Lore.Agent.Hosting;
 using Lore.Agent.Memory;
 using Lore.Agent.Providers;
+using Lore.Agent.Tests.Config;
 using Lore.Agent.Tests.Memory;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -50,6 +53,96 @@ public sealed class SystemEndpointsTests
 
         Assert.Equal("starting", components.GetProperty("memoryd").GetString());
         Assert.Equal("unconfigured", components.GetProperty("provider").GetString());
+    }
+
+    [Fact]
+    public async Task Status_surfaces_the_watched_window_when_capture_is_on()
+    {
+        var tracker = new CaptureStatusTracker();
+        tracker.RecordCaptured(
+            "Figma — Lore rebrand",
+            DateTimeOffset.Parse("2026-07-31T14:12:04Z", System.Globalization.CultureInfo.InvariantCulture));
+        await using LoreApiHarness harness = await StartAsync(services =>
+        {
+            services.AddSingleton<IMemorydReadiness>(new StubMemorydReadiness(ready: true));
+            services.AddSingleton(new ProviderOptions());
+            services.AddSingleton(tracker);
+        });
+
+        using JsonDocument doc = await GetJsonAsync(harness, "/system/status");
+        JsonElement capture = doc.RootElement.GetProperty("capture");
+
+        Assert.True(capture.GetProperty("enabled").GetBoolean());
+        Assert.Equal("Figma — Lore rebrand", capture.GetProperty("window_title").GetString());
+        Assert.Equal(JsonValueKind.String, capture.GetProperty("observed_at").ValueKind);
+    }
+
+    [Fact]
+    public async Task Status_hides_the_title_of_an_excluded_window()
+    {
+        var tracker = new CaptureStatusTracker();
+        tracker.RecordCaptured("Figma — Lore rebrand", DateTimeOffset.UnixEpoch);
+        tracker.RecordExcluded(); // the current window is now blocklisted
+        await using LoreApiHarness harness = await StartAsync(services =>
+        {
+            services.AddSingleton<IMemorydReadiness>(new StubMemorydReadiness(ready: true));
+            services.AddSingleton(new ProviderOptions());
+            services.AddSingleton(tracker);
+        });
+
+        string body = await (await harness.Client.GetAsync(new Uri("/system/status", UriKind.Relative)))
+            .Content.ReadAsStringAsync();
+        using JsonDocument doc = JsonDocument.Parse(body);
+        JsonElement capture = doc.RootElement.GetProperty("capture");
+
+        Assert.True(capture.GetProperty("enabled").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, capture.GetProperty("window_title").ValueKind);
+        Assert.Equal(JsonValueKind.Null, capture.GetProperty("observed_at").ValueKind);
+        // Belt and braces: no fragment of the excluded title survives anywhere in the response.
+        Assert.DoesNotContain("Figma", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Status_nulls_the_watched_window_when_capture_is_paused()
+    {
+        string configPath = Path.Combine(Path.GetTempPath(), $"lore-cap-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(configPath, /*lang=json,strict*/ "{\"capture\":{\"enabled\":false}}");
+        try
+        {
+            var tracker = new CaptureStatusTracker();
+            tracker.RecordCaptured("Private Journal", DateTimeOffset.UtcNow); // loop hasn't stopped
+            await using LoreApiHarness harness = await StartAsync(services =>
+            {
+                services.AddSingleton<IMemorydReadiness>(new StubMemorydReadiness(ready: true));
+                services.AddSingleton(new ProviderOptions());
+                services.AddSingleton(tracker);
+                services.AddSingleton(new LoreConfig(configPath, new InMemoryCredentialStore()));
+            });
+
+            using JsonDocument doc = await GetJsonAsync(harness, "/system/status");
+            JsonElement capture = doc.RootElement.GetProperty("capture");
+
+            Assert.False(capture.GetProperty("enabled").GetBoolean());
+            Assert.Equal(JsonValueKind.Null, capture.GetProperty("window_title").ValueKind);
+        }
+        finally
+        {
+            File.Delete(configPath);
+        }
+    }
+
+    [Fact]
+    public async Task Status_omits_the_capture_block_when_capture_is_not_wired()
+    {
+        await using LoreApiHarness harness = await StartAsync(services =>
+        {
+            services.AddSingleton<IMemorydReadiness>(new StubMemorydReadiness(ready: true));
+            services.AddSingleton(new ProviderOptions());
+        });
+
+        using JsonDocument doc = await GetJsonAsync(harness, "/system/status");
+
+        Assert.False(doc.RootElement.TryGetProperty("capture", out _));
     }
 
     [Fact]

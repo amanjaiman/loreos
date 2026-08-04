@@ -1,7 +1,441 @@
+/* Home (v2-004): a two-column app pane. Three visual roles, deliberately different in
+   weight — the queue you operate on, the record you scan, the context you glance at. */
+
 .today-loading {
   align-items: center;
-  padding-top: var(--space-20);
+  justify-content: center;
+  min-height: 320px;
 }
+
+.today-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 262px;
+  gap: var(--space-8);
+  align-items: start;
+}
+
+.today-work {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-10);
+}
+
+/* ---- section headers: two treatments, never one repeated rule ----
+   Identical `title + hairline + count` headers stacked down a column is the shape of
+   rendered markdown; the repetition is the tell, not the styling. */
+
+.today-shead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.today-shead h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text);
+}
+
+.today-shead--quiet {
+  border-bottom: var(--border-width) solid var(--border);
+  padding-bottom: var(--space-3);
+}
+
+.today-shead--quiet h2 {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--text-subtle);
+}
+
+.today-shead__spacer {
+  flex: 1;
+}
+
+.today-shead__count {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.today-chip {
+  padding: 3px var(--space-2);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--viz-2) 16%, var(--surface));
+  color: var(--viz-2);
+  font-size: var(--text-2xs);
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- the queue: elevated, operable ---- */
+
+.today-queue {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.today-qcard {
+  padding: var(--space-5) var(--space-6);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  transition:
+    box-shadow var(--dur) var(--ease),
+    transform var(--dur) var(--ease-out);
+}
+
+.today-qcard:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+/* Keep / dismiss collapses the card out so the queue heals itself. Duration is mirrored
+   by COLLAPSE_MS in Today.tsx, which waits for it before refetching. */
+.today-qcard--removing {
+  overflow: hidden;
+  pointer-events: none;
+  animation: today-collapse var(--dur-slow) var(--ease) forwards;
+}
+
+@keyframes today-collapse {
+  from {
+    opacity: 1;
+    max-height: 320px;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(14px);
+    max-height: 0;
+    margin-bottom: calc(var(--space-4) * -1);
+    padding-block: 0;
+    border-width: 0;
+  }
+}
+
+.today-qcard__mark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--viz-2);
+}
+
+.today-qcard__mark span {
+  width: 5px;
+  height: 5px;
+  border-radius: var(--radius-full);
+  background: var(--viz-2);
+}
+
+.today-qcard p {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-md);
+  line-height: var(--lh-normal);
+  color: var(--text);
+}
+
+.today-qcard__why {
+  font-size: var(--text-xs);
+  color: var(--text-subtle);
+}
+
+.today-qcard__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+}
+
+/* ---- evidence expansion ---- */
+
+.today-evidence {
+  margin-top: var(--space-3);
+}
+
+.today-evidence__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) 0;
+  border: none;
+  background: transparent;
+  color: var(--text-subtle);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition: color var(--dur) var(--ease);
+}
+
+.today-evidence__toggle:hover {
+  color: var(--text);
+}
+
+.today-evidence__toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: var(--radius-sm);
+}
+
+.today-evidence__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+}
+
+.today-evidence__row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr) auto;
+  align-items: baseline;
+  gap: var(--space-3);
+  font-size: var(--text-2xs);
+  color: var(--text-subtle);
+}
+
+.today-evidence__app {
+  color: var(--text-muted);
+  font-weight: var(--fw-medium);
+}
+
+.today-evidence__app,
+.today-evidence__title {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.today-evidence__when {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---- the record: dense, quiet, scannable ---- */
+
+.today-recs {
+  display: flex;
+  flex-direction: column;
+}
+
+.today-rec {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-2);
+  border-bottom: var(--border-width) solid var(--border);
+  transition: background var(--dur) var(--ease);
+}
+
+.today-rec:hover {
+  background: var(--surface-hover);
+}
+
+/* A memory arriving — the one moment that is genuinely about what Lore does. The row
+   drops in with a soft ring in the viz hue that dissolves. Duration is mirrored by
+   LAND_MS in Today.tsx, which clears the class afterwards. */
+.today-rec--new {
+  animation: today-land 900ms var(--ease-out) both;
+}
+
+@keyframes today-land {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--viz-1) 55%, transparent);
+  }
+  55% {
+    opacity: 1;
+    transform: none;
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--viz-1) 20%, transparent);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+.today-rec__dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 2px;
+  transform: rotate(45deg);
+  background: var(--viz-1);
+}
+
+.today-rec__text {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-base);
+  line-height: var(--lh-normal);
+  color: var(--text);
+}
+
+.today-rec__kind,
+.today-rec__time {
+  flex: none;
+  font-size: var(--text-2xs);
+  color: var(--text-subtle);
+}
+
+.today-rec__time {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- context column: glanceable, never operable ---- */
+
+.today-ctx {
+  position: sticky;
+  top: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.today-ctx__block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.today-ctx__rule {
+  height: 1px;
+  background: var(--border);
+}
+
+.today-vlabel {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--text-subtle);
+}
+
+.today-vnote {
+  font-size: var(--text-2xs);
+  color: var(--text-subtle);
+  line-height: var(--lh-normal);
+}
+
+.today-dl {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.today-dl div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.today-dl dt,
+.today-dl dd {
+  margin: 0;
+}
+
+.today-dl dd {
+  color: var(--text);
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* part-to-whole: 2px gaps in the surface colour do the separating, never borders */
+.today-ratio {
+  display: flex;
+  gap: 2px;
+  height: 6px;
+}
+
+.today-ratio span {
+  display: block;
+  border-radius: 2px;
+  min-width: 3px;
+}
+
+.today-ratio span:first-child {
+  border-radius: 3px 2px 2px 3px;
+}
+
+.today-ratio span:last-child {
+  border-radius: 2px 3px 3px 2px;
+}
+
+.today-meter {
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--viz-1) 18%, var(--surface));
+  overflow: hidden;
+}
+
+.today-meter span {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--viz-1);
+  transition: width var(--dur-slow) var(--ease-out);
+}
+
+.today-kinds {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.today-kind {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-2xs);
+  color: var(--text-muted);
+}
+
+.today-kind__track {
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--viz-1) 16%, var(--surface));
+}
+
+.today-kind__track span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--viz-1);
+}
+
+.today-kind__n {
+  text-align: right;
+  color: var(--text);
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- offline ---- */
 
 .today-offline {
   display: flex;
@@ -30,264 +464,37 @@
 }
 
 .today-offline strong {
+  display: block;
+  font-size: var(--text-base);
   color: var(--text);
-  font-size: var(--text-sm);
 }
 
 .today-offline p {
   margin: var(--space-1) 0 0;
-  color: var(--text-muted);
   font-size: var(--text-sm);
-}
-
-.today-brief {
-  overflow: hidden;
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-card);
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
-}
-
-.today-brief__lead {
-  display: flex;
-  gap: var(--space-5);
-  padding: var(--space-8);
-}
-
-.today-brief__pulse {
-  width: 44px;
-  height: 44px;
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-full);
-  background: color-mix(in srgb, var(--success) 12%, var(--surface));
-}
-
-.today-brief__pulse span {
-  width: 9px;
-  height: 9px;
-  border-radius: var(--radius-full);
-  background: var(--success);
-  box-shadow: 0 0 0 6px color-mix(in srgb, var(--success) 12%, transparent);
-}
-
-.today-brief__label {
-  color: var(--text-subtle);
-  font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-  letter-spacing: var(--tracking-eyebrow);
-  text-transform: uppercase;
-}
-
-.today-brief h2 {
-  margin: var(--space-2) 0 0;
-  color: var(--text);
-  font-family: var(--font-display);
-  font-size: var(--text-xl);
-  font-weight: var(--fw-semibold);
-  letter-spacing: var(--tracking-tight);
-}
-
-.today-brief__lead p {
-  margin: var(--space-2) 0 0;
-  color: var(--text-muted);
-  font-size: var(--text-sm);
-}
-
-.today-metrics {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  border-top: var(--border-width) solid var(--border);
-  border-bottom: var(--border-width) solid var(--border);
-  background: color-mix(in srgb, var(--surface-2) 42%, var(--surface));
-}
-
-.today-metric {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-5) var(--space-6);
-}
-
-.today-metric + .today-metric {
-  border-left: var(--border-width) solid var(--border);
-}
-
-.today-metric strong {
-  color: var(--text);
-  font-family: var(--font-mono);
-  font-size: var(--text-lg);
-  font-weight: var(--fw-medium);
-}
-
-.today-metric span {
-  color: var(--text-subtle);
-  font-size: var(--text-xs);
-}
-
-.today-budget {
-  padding: var(--space-4) var(--space-6) var(--space-5);
-}
-
-.today-budget__copy {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: var(--space-2);
-  color: var(--text-subtle);
-  font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-}
-
-.today-budget__track {
-  height: 3px;
-  overflow: hidden;
-  border-radius: var(--radius-full);
-  background: var(--surface-3);
-}
-
-.today-budget__track span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--primary);
-  transition: width var(--dur-slow) var(--ease-out);
-}
-
-.today-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.today-section__head,
-.today-section__title {
-  display: flex;
-  align-items: center;
-}
-
-.today-section__head {
-  justify-content: space-between;
-  gap: var(--space-4);
-}
-
-.today-section__title {
-  gap: var(--space-3);
-}
-
-.today-section__title > span {
-  width: 30px;
-  height: 30px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-lg);
-  background: var(--surface-2);
   color: var(--text-muted);
 }
 
-.today-section__title h2 {
-  margin: 0;
-  color: var(--text);
-  font-family: var(--font-display);
-  font-size: var(--text-md);
-  font-weight: var(--fw-semibold);
-}
-
-.today-section__detail {
-  color: var(--text-subtle);
-  font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-}
-
-.today-list {
-  overflow: hidden;
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-card);
-  background: var(--surface);
-  box-shadow: var(--shadow-xs);
-}
-
-.today-memory {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-4);
-  padding: var(--space-5);
-  transition: background var(--dur) var(--ease);
-}
-
-.today-memory + .today-memory {
-  border-top: var(--border-width) solid var(--border);
-}
-
-.today-memory:hover {
-  background: var(--surface-hover);
-}
-
-.today-memory__glyph {
-  width: 32px;
-  height: 32px;
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-lg);
-  background: var(--primary-soft);
-  color: var(--on-primary-soft);
-}
-
-.today-memory--staged .today-memory__glyph {
-  background: var(--surface-2);
-  color: var(--text-muted);
-}
-
-.today-memory__body {
-  flex: 1;
-  min-width: 0;
-}
-
-.today-memory__body > p {
-  margin: 0;
-  color: var(--text);
-  font-size: var(--text-base);
-  line-height: var(--lh-relaxed);
-}
-
-.today-memory__meta {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  margin-top: var(--space-3);
-  color: var(--text-subtle);
-  font-size: var(--text-xs);
-}
-
-.today-memory__actions {
-  display: flex;
-  gap: var(--space-2);
-  align-self: center;
-}
-
-@media (max-width: 640px) {
-  .today-metrics {
-    grid-template-columns: repeat(2, 1fr);
+/* Keyed off the pane's own width, not the viewport: the rail consumes 236px before the
+   content sees any, so a viewport breakpoint fires at the wrong moment. The container is
+   declared on .app-card__scroll in chrome.css. */
+@container pane (max-width: 820px) {
+  .today-layout {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .today-metric:nth-child(3) {
-    border-left: 0;
-  }
-
-  .today-metric:nth-child(n + 3) {
-    border-top: var(--border-width) solid var(--border);
-  }
-
-  .today-memory--staged {
+  .today-ctx {
+    position: static;
+    flex-direction: row;
     flex-wrap: wrap;
+    gap: var(--space-8);
   }
 
-  .today-memory__actions {
-    width: 100%;
-    padding-left: var(--space-12);
+  .today-ctx__block {
+    flex: 1 1 200px;
+  }
+
+  .today-ctx__rule {
+    display: none;
   }
 }

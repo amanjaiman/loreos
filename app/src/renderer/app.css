@@ -45,6 +45,20 @@ body {
   min-height: 100%;
 }
 
+/* The window is frameless (v2-004), so any surface that owns the whole window — the
+   splash, the offline screen, onboarding — must supply its own drag region. Without
+   this a first-run user cannot move the window at all, because AppShell's strip never
+   renders. The band matches the shell's 44px strip so the native controls sit in it. */
+.window-drag {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 44px;
+  z-index: var(--z-sticky);
+  -webkit-app-region: drag;
+}
+
 /* Launch splash + offline state (shared by App gating and T011's resilience sweep). */
 .app-splash {
   min-height: 100vh;

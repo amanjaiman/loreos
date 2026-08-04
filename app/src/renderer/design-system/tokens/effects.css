@@ -1,14 +1,13 @@
 /* ============================================================================
    Lore — Effects: shadows, borders, focus, motion, z-index
-   :root carries the MINIMAL style (soft, diffuse elevation).
-   [data-style="techy"] swaps in tight, hard-edged shadows. Motion is smooth &
-   subtle in both. [data-mode="dark"] deepens shadows.
+   Soft, diffuse elevation; motion smooth and subtle. [data-mode="dark"] deepens
+   the shadows and nothing else — the elevation character is shared (v2-004).
    ============================================================================ */
 
 :root {
   --border-width: 1px;   /* @kind other */
 
-  /* MINIMAL (default / Coastal) — soft, diffuse elevation */
+  /* soft, diffuse elevation */
   --shadow-xs: 0 1px 2px rgba(20, 16, 12, 0.04);
   --shadow-sm: 0 2px 8px rgba(20, 16, 12, 0.05);
   --shadow-md: 0 6px 20px rgba(20, 16, 12, 0.07);
@@ -32,16 +31,6 @@
   --z-overlay: 800;   /* @kind other */
   --z-modal: 900;     /* @kind other */
   --z-toast: 1000;    /* @kind other */
-}
-
-/* TECHY (Nocturne) — tight, low, hard-edged shadows */
-:root[data-style="techy"] {
-  --shadow-xs: 0 1px 1px rgba(20, 16, 12, 0.05);
-  --shadow-sm: 0 1px 2px rgba(20, 16, 12, 0.08);
-  --shadow-md: 0 2px 6px rgba(20, 16, 12, 0.10);
-  --shadow-lg: 0 8px 24px rgba(20, 16, 12, 0.14);
-  --shadow-pop: 0 12px 40px rgba(20, 16, 12, 0.20);
-  --ring-width: 3px;   /* @kind other */
 }
 
 :root[data-mode="dark"] {

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron';
 import { AgentProcess } from './agentProcess';
 import { applySquirrelPathHook } from './windowsIntegration';
 
@@ -21,6 +21,27 @@ if (require('electron-squirrel-startup')) {
 // (it in turn supervises memoryd — spec 002). A no-op in dev, where it's run separately.
 const agent = new AgentProcess();
 
+/** Height of the app's own drag strip; the native controls are sized to match (v2-004). */
+const TITLE_BAR_HEIGHT = 44;
+
+/** Coastal (light) window-control colours — the first paint, before the renderer reports in. */
+const DEFAULT_OVERLAY = { color: '#fbf7ef', symbolColor: '#565049' };
+
+/**
+ * The application menu is *hidden*, not removed. `Menu.setApplicationMenu(null)` also
+ * unregisters the accelerators the roles carry, which on Windows silently breaks
+ * Ctrl+C/V/X/A/Z inside every text input. Marking the top-level items `visible: false`
+ * keeps the accelerators and renders no menu bar (v2-004 T001, AC 3).
+ */
+const installHiddenMenu = (): void => {
+  const template: Electron.MenuItemConstructorOptions[] = [
+    { role: 'editMenu', visible: false },
+    // Devtools only: harmless in production because the item never renders.
+    { role: 'viewMenu', visible: false },
+  ];
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+};
+
 const createWindow = (): void => {
   const mainWindow = new BrowserWindow({
     width: 1180,
@@ -29,6 +50,11 @@ const createWindow = (): void => {
     minHeight: 600,
     title: 'Lore',
     backgroundColor: '#fbf7ef', // Coastal --bg, avoids a white flash before styles load
+    // Frameless, but NOT `frame: false` — that removes the non-client area and with it
+    // Windows 11 Snap Layouts (the flyout on hover over Maximize). 'hidden' + an overlay
+    // keeps real, snap-aware controls in a strip whose colours we own (v2-004 AC 2).
+    titleBarStyle: 'hidden',
+    titleBarOverlay: { ...DEFAULT_OVERLAY, height: TITLE_BAR_HEIGHT },
     webPreferences: {
       // contextIsolation on / nodeIntegration off (Electron defaults). The renderer is
       // a pure client of the local API (005) over loopback fetch — there is no
@@ -39,6 +65,30 @@ const createWindow = (): void => {
 
   void mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 };
+
+/** `#rrggbb` only — the renderer is untrusted input like any other caller. */
+const isHexColor = (value: unknown): value is string =>
+  typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value);
+
+// The overlay's colours are fixed at construction and do not follow CSS, so the renderer
+// reports the resolved theme colours after each switch (v2-004 AC 4).
+ipcMain.on(
+  'lore:set-titlebar',
+  (event, color: unknown, symbolColor: unknown): void => {
+    if (!isHexColor(color) || !isHexColor(symbolColor)) {
+      return;
+    }
+    const window = BrowserWindow.fromWebContents(event.sender);
+    // setTitleBarOverlay only exists where an overlay is in use (Windows/Linux).
+    if (window !== null && typeof window.setTitleBarOverlay === 'function') {
+      window.setTitleBarOverlay({
+        color,
+        symbolColor,
+        height: TITLE_BAR_HEIGHT,
+      });
+    }
+  },
+);
 
 // Native document picker for import (T009). The renderer can't obtain a real filesystem
 // path on its own; it asks the main process, which returns the chosen PDF's absolute path.
@@ -55,6 +105,7 @@ ipcMain.handle('lore:pick-document', async (): Promise<string | null> => {
 
 app.on('ready', () => {
   agent.start();
+  installHiddenMenu();
   createWindow();
 });
 

@@ -5,8 +5,10 @@ export function Appearance(): JSX.Element {
   return (
     <Card eyebrow="// appearance" title="Theme">
       <p className="set-subtle">
-        Coastal is calm and light; Nocturne is dark and crisp. Switch anytime
-        from the theme control in the header — your choice is remembered.
+        Coastal is calm and light; Coastal Dark is the same room with the lamp
+        on — the same type and the same soft edges, only the ground goes dark.
+        Switch anytime from the control at the bottom of the rail; your choice
+        is remembered.
       </p>
     </Card>
   );

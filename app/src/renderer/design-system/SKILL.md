@@ -17,12 +17,12 @@ Link the one stylesheet. A bare `<html>` renders the **Coastal** theme; add attr
 <html><link rel="stylesheet" href="styles.css"></html>
 
 <!-- Nocturne: Techy + Dark -->
-<html data-palette="3" data-style="techy" data-mode="dark">
+<html data-mode="dark">
   <link rel="stylesheet" href="styles.css">
 ```
 
 - **Coastal** (default) — Cerulean/Coral, Manrope, soft-rounded, light.
-- **Nocturne** — Yale Blue/Bronze, Space Grotesk, crisp corners, dark.
+- **Coastal Dark** — the same Coastal brand and Manrope on a warm dark ground.
 - Easiest switch: drop `<ThemeSelector />` (from `components/theming/`) — it sets + persists the theme on `<html>`.
 
 Open `showcase.html` to see both themes live.
