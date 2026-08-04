@@ -115,7 +115,8 @@ public sealed class ContractTests : IAsyncLifetime, IDisposable
         JsonElement paths = root.GetProperty("paths");
         foreach (string expected in new[]
                  {
-                     "/memories", "/memories/search", "/memories/{id}", "/recent", "/activity",
+                     "/memories", "/memories/search", "/memories/{id}", "/memories/stats",
+                     "/memories/{id}/evidence", "/recent", "/activity",
                      "/config", "/providers/test", "/recall", "/system/status",
                      "/system/log", "/system/data", "/export/json", "/export/markdown",
                  })

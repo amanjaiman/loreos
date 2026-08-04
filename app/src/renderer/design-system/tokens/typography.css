@@ -1,12 +1,12 @@
 /* ============================================================================
    Lore — Typography
-   :root carries the MINIMAL style (Coastal's type). [data-style="techy"] swaps
-   in the Techy type (Nocturne). The type scale, weights and line-heights are
-   shared across both.
+   One type system: Manrope for display and body, JetBrains Mono for eyebrows,
+   code, data and metadata. Both themes share it — Coastal Dark flips the ground,
+   never the typeface (v2-004).
    ============================================================================ */
 
 :root {
-  /* MINIMAL (default / Coastal) — geometric Manrope, airy tracking */
+  /* geometric Manrope, airy tracking */
   --font-display: 'Manrope', system-ui, -apple-system, sans-serif;
   --font-sans: 'Manrope', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
@@ -41,28 +41,15 @@
   --lh-normal: 1.5;    /* @kind other */
   --lh-relaxed: 1.65;  /* @kind other */
 
-  /* tracking (Minimal) */
+  /* tracking */
   --tracking-tighter: -0.025em;  /* @kind other */
   --tracking-tight: -0.012em;    /* @kind other */
   --tracking-normal: 0em;        /* @kind other */
   --tracking-wide: 0.02em;       /* @kind other */
   --tracking-eyebrow: 0.12em;    /* @kind other */
 
-  /* eyebrow / overline treatment (Minimal) */
+  /* eyebrow / overline treatment */
   --eyebrow-font: var(--font-sans);     /* @kind font */
   --eyebrow-transform: uppercase;       /* @kind other */
   --eyebrow-weight: var(--fw-semibold); /* @kind font */
-}
-
-/* TECHY (Nocturne) — grotesk + mono eyebrows, tighter tracking */
-:root[data-style="techy"] {
-  --font-display: 'Space Grotesk', system-ui, -apple-system, sans-serif;
-  --font-sans: 'Space Grotesk', system-ui, -apple-system, sans-serif;
-
-  --tracking-tighter: -0.03em;   /* @kind other */
-  --tracking-tight: -0.015em;    /* @kind other */
-  --tracking-eyebrow: 0.18em;    /* @kind other */
-
-  --eyebrow-font: var(--font-mono);     /* @kind font */
-  --eyebrow-weight: var(--fw-medium);   /* @kind font */
 }

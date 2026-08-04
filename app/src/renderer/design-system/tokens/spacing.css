@@ -1,7 +1,6 @@
 /* ============================================================================
    Lore — Spacing, Radius & Density
-   :root carries the MINIMAL style (generous rounding, airy controls).
-   [data-style="techy"] swaps in crisp, compact controls. Spacing scale shared.
+   Generous rounding and airy controls, shared by both themes (v2-004).
    ============================================================================ */
 
 :root {
@@ -29,7 +28,7 @@
   --radius-2xl: 20px;
   --radius-full: 999px;
 
-  /* MINIMAL (default / Coastal) — generous rounding, airier controls */
+  /* generous rounding, airier controls */
   --radius-control: var(--radius-full);
   --radius-card: var(--radius-2xl);
   --radius-field: var(--radius-lg);
@@ -37,15 +36,4 @@
   --control-h-md: 44px;
   --control-h-lg: 54px;
   --control-px: var(--space-5);
-}
-
-/* TECHY (Nocturne) — crisp, near-square corners; compact controls */
-:root[data-style="techy"] {
-  --radius-control: var(--radius-sm);
-  --radius-card: var(--radius-md);
-  --radius-field: var(--radius-sm);
-  --control-h-sm: 30px;
-  --control-h-md: 38px;
-  --control-h-lg: 46px;
-  --control-px: var(--space-4);
 }

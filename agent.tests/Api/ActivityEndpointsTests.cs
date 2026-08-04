@@ -85,6 +85,54 @@ public sealed class ActivityEndpointsTests : IDisposable
     }
 
     [Fact]
+    public async Task Evidence_returns_the_supporting_episodes_in_one_call()
+    {
+        var episode = new Episode(
+            "ep-1", _time.Now.AddMinutes(-30), _time.Now.AddMinutes(-10),
+            ["Figma.exe"], ["Figma — Lore rebrand"], ["sample text"], 12);
+        await _activity.SaveEpisodeAsync(episode);
+        string id = SeedMemory("I'm redesigning the Lore shell.", Meta(MemoryStatuses.Staged));
+
+        await using LoreApiHarness harness = await StartAsync();
+        JsonElement body = await harness.Client.GetFromJsonAsync<JsonElement>($"/memories/{id}/evidence");
+        JsonElement ep = Assert.Single(body.GetProperty("episodes").EnumerateArray().ToArray());
+
+        Assert.Equal("ep-1", ep.GetProperty("id").GetString());
+        Assert.Equal(12, ep.GetProperty("observation_count").GetInt32());
+        Assert.Equal(
+            "Figma.exe",
+            Assert.Single(ep.GetProperty("executables").EnumerateArray().ToArray()).GetString());
+        Assert.Equal(
+            "Figma — Lore rebrand",
+            Assert.Single(ep.GetProperty("titles").EnumerateArray().ToArray()).GetString());
+        // The evidence view carries when/where, not the raw sample captures.
+        Assert.False(ep.TryGetProperty("samples", out _));
+    }
+
+    [Fact]
+    public async Task Evidence_404s_for_an_unknown_memory()
+    {
+        await using LoreApiHarness harness = await StartAsync();
+
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await harness.Client.GetAsync(U("/memories/nope/evidence"))).StatusCode);
+    }
+
+    [Fact]
+    public async Task Evidence_is_empty_when_no_episode_row_backs_the_ids()
+    {
+        // The memory references ep-1 but no episode was persisted (e.g. swept) — an empty list,
+        // not a 404 or a 500.
+        string id = SeedMemory("Orphaned evidence.", Meta(MemoryStatuses.Active));
+
+        await using LoreApiHarness harness = await StartAsync();
+        JsonElement body = await harness.Client.GetFromJsonAsync<JsonElement>($"/memories/{id}/evidence");
+
+        Assert.Empty(body.GetProperty("episodes").EnumerateArray().ToArray());
+    }
+
+    [Fact]
     public async Task Economy_counts_todays_decisions_against_the_budget()
     {
         await _activity.LogDecisionAsync(new DecisionEntry(

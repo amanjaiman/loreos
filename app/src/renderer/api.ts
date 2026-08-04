@@ -252,6 +252,21 @@ export interface ProviderTestResult {
   error_kind?: string;
 }
 
+/**
+ * What Lore is capturing right now (v2-005 R2). Optional: the block is absent when the
+ * capture pipeline isn't wired, and the client must tolerate that.
+ *
+ * `window_title` is null whenever the window was excluded by the blocklist, a keyword
+ * rule, or any privacy filter — and also when capture is off. An excluded window is
+ * deliberately indistinguishable from an idle one, so a reader can never infer blocked
+ * activity from this field. Redaction happens in the agent; the renderer just displays.
+ */
+export interface CaptureStatus {
+  enabled: boolean;
+  window_title: string | null;
+  observed_at: string | null;
+}
+
 export interface SystemStatus {
   version: string;
   api_version: string;
@@ -260,6 +275,20 @@ export interface SystemStatus {
     memoryd: string; // ready | starting
     provider: string; // ready | unconfigured
   };
+  capture?: CaptureStatus;
+}
+
+/** Memory composition counts (v2-005 R1). `active` is zero-filled across all five kinds. */
+export interface MemoryStats {
+  active: Record<string, number>;
+  staged: number;
+  archived: number;
+  total_active: number;
+}
+
+/** The episodes that support a memory (v2-005 R3). */
+export interface MemoryEvidence {
+  episodes: Episode[];
 }
 
 export interface LogTail {
@@ -373,6 +402,10 @@ export const api = {
     }),
   searchMemories: (request: SearchRequest) =>
     mutateJson<MemoryResults>('POST', '/memories/search', request),
+  memoryStats: (userId?: string) =>
+    getJson<MemoryStats>('/memories/stats', { user_id: userId }),
+  memoryEvidence: (id: string) =>
+    getJson<MemoryEvidence>(`/memories/${encodeURIComponent(id)}/evidence`),
   getMemory: (id: string) =>
     getJson<Memory>(`/memories/${encodeURIComponent(id)}`),
   addMemory: (request: AddRequest) =>

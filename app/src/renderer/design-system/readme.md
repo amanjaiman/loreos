@@ -7,7 +7,7 @@ This design system ships **two ready-to-use themes**, each a complete look. A th
 | Theme | `data-palette` | `data-style` | `data-mode` |
 |-------|----------------|--------------|-------------|
 | **Coastal** (default) | *(unset → base)* | `minimal` | `light` |
-| **Nocturne** | `3` | `techy` | `dark` |
+| **Coastal Dark** | `2` | `minimal` | `dark` |
 
 With **no attributes**, a page renders full **Coastal**. Add `<ThemeSelector />` (or set the attributes directly) to switch to **Nocturne**. Open **`showcase.html`** for the live switcher and a full component preview.
 
@@ -16,7 +16,7 @@ With **no attributes**, a page renders full **Coastal**. Add `<ThemeSelector />`
 <html><link rel="stylesheet" href="styles.css"></html>
 
 <!-- Nocturne -->
-<html data-palette="3" data-style="techy" data-mode="dark">
+<html data-mode="dark">
   <link rel="stylesheet" href="styles.css">
 ```
 
@@ -36,7 +36,7 @@ Each theme's palette defines its brand roles plus a 10-step neutral ramp (`--n-0
 ## The two styles
 
 - **Minimal** (Coastal) — Manrope + JetBrains Mono. Pill / generously-rounded corners (`--radius-control: full`), airier controls, soft diffuse shadows, sans eyebrows with gentle tracking. Reads quiet and premium. *This is the `:root` default.*
-- **Techy** (Nocturne) — Space Grotesk + JetBrains Mono. Near-square corners (`--radius-control: 4px`), compact controls, crisp low shadows, uppercase **mono** eyebrows with wide tracking. Reads engineered and data-forward. *Applied via `[data-style="techy"]`.*
+- **Techy** (Nocturne) — REMOVED in v2-004. The style axis changed typeface and shadow character as well as the ground, so the dark theme read as a different product. Only the Minimal style ships.
 
 ---
 
@@ -48,7 +48,7 @@ This is an **original brand built from scratch** for the prompt "Lore: Ambient I
 - Two style directions (Techy, Modern/Minimal), supplied by the user, paired to the themes.
 - Mood: *calm / ambient / quiet* + *precise / technical / engineered*. Motion: *smooth & subtle*. Logo: *wordmark + simple geometric glyph mark*.
 
-**Fonts are Google-hosted substitutes** (Space Grotesk, Manrope, JetBrains Mono) chosen to fit the brief — no brand font files were provided. Swap the `@font-face` sources in `tokens/fonts.css` if real brand fonts arrive. → *See CAVEATS at the bottom.*
+**Fonts are Google-hosted substitutes** (Manrope, JetBrains Mono) chosen to fit the brief — no brand font files were provided. Swap the `@font-face` sources in `tokens/fonts.css` if real brand fonts arrive. → *See CAVEATS at the bottom.*
 
 ---
 
@@ -74,7 +74,7 @@ The voice is **calm, certain, and quietly clever**. Lore is an assistant that ha
 
 **Color & vibe.** Two grounds: **Coastal** is paper-warm cream with a Carbon-Black ink and a confident Cerulean + Coral pairing; **Nocturne** is deep Ink-Black with cool Porcelain text and a Yale-Blue + Golden-Bronze pairing. Light mode is paper-warm, not stark white; dark mode is deep ink, not pure black. Imagery, when used, should be **warm and softly lit** in Coastal and **cool and architectural** in Nocturne — grain is welcome, heavy saturation is not. There are no gradients in the brand except the tiny two-tone theme dots in the switcher; surfaces are flat and honest.
 
-**Type.** A single family carries display + body per style (Space Grotesk / Manrope) with JetBrains Mono for eyebrows, code, data, and metadata. Display is tight-tracked (`-0.03em`) and large; body is `15px` at relaxed line-height; the mono eyebrow is the consistent signature across both styles. Scale runs `11 → 72px`.
+**Type.** A single family carries display + body (Manrope) with JetBrains Mono for eyebrows, code, data, and metadata. Display is tight-tracked (`-0.03em`) and large; body is `15px` at relaxed line-height; the mono eyebrow is the consistent signature across both styles. Scale runs `11 → 72px`.
 
 **Spacing & layout.** 4px base scale. Content sits in a centered column (~1140px max) with generous vertical rhythm (`--space-16` between sections). Layout is calm and single-focus — no dense dashboards by default. The header is sticky with a blurred translucent ground.
 
@@ -127,7 +127,7 @@ Each component is `<Name>.jsx` + `<Name>.d.ts` (props) + `<Name>.prompt.md` (usa
 
 ## CAVEATS
 
-1. **Fonts are substitutes.** Space Grotesk / Manrope / JetBrains Mono are Google-hosted stand-ins chosen for the brief. If Lore has real brand fonts, drop them in and update `tokens/fonts.css`.
+1. **Fonts are substitutes.** Manrope / JetBrains Mono are Google-hosted stand-ins chosen for the brief. If Lore has real brand fonts, drop them in and update `tokens/fonts.css`.
 2. **Icons are substitutes.** Lucide via CDN. Swap for a bespoke set if one exists.
 3. **The logo is original** and intentionally minimal — happy to iterate on the glyph concept (currently ambient broadcast arcs + accent period).
 4. **No UI kits** were built, per your direction (components, type, color, and standard foundations only).

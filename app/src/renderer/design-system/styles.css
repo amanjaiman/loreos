@@ -3,7 +3,7 @@
    Consumers link THIS one file. It is only @import lines; everything reachable
    from here ships to consumers (tokens, fonts, component styles).
    Default theme = Palette 1 (warm) + Techy + light. Switch by setting
-   [data-palette="1|2|3"], [data-style="techy|minimal"], [data-mode="light|dark"]
+   [data-mode="light|dark"] (v2-004: the palette and style axes were removed)
    on <html> (or any scope).
    ============================================================================ */
 @import url("tokens/fonts.css");

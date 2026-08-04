@@ -7,8 +7,10 @@ import {
   MEMORY_KINDS,
   type Decision,
   type Economy,
+  type Episode,
   type Memory,
   type MemoryKind,
+  type MemoryStats,
 } from '../api';
 import { Button, Spinner } from '../design-system';
 import { formatRelative } from '../lib/format';
@@ -20,9 +22,15 @@ interface TodayData {
   economy: Economy;
   decisions: Decision[];
   staged: Memory[];
-  /** Active memories, used only for the composition breakdown. */
-  active: Memory[];
+  stats: MemoryStats;
 }
+
+const EMPTY_STATS: MemoryStats = {
+  active: {},
+  staged: 0,
+  archived: 0,
+  total_active: 0,
+};
 
 /** Keep in step with the `land` / `collapse` keyframes in today.css. */
 const LAND_MS = 900;
@@ -65,11 +73,13 @@ export function Today(): JSX.Element {
 
   const load = useCallback(async (): Promise<void> => {
     try {
-      const [economy, decisions, staged, active] = await Promise.all([
+      // Composition comes from the counts endpoint (v2-005 R1). This used to fetch 500
+      // active memories and tally them in the browser purely to draw a five-row bar.
+      const [economy, decisions, staged, stats] = await Promise.all([
         api.economy(),
         api.decisions(100),
         api.listMemories({ status: 'staged', limit: 20 }),
-        api.listMemories({ status: 'active', limit: 500 }),
+        api.memoryStats(),
       ]);
 
       const keptIds = decisions.items.filter(isKept).map((d) => d.memory_id);
@@ -91,7 +101,7 @@ export function Today(): JSX.Element {
         economy,
         decisions: decisions.items,
         staged: staged.items,
-        active: active.items,
+        stats,
       });
       setOffline(false);
     } catch (e) {
@@ -100,7 +110,7 @@ export function Today(): JSX.Element {
         economy: { decisions_today: {}, promoted_today: 0, daily_budget: 0 },
         decisions: [],
         staged: [],
-        active: [],
+        stats: EMPTY_STATS,
       });
     }
   }, []);
@@ -280,7 +290,7 @@ export function Today(): JSX.Element {
 
             <div className="today-ctx__rule" />
 
-            <Composition memories={data.active} />
+            <Composition stats={data.stats} />
           </aside>
         </div>
       )}
@@ -332,21 +342,10 @@ function Ratio({
 }
 
 /** What Lore knows, by kind: magnitude, one hue, every bar direct-labelled. */
-function Composition({ memories }: { memories: Memory[] }): JSX.Element {
-  const counts = new Map<MemoryKind, number>();
-  for (const memory of memories) {
-    const meta = metaOf(memory);
-    if (meta === null) {
-      continue;
-    }
-    const kind = MEMORY_KINDS.find((k) => k === meta.kind);
-    if (kind !== undefined) {
-      counts.set(kind, (counts.get(kind) ?? 0) + 1);
-    }
-  }
+function Composition({ stats }: { stats: MemoryStats }): JSX.Element {
   const rows = MEMORY_KINDS.map((kind) => ({
     kind,
-    n: counts.get(kind) ?? 0,
+    n: stats.active[kind] ?? 0,
   }))
     .filter((row) => row.n > 0)
     .sort((a, b) => b.n - a.n);
@@ -371,8 +370,8 @@ function Composition({ memories }: { memories: Memory[] }): JSX.Element {
             ))}
           </div>
           <span className="today-vnote">
-            {memories.length} active{' '}
-            {memories.length === 1 ? 'memory' : 'memories'} in total.
+            {stats.total_active} active{' '}
+            {stats.total_active === 1 ? 'memory' : 'memories'} in total.
           </span>
         </>
       )}
@@ -440,6 +439,7 @@ function QueueCard({
       </span>
       <p>{memory.memory}</p>
       <p className="today-qcard__why">{evidence}</p>
+      {episodes > 0 && <Evidence memoryId={memory.id} />}
       <div className="today-qcard__foot">
         <Button
           size="sm"
@@ -459,6 +459,78 @@ function QueueCard({
         </Button>
       </div>
     </article>
+  );
+}
+
+/**
+ * The episodes that support a staged memory (v2-004 T009), fetched on demand from
+ * v2-005 R3. This answers the question the evidence *line* only summarises — "why does
+ * Lore think this?" — without which judging a staged memory is guesswork.
+ *
+ * Titles here come from the same filter chain capture applies, so nothing appears that
+ * Lore would not have captured in the first place.
+ */
+function Evidence({ memoryId }: { memoryId: string }): JSX.Element {
+  const [open, setOpen] = useState(false);
+  const [episodes, setEpisodes] = useState<Episode[] | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  const toggle = async (): Promise<void> => {
+    const next = !open;
+    setOpen(next);
+    if (!next || episodes !== null) {
+      return;
+    }
+    try {
+      const result = await api.memoryEvidence(memoryId);
+      setEpisodes(result.episodes);
+      setFailed(false);
+    } catch {
+      setFailed(true);
+    }
+  };
+
+  return (
+    <div className="today-evidence">
+      <button
+        type="button"
+        className="today-evidence__toggle"
+        aria-expanded={open}
+        onClick={() => void toggle()}
+      >
+        <Icon name={open ? 'chevron-down' : 'chevron-right'} size={13} />
+        {open ? 'Hide evidence' : 'Show evidence'}
+      </button>
+      {open && (
+        <div className="today-evidence__body">
+          {failed ? (
+            <span className="today-vnote">
+              Evidence isn&rsquo;t available right now.
+            </span>
+          ) : episodes === null ? (
+            <span className="today-vnote">Loading&hellip;</span>
+          ) : episodes.length === 0 ? (
+            <span className="today-vnote">
+              The supporting episodes are no longer stored.
+            </span>
+          ) : (
+            episodes.map((episode) => (
+              <div className="today-evidence__row" key={episode.id}>
+                <span className="today-evidence__app">
+                  {episode.executables.join(', ') || 'Unknown app'}
+                </span>
+                <span className="today-evidence__title">
+                  {episode.titles[0] ?? 'No window title'}
+                </span>
+                <span className="today-evidence__when">
+                  {formatRelative(episode.started_at)}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

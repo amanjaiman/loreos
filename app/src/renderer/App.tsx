@@ -64,15 +64,26 @@ export function App(): JSX.Element {
     return () => window.clearInterval(id);
   }, [confirmed, probe]);
 
+  // The window is frameless, so every full-window surface carries its own drag band —
+  // AppShell's top strip isn't mounted on these paths, and without one the window can't
+  // be moved at all (most visibly during first-run onboarding).
   if (gate === 'loading') {
     return (
-      <div className="app-splash">
-        <Spinner size={28} />
-      </div>
+      <>
+        <div className="window-drag" />
+        <div className="app-splash">
+          <Spinner size={28} />
+        </div>
+      </>
     );
   }
   if (gate === 'onboarding') {
-    return <Onboarding onComplete={() => setGate('shell')} />;
+    return (
+      <>
+        <div className="window-drag" />
+        <Onboarding onComplete={() => setGate('shell')} />
+      </>
+    );
   }
   return (
     <RouterProvider initial="today">

@@ -1,6 +1,5 @@
 /* Lore — Webfonts (vendored, self-hosted)
-   Techy style → Space Grotesk (display/body) + JetBrains Mono (mono)
-   Modern/Minimal style → Manrope (display/body) + JetBrains Mono (mono)
+   Manrope (display/body) + JetBrains Mono (eyebrows, code, data)
 
    The upstream design system loaded these from Google Fonts over the network.
    Lore is local-only: nothing leaves the machine except the model calls the user

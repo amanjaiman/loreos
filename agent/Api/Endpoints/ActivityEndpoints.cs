@@ -70,6 +70,40 @@ public static class ActivityEndpoints
                 new EconomyDto(counts, promoted, lifecycle.DailyBudget), ResponseJson);
         });
 
+        // Evidence for a memory (spec 005 R3): the episodes that supported it, resolved in one
+        // call instead of the client fanning out over GET /episodes/{id}. The episode titles are
+        // already filter-cleared — episode intake only ever sees observations that passed the whole
+        // sensitivity chain (a blocked window never becomes an observation), so the same redaction
+        // guarantee as R2 holds without re-screening here.
+        app.MapGet("/memories/{id}/evidence", async (
+            string id, [FromServices] IMemoryService memory, [FromServices] ActivityStore activity,
+            CancellationToken ct) =>
+        {
+            MemoryRecord? record = await memory.GetAsync(id, ct).ConfigureAwait(false);
+            if (record is null)
+            {
+                return NotFound(id);
+            }
+
+            IReadOnlyList<string> episodeIds = MemoryMetadata.From(record)?.Episodes ?? [];
+            var episodes = new List<EvidenceEpisodeDto>();
+            foreach (string episodeId in episodeIds)
+            {
+                if (string.IsNullOrEmpty(episodeId))
+                {
+                    continue;
+                }
+
+                Episode? episode = await activity.GetEpisodeAsync(episodeId, ct).ConfigureAwait(false);
+                if (episode is not null)
+                {
+                    episodes.Add(EvidenceEpisodeDto.From(episode));
+                }
+            }
+
+            return Results.Json(new EvidenceDto(episodes), ResponseJson);
+        });
+
         // Staging curation: the user's tap outranks the budget and the evidence rule.
         app.MapPost("/staging/{id}/promote", (string id, [FromServices] IMemoryService memory,
             [FromServices] ActivityStore activity, [FromServices] LifecycleOptions lifecycle,
@@ -200,6 +234,30 @@ public sealed record EpisodeDto(
 
 public sealed record EpisodesDto(
     [property: JsonPropertyName("items")] IReadOnlyList<EpisodeDto> Items);
+
+/// <summary>One supporting episode on the evidence wire (spec 005 R3): the same provenance an
+/// episode carries, minus the sample text — a memory's "Show evidence" needs when and where, not
+/// the raw captures. <c>titles</c> are filter-cleared, same as <see cref="EpisodeDto"/>.</summary>
+public sealed record EvidenceEpisodeDto(
+    [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("started_at")] DateTimeOffset StartedAt,
+    [property: JsonPropertyName("ended_at")] DateTimeOffset EndedAt,
+    [property: JsonPropertyName("executables")] IReadOnlyList<string> Executables,
+    [property: JsonPropertyName("titles")] IReadOnlyList<string> Titles,
+    [property: JsonPropertyName("observation_count")] int ObservationCount)
+{
+    public static EvidenceEpisodeDto From(Episode episode)
+    {
+        ArgumentNullException.ThrowIfNull(episode);
+        return new EvidenceEpisodeDto(
+            episode.Id, episode.StartedAt, episode.EndedAt,
+            episode.Executables, episode.Titles, episode.ObservationCount);
+    }
+}
+
+/// <summary>The episodes that supported a memory, for its evidence view (spec 005 R3).</summary>
+public sealed record EvidenceDto(
+    [property: JsonPropertyName("episodes")] IReadOnlyList<EvidenceEpisodeDto> Episodes);
 
 /// <summary>One decision-trail row on the wire — the Activity feed's unit.</summary>
 public sealed record DecisionDto(

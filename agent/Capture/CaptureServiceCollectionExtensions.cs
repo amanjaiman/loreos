@@ -65,6 +65,9 @@ public static class CaptureServiceCollectionExtensions
         services.AddSingleton<Distill.Distiller>();
         services.AddSingleton<Episodes.IEpisodeProcessor, Lifecycle.LifecycleEngine>();
 
+        // The live "what is Lore watching" signal the app rail reads via GET /system/status (R2).
+        services.AddSingleton<CaptureStatusTracker>();
+
         // Metrics, the readiness bridge to memoryd, and the loop.
         services.AddSingleton<CaptureMetrics>();
         services.AddSingleton<IReadinessSignal, MemorydReadinessSignal>();

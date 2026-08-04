@@ -489,11 +489,16 @@
     border-color var(--dur-slow) var(--ease);
 }
 
+/* Named container so pages can respond to the PANE's width rather than the viewport's.
+   The rail consumes 236px before content sees any, so a viewport media query breaks at
+   the wrong moment (v2-004 T007). */
 .app-card__scroll {
   flex: 1;
   overflow-y: auto;
   padding: var(--space-8);
   scrollbar-gutter: stable;
+  container-type: inline-size;
+  container-name: pane;
 }
 
 /* The page is an app pane, not a reading column. A centred ~760px column with wide

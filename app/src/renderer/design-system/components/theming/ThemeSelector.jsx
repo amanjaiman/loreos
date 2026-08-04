@@ -10,11 +10,11 @@ export const LORE_THEMES = [
 ];
 
 /**
- * Nocturne (palette 3 · techy · dark) is retired as a shipped theme in v2-004: it
+ * Nocturne (palette 3 · techy · dark) was retired in v2-004 and its tokens removed: it
  * changed the *style* as well as the mode — Space Grotesk, tighter tracking, hard-edged
  * shadows — so it read as a different product rather than Coastal at night. Coastal Dark
- * flips only the mode. The palette-3 and techy CSS remain defined in the token files;
- * whether to strip that axis entirely is v2-004 T006.
+ * flips only the mode. `palette` and `style` are kept on the theme records because
+ * applyLoreTheme still writes those attributes, but only one value of each now exists.
  */
 
 /** Imperatively apply a theme preset to an element (defaults to <html>). */

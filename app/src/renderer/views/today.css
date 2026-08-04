@@ -160,6 +160,74 @@
   margin-top: var(--space-5);
 }
 
+/* ---- evidence expansion ---- */
+
+.today-evidence {
+  margin-top: var(--space-3);
+}
+
+.today-evidence__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) 0;
+  border: none;
+  background: transparent;
+  color: var(--text-subtle);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition: color var(--dur) var(--ease);
+}
+
+.today-evidence__toggle:hover {
+  color: var(--text);
+}
+
+.today-evidence__toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: var(--radius-sm);
+}
+
+.today-evidence__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+}
+
+.today-evidence__row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr) auto;
+  align-items: baseline;
+  gap: var(--space-3);
+  font-size: var(--text-2xs);
+  color: var(--text-subtle);
+}
+
+.today-evidence__app {
+  color: var(--text-muted);
+  font-weight: var(--fw-medium);
+}
+
+.today-evidence__app,
+.today-evidence__title {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.today-evidence__when {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 /* ---- the record: dense, quiet, scannable ---- */
 
 .today-recs {
@@ -407,10 +475,10 @@
   color: var(--text-muted);
 }
 
-/* The context column should really key off the CARD's width, not the viewport — the
-   rail consumes 236px before the content sees any. Container query once the shell has
-   settled (v2-004 T007); viewport fallback until then. */
-@media (max-width: 1180px) {
+/* Keyed off the pane's own width, not the viewport: the rail consumes 236px before the
+   content sees any, so a viewport breakpoint fires at the wrong moment. The container is
+   declared on .app-card__scroll in chrome.css. */
+@container pane (max-width: 820px) {
   .today-layout {
     grid-template-columns: minmax(0, 1fr);
   }

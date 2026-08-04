@@ -3,7 +3,6 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   api,
   LoreOfflineError,
-  type ActivityEntry,
   type LoreConfigShape,
   type SystemStatus,
 } from '../api';
@@ -64,46 +63,28 @@ export interface RailSummary {
   staged: number;
   /** Statements of the last few memories Lore kept, newest first. */
   recent: string[];
-  /** Title of the most recent window Lore actually captured, or null. */
-  watching: string | null;
-}
-
-/**
- * The newest window title Lore *captured*.
- *
- * Only `Captured` rows qualify. `Filtered` and `Skipped` mean the blocklist or a privacy
- * filter excluded that window — echoing its title into the always-visible rail would leak
- * precisely what the blocklist exists to protect (constitution §1). When the newest row is
- * excluded we surface nothing and the live element falls back to generic state copy.
- */
-function watchedTitle(items: ActivityEntry[]): string | null {
-  const newest = items[0];
-  if (newest === undefined || newest.decision !== 'Captured') {
-    return null;
-  }
-  const title = newest.window_title.trim();
-  return title.length > 0 ? title : null;
 }
 
 /**
  * The small, rail-scoped read behind the staged badge and the ambient trace (v2-004).
  * Kept separate from the Today view's fetch so the rail stays live on every route.
  */
-export function useRailSummary(pollMs = 8000): RailSummary {
+export function useRailSummary(pollMs = 20000): RailSummary {
   const [summary, setSummary] = useState<RailSummary>({
     staged: 0,
     recent: [],
-    watching: null,
   });
 
   useEffect(() => {
     let alive = true;
     const tick = async (): Promise<void> => {
       try {
-        const [staged, decisions, activity] = await Promise.all([
-          api.listMemories({ status: 'staged', limit: 50 }),
+        // The badge reads the counts endpoint rather than `listMemories(...).items.length`,
+        // which silently under-reported past its page size and pulled whole rows to render
+        // one integer.
+        const [stats, decisions] = await Promise.all([
+          api.memoryStats(),
           api.decisions(40),
-          api.activity(5),
         ]);
         if (!alive) {
           return;
@@ -118,11 +99,7 @@ export function useRailSummary(pollMs = 8000): RailSummary {
           .map((d) => d.statement)
           .filter((s) => typeof s === 'string' && s.length > 0)
           .slice(0, 3);
-        setSummary({
-          staged: staged.items.length,
-          recent,
-          watching: watchedTitle(activity.items),
-        });
+        setSummary({ staged: stats.staged, recent });
       } catch {
         // Offline is a normal state here: leave the last good summary in place rather
         // than blanking the rail while the agent restarts.

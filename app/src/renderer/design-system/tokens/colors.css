@@ -1,20 +1,22 @@
 /* ============================================================================
-   Lore — Color System (two themes)
+   Lore — Color System (one palette, two modes)
    ----------------------------------------------------------------------------
-   The library ships exactly two themes:
-     • Coastal  — the BASE (:root). Palette: Cerulean / Coral / Carbon / Wheat /
-                  Sunlit Clay. Pairs with the Minimal style + Light mode.
-     • Nocturne — [data-palette="3"] + [data-mode="dark"]. Palette: Yale Blue /
-                  Golden Bronze / Porcelain / Ink Black / Dusty Mauve. Pairs with
-                  the Techy style + Dark mode.
+   The library ships exactly two themes, and they are the SAME palette:
+     • Coastal      — the BASE (:root). Cerulean / Coral / Carbon / Wheat /
+                      Sunlit Clay, light.
+     • Coastal Dark — [data-mode="dark"]. The same brand on a warm dark ground.
 
-   A bare <html> (no attributes) renders full Coastal. The <ThemeSelector>
-   component sets data-palette / data-style / data-mode to switch themes.
+   A bare <html> (no attributes) renders Coastal. <ThemeSelector> flips
+   data-mode to switch.
 
-   Structure: :root defines Coastal brand roles + a 10-step neutral ramp
-   (--n-0 lightest … --n-9 darkest) + LIGHT semantic mapping. [data-palette="3"]
-   swaps the ramp + brand. [data-mode="dark"] only re-maps semantics onto the
-   active ramp.
+   Structure: :root defines the Coastal brand roles, a 10-step warm-neutral ramp
+   (--n-0 lightest … --n-9 darkest) and the LIGHT semantic mapping;
+   [data-mode="dark"] extends the ramp downward and re-maps the semantics.
+
+   NOTE (v2-004): the Nocturne palette and the "techy" style axis were removed.
+   Nocturne changed the typeface and shadow character as well as the mode, so it
+   read as a different product; keeping an axis nothing selected was a liability
+   in a design system. Recoverable from git if a third theme is ever wanted.
    ============================================================================ */
 
 :root {
@@ -80,48 +82,23 @@
   color-scheme: light;
 }
 
-/* ---- Nocturne palette · Yale Blue / Bronze / Porcelain / Ink / Mauve ---- */
-:root[data-palette="3"] {
-  --primary: #344966;          /* Yale Blue */
-  --primary-fg: #ffffff;
-  --accent: #c9a74d;           /* Golden Bronze */
-  --accent-fg: #1a1407;
-  --secondary: #8e6778;        /* Dusty Mauve */
-  --secondary-fg: #ffffff;
-  --tone: #8e6778;
+/* ---- Coastal Dark · the shipped dark theme (v2-004) ----------------------
+   NOT a palette swap. Palette stays Coastal, style stays Minimal — same Manrope,
+   same soft diffuse shadows, same generous radii — and only the mode flips. That
+   is the whole point: the retired Nocturne changed the *style* too, which made it
+   read as a different product rather than Coastal at night.
 
-  --n-0: #f0f4ef;              /* Porcelain */
-  --n-1: #e5ebe4;
-  --n-2: #d5dcd7;
-  --n-3: #bbc4c2;
-  --n-4: #909c9e;
-  --n-5: #6a757c;
-  --n-6: #46535d;
-  --n-7: #28333d;
-  --n-8: #15212b;
-  --n-9: #0d1821;              /* Ink Black */
-
-  --success: #4f9d7a;
-  --warning: #c9a74d; --warning-fg: #1a1407;
-  --danger:  #b5503f; --danger-fg: #ffffff;
-}
-
-/* ---- Coastal Dark (v2-004) ----------------------------------------------
-   The shipped dark theme. NOT a palette swap: palette stays Coastal, style stays
-   Minimal (Manrope, soft diffuse shadows, generous radii) and only the mode flips.
-   The base dark mapping below re-maps semantics onto whatever ramp is active, and
-   Coastal's ramp bottoms out at the cool Carbon #1B2021 — so this rule extends the
-   warm family downward (hue held near 38°) BEFORE the mapping reads it, giving a
-   lamp-lit room rather than a cold screen. Higher specificity than the base dark
-   block, so file ordering is not load-bearing. */
-:root:not([data-palette="3"])[data-mode="dark"] {
+   The ramp is Coastal's own warm family extended downward (hue held near 38°)
+   instead of bottoming out at the cool Carbon #1B2021, so the dark ground reads as
+   a lamp-lit room. Wheat (--tone) is deliberately untouched — it is what carries
+   the Coastal feeling into the dark. */
+:root[data-mode="dark"] {
   --n-6: #554c40;
   --n-7: #322b23;
   --n-8: #221d17;
   --n-9: #17130e;
 
-  /* lifted for contrast on the dark ground; Wheat (--tone) is left alone — it is
-     what carries the Coastal feeling into the dark. */
+  /* brand, lifted for contrast against the dark ground */
   --primary: #35a8d0;
   --primary-fg: #06222d;
   --accent: #ff8272;
@@ -130,33 +107,19 @@
   --success: #4fb08a;
   --danger: #e0705d;
 
-  /* lift with warm cream rather than pure white, so the surfaces stay in the family */
+  /* semantic mapping · DARK. Surfaces lift with warm cream rather than pure white,
+     so nothing drifts out of the family. */
+  --bg: var(--n-9);
   --surface: color-mix(in srgb, var(--n-8) 92%, #fbf7ef);
+  --surface-2: var(--n-7);
+  --surface-3: var(--n-6);
   --surface-hover: color-mix(in srgb, #fbf7ef 6%, var(--surface));
   --surface-active: color-mix(in srgb, #fbf7ef 10%, var(--surface));
+  --border: color-mix(in srgb, var(--n-6) 60%, transparent);
+  --border-strong: var(--n-6);
   --text: #fbf7ef;
   --text-muted: #b3a894;
   --text-subtle: #8a8071;
-
-  /* validated against the dark surface — see the table in plan.md */
-  --viz-1: #2499c2;
-  --viz-2: #df6250;
-  --viz-rest: var(--n-5);
-}
-
-/* ---- semantic mapping · DARK (re-maps onto whatever ramp is active) ---- */
-:root[data-mode="dark"] {
-  --bg: var(--n-9);
-  --surface: color-mix(in srgb, var(--n-8) 92%, #ffffff);
-  --surface-2: var(--n-7);
-  --surface-3: var(--n-6);
-  --surface-hover: color-mix(in srgb, #ffffff 5%, var(--surface));
-  --surface-active: color-mix(in srgb, #ffffff 9%, var(--surface));
-  --border: color-mix(in srgb, var(--n-6) 60%, transparent);
-  --border-strong: var(--n-6);
-  --text: var(--n-0);
-  --text-muted: var(--n-4);
-  --text-subtle: var(--n-5);
   --inverse-bg: var(--n-0);
   --inverse-text: var(--n-9);
 
@@ -164,5 +127,12 @@
   --primary-soft: color-mix(in srgb, var(--primary) 22%, var(--surface));
   --accent-soft: color-mix(in srgb, var(--accent) 22%, var(--surface));
 
+  /* validated against the dark surface — see the table in v2-004 plan.md */
+  --viz-1: #2499c2;
+  --viz-2: #df6250;
+  --viz-rest: var(--n-5);
+
   color-scheme: dark;
 }
+
+

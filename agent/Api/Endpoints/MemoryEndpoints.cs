@@ -61,6 +61,42 @@ public static class MemoryEndpoints
                 new PagedMemories(page.ToArray(), all.Count, take, skip), ResponseJson);
         });
 
+        // Composition counts for the Home screen (spec 005 R1): active memories keyed by the five
+        // v2-001 kinds, plus staged/archived totals — so the client draws its bar and rail badge
+        // without over-fetching full rows to count them in the browser. Computed through the same
+        // filtered-list path GET /memories uses, so the numbers agree exactly (acceptance). memoryd
+        // exposes no count verb, so this pages the (personal-scale) store per status rather than
+        // materialising every row twice.
+        memories.MapGet("/stats", async (
+            [FromServices] IMemoryService service, string? userId, CancellationToken ct) =>
+        {
+            string user = UserOr(userId);
+            IReadOnlyList<MemoryRecord> active = await ListAllFilteredAsync(
+                service, user, kind: null, MemoryStatuses.Active, ct).ConfigureAwait(false);
+            int staged = (await ListAllFilteredAsync(
+                service, user, null, MemoryStatuses.Staged, ct).ConfigureAwait(false)).Count;
+            int archived = (await ListAllFilteredAsync(
+                service, user, null, MemoryStatuses.Archived, ct).ConfigureAwait(false)).Count;
+
+            // Zero-fill every kind so the client never has to tell "zero" from "field missing".
+            var byKind = new Dictionary<string, int>(StringComparer.Ordinal);
+            foreach (string kind in MemoryKinds.All)
+            {
+                byKind[kind] = 0;
+            }
+
+            foreach (MemoryRecord record in active)
+            {
+                string? kind = MemoryMetadata.From(record)?.Kind;
+                if (kind is not null && byKind.TryGetValue(kind, out int count))
+                {
+                    byKind[kind] = count + 1;
+                }
+            }
+
+            return Results.Json(new MemoryStatsDto(byKind, staged, archived, active.Count), ResponseJson);
+        });
+
         memories.MapPost("/search", async (
             SearchRequest? request, [FromServices] IMemoryService service, CancellationToken ct) =>
         {
@@ -248,6 +284,16 @@ public sealed record PagedMemories(
     [property: JsonPropertyName("total")] int Total,
     [property: JsonPropertyName("limit")] int Limit,
     [property: JsonPropertyName("offset")] int Offset);
+
+/// <summary>Memory composition counts (spec 005 R1). <c>active</c> is keyed by the five v2-001
+/// kinds with every kind present (zero counts included); <c>staged</c>/<c>archived</c> are totals;
+/// <c>total_active</c> is the full active count (which may exceed the sum of kinds if a row carries
+/// an unrecognised kind).</summary>
+public sealed record MemoryStatsDto(
+    [property: JsonPropertyName("active")] IReadOnlyDictionary<string, int> Active,
+    [property: JsonPropertyName("staged")] int Staged,
+    [property: JsonPropertyName("archived")] int Archived,
+    [property: JsonPropertyName("total_active")] int TotalActive);
 
 /// <summary>Search hits, most relevant first (each carries a <c>score</c>).</summary>
 public sealed record MemoryResults(

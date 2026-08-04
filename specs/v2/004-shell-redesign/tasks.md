@@ -25,10 +25,8 @@
   first (statement, evidence line derived from `metadata.episodes` +
   `established_at`, Keep / Dismiss), then the kept record as a dense list; context
   column with today's counts, the selectivity ratio, the budget meter, and composition
-  by kind. `--text-sm` demoted out of content. AC 6.
-  **Not built:** the *Show evidence* action from the mockup — it needs a per-episode
-  fan-out over `GET /episodes/{id}`, or [v2-005](../005-app-read-api/specification.md)
-  R3. Tracked as T009.
+  by kind — the last from v2-005 R1's counts endpoint rather than a 500-row fetch.
+  `--text-sm` demoted out of content. AC 6.
 
 - [x] **T005 — Motion + glass.** Route cascade with travel direction (`--dir` from the
   previous route), sliding nav indicator (fixed-height items, pure-CSS offset — no
@@ -39,27 +37,28 @@
   animation. Glass restricted to floating surfaces. The two places that *wait* on an
   animation check `prefers-reduced-motion` in JS, not just CSS. AC 8.
 
-- [ ] **T006 — Retire the techy axis (decision required).** Nocturne leaves the theme
-  list in T003, but `[data-style="techy"]` remains defined across `typography.css`,
-  `effects.css` and `spacing.css`, and Space Grotesk stays in the bundle via
-  `ds-globals.ts`. Either strip the axis (smaller bundle, honest two-axis system) or
-  keep it documented as reserved. **Human call — do not decide unilaterally.**
+- [x] **T006 — Retire the techy axis.** Decided: stripped. `[data-style="techy"]`
+  removed from `typography.css` / `effects.css` / `spacing.css`, the Nocturne palette
+  block removed from `colors.css` (its dark mapping merged into the single
+  `[data-mode="dark"]` rule), Space Grotesk dropped from `ds-globals.ts` and from
+  `package.json`, and the design-system readme/SKILL/styles docs updated. The system is
+  now honestly one palette + two modes. Recoverable from git if a third theme is wanted.
 
-- [x] **T008 — Surface what Lore is watching.** Done in the renderer: `GET /activity`
-  already carries `window_title`, so the live element shows the newest **`Captured`**
-  row's title. `Filtered` / `Skipped` rows are discarded without display — echoing a
-  blocklisted window's title into the always-visible rail would leak precisely what the
-  blocklist protects. Moving that rule into the agent is [v2-005](../005-app-read-api/specification.md) R2.
+- [x] **T008 — Surface what Lore is watching.** The live element reads
+  `status.capture.window_title` from [v2-005](../005-app-read-api/specification.md) R2.
+  An earlier attempt derived it from `GET /activity`, filtering to `Captured` rows —
+  that was **dead on arrival**: `CaptureAgent` only ever logs `Filtered`, so the field
+  was always null. The agent's tracker is what makes the feature real, and it also puts
+  the redaction rule next to the filter chain instead of in the client.
 
-- [ ] **T007 — Container query for the context column.** Home's context column
-  currently collapses on a viewport media query; it should key off the card's width,
-  since the rail consumes 236 px first. Swap to a container query once the shell is
-  settled.
+- [x] **T007 — Container query for the context column.** `.app-card__scroll` declares
+  `container-name: pane`; Home's context column now collapses at
+  `@container pane (max-width: 820px)` instead of a viewport breakpoint that fired at
+  the wrong moment because the rail consumes 236 px first.
 
-- [ ] **T009 — "Show evidence" on a queue card.** Expand a staged memory to the episodes
-  that support it. Buildable now by fanning out over `GET /episodes/{id}` for each id in
-  `metadata.episodes`; cheaper once [v2-005](../005-app-read-api/specification.md) R3
-  lands. The evidence *line* already ships; this is the expansion.
+- [x] **T009 — "Show evidence" on a queue card.** Expands a staged memory to the
+  episodes behind it (app, window title, when), fetched on demand from v2-005 R3's
+  `GET /memories/{id}/evidence`. Only rendered when the memory actually has episodes.
 
 ## Not in this spec
 

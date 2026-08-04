@@ -39,9 +39,16 @@ export function AppShell(): JSX.Element {
 
   useTitleBarSync();
 
-  const { offline } = useSystemStatus();
+  const { status: system, offline } = useSystemStatus();
   const { config, refresh } = useConfig();
-  const { staged, recent, watching } = useRailSummary();
+  const { staged, recent } = useRailSummary();
+
+  // What Lore is watching, straight off /system/status (v2-005 R2). The agent nulls this
+  // for excluded or blocked windows, so the renderer never has to decide what is safe to
+  // show. `enabled` is intentionally NOT read from here — config is the write path, so
+  // reading it back from config keeps the pause button responsive instead of waiting on
+  // the next status poll.
+  const watching = system?.capture?.window_title ?? null;
   const [busy, setBusy] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
