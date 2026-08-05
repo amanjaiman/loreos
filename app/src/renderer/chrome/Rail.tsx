@@ -90,6 +90,15 @@ export function Rail({
 
       <div className="rail__mid" />
 
+      {/* Now first, then what it just kept below — the trace reads as the live element
+          continuing downward in time, which only works in that order. */}
+      <LiveElement
+        status={status}
+        watching={watching}
+        onToggle={onToggleCapture}
+        busy={busy}
+      />
+
       {recent.length > 0 && (
         <div className="trace" aria-label="Recently kept">
           {recent.map((statement, index) => (
@@ -106,13 +115,6 @@ export function Rail({
           ))}
         </div>
       )}
-
-      <LiveElement
-        status={status}
-        watching={watching}
-        onToggle={onToggleCapture}
-        busy={busy}
-      />
 
       <div className="rail__themes">
         <ThemeToggle />

@@ -273,14 +273,17 @@
   flex: none;
   display: flex;
   flex-direction: column;
-  margin-bottom: var(--space-1);
+  margin-top: var(--space-1);
 }
 
+/* The hairline starts under the live element's pulse and dissolves downward, so the
+   trace reads as one continuous thread of time rather than a separate list. Aligned to
+   the live dot: 8px rail padding + 3px dot margin + 3px to the dot's centre. */
 .trace::before {
   content: '';
   position: absolute;
   left: 13px;
-  top: calc(var(--space-1) * -1);
+  top: calc(var(--space-3) * -1);
   bottom: var(--space-4);
   width: 1px;
   background: linear-gradient(var(--border-strong), transparent);
