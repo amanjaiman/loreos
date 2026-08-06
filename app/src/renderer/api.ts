@@ -185,6 +185,32 @@ export interface Episodes {
   items: Episode[];
 }
 
+/**
+ * An episode as it actually arrives. The collections are optional here because the wire
+ * genuinely omits them — `/memories/{id}/evidence` shipped without `samples` at first, and
+ * a view that trusted the strict `Episode` type crashed on `samples.length`. TypeScript
+ * could not catch it, because the type was asserting something about the wire that wasn't
+ * true.
+ *
+ * Every episode-returning call normalises through `toEpisode` below, so the rest of the app
+ * keeps the strict type and no view has to defend itself.
+ */
+interface WireEpisode
+  extends Omit<Episode, 'executables' | 'titles' | 'samples'> {
+  executables?: string[] | null;
+  titles?: string[] | null;
+  samples?: string[] | null;
+}
+
+function toEpisode(episode: WireEpisode): Episode {
+  return {
+    ...episode,
+    executables: episode.executables ?? [],
+    titles: episode.titles ?? [],
+    samples: episode.samples ?? [],
+  };
+}
+
 /** One decision-trail row — the Activity feed's unit. */
 export interface Decision {
   at: string;
@@ -404,8 +430,12 @@ export const api = {
     mutateJson<MemoryResults>('POST', '/memories/search', request),
   memoryStats: (userId?: string) =>
     getJson<MemoryStats>('/memories/stats', { user_id: userId }),
-  memoryEvidence: (id: string) =>
-    getJson<MemoryEvidence>(`/memories/${encodeURIComponent(id)}/evidence`),
+  memoryEvidence: async (id: string): Promise<MemoryEvidence> => {
+    const wire = await getJson<{ episodes: WireEpisode[] }>(
+      `/memories/${encodeURIComponent(id)}/evidence`,
+    );
+    return { episodes: wire.episodes.map(toEpisode) };
+  },
   getMemory: (id: string) =>
     getJson<Memory>(`/memories/${encodeURIComponent(id)}`),
   addMemory: (request: AddRequest) =>
@@ -423,9 +453,14 @@ export const api = {
     mutateJson<Memory>('POST', `/staging/${encodeURIComponent(id)}/promote`),
   dismissStaged: (id: string) =>
     mutateJson<Memory>('POST', `/staging/${encodeURIComponent(id)}/dismiss`),
-  episodes: (limit?: number) => getJson<Episodes>('/episodes', { limit }),
-  getEpisode: (id: string) =>
-    getJson<Episode>(`/episodes/${encodeURIComponent(id)}`),
+  episodes: async (limit?: number): Promise<Episodes> => {
+    const wire = await getJson<{ items: WireEpisode[] }>('/episodes', { limit });
+    return { items: wire.items.map(toEpisode) };
+  },
+  getEpisode: async (id: string): Promise<Episode> =>
+    toEpisode(
+      await getJson<WireEpisode>(`/episodes/${encodeURIComponent(id)}`),
+    ),
   decisions: (limit?: number) => getJson<Decisions>('/decisions', { limit }),
   economy: () => getJson<Economy>('/system/economy'),
 

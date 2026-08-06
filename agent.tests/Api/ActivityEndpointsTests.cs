@@ -110,8 +110,10 @@ public sealed class ActivityEndpointsTests : IDisposable
         Assert.Equal(
             "Figma — Lore rebrand",
             Assert.Single(ep.GetProperty("titles").EnumerateArray().ToArray()).GetString());
-        // The evidence view carries when/where, not the raw sample captures.
-        Assert.False(ep.TryGetProperty("samples", out _));
+        // Samples are the evidence: a window title alone does not answer "why does Lore
+        // think this?". Same data and same filter chain as /episodes.
+        Assert.True(ep.TryGetProperty("samples", out JsonElement samples));
+        Assert.NotEmpty(samples.EnumerateArray().ToArray());
     }
 
     [Fact]

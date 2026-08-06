@@ -236,14 +236,20 @@ public sealed record EpisodesDto(
     [property: JsonPropertyName("items")] IReadOnlyList<EpisodeDto> Items);
 
 /// <summary>One supporting episode on the evidence wire (spec 005 R3): the same provenance an
-/// episode carries, minus the sample text — a memory's "Show evidence" needs when and where, not
-/// the raw captures. <c>titles</c> are filter-cleared, same as <see cref="EpisodeDto"/>.</summary>
+/// episode carries, including the sample text.
+///
+/// This originally omitted <c>samples</c> on the reasoning that "show evidence" needs when and
+/// where rather than the raw captures. In use that reads as metadata, not evidence — a window
+/// title alone does not answer "why does Lore think this?", and the snippet does. No new
+/// disclosure: the same samples already ship on <see cref="EpisodeDto"/> via /episodes, through
+/// the same filter chain. <c>titles</c> and <c>samples</c> are both filter-cleared.</summary>
 public sealed record EvidenceEpisodeDto(
     [property: JsonPropertyName("id")] string Id,
     [property: JsonPropertyName("started_at")] DateTimeOffset StartedAt,
     [property: JsonPropertyName("ended_at")] DateTimeOffset EndedAt,
     [property: JsonPropertyName("executables")] IReadOnlyList<string> Executables,
     [property: JsonPropertyName("titles")] IReadOnlyList<string> Titles,
+    [property: JsonPropertyName("samples")] IReadOnlyList<string> Samples,
     [property: JsonPropertyName("observation_count")] int ObservationCount)
 {
     public static EvidenceEpisodeDto From(Episode episode)
@@ -251,7 +257,8 @@ public sealed record EvidenceEpisodeDto(
         ArgumentNullException.ThrowIfNull(episode);
         return new EvidenceEpisodeDto(
             episode.Id, episode.StartedAt, episode.EndedAt,
-            episode.Executables, episode.Titles, episode.ObservationCount);
+            episode.Executables, episode.Titles, episode.Samples,
+            episode.ObservationCount);
     }
 }
 
