@@ -95,74 +95,78 @@ export function Activity(): JSX.Element {
         : decisions.filter(isAboutAMemory);
 
   return (
-    <div className="app-page">
+    <>
       <PageHeader
         eyebrow="// timeline"
         title="Every choice, in context."
         description="See what Lore observed, why it acted, and why most activity never became a memory."
       />
-      <div className="act-toolbar">
-        <Tabs
-          tabs={[
-            { value: 'decisions', label: 'Decisions' },
-            { value: 'episodes', label: 'Episodes' },
-          ]}
-          value={feed}
-          onChange={(v) => setFeed(v as Feed)}
-        />
-        {!loading && !offline && feed === 'decisions' && (
-          <button
-            type="button"
-            className="act-toolbar__scope"
-            aria-pressed={scope === 'all'}
-            onClick={() => setScope((s) => (s === 'all' ? 'memories' : 'all'))}
-          >
-            <Icon name={scope === 'all' ? 'eye' : 'eye-off'} size={13} />
-            {scope === 'all' ? 'Showing engine steps' : 'Show engine steps'}
-          </button>
-        )}
-        {!loading && !offline && (
-          <span className="act-toolbar__count">
-            {feed === 'decisions'
-              ? `${shown.length} ${shown.length === 1 ? 'decision' : 'decisions'}`
-              : `${episodes.length} episodes`}
-          </span>
-        )}
-      </div>
-
-      {loading ? (
-        <div className="act-loading">
-          <Spinner size={20} />
+      <div className="app-page">
+        <div className="act-toolbar">
+          <Tabs
+            tabs={[
+              { value: 'decisions', label: 'Decisions' },
+              { value: 'episodes', label: 'Episodes' },
+            ]}
+            value={feed}
+            onChange={(v) => setFeed(v as Feed)}
+          />
+          {!loading && !offline && feed === 'decisions' && (
+            <button
+              type="button"
+              className="act-toolbar__scope"
+              aria-pressed={scope === 'all'}
+              onClick={() =>
+                setScope((s) => (s === 'all' ? 'memories' : 'all'))
+              }
+            >
+              <Icon name={scope === 'all' ? 'eye' : 'eye-off'} size={13} />
+              {scope === 'all' ? 'Showing engine steps' : 'Show engine steps'}
+            </button>
+          )}
+          {!loading && !offline && (
+            <span className="act-toolbar__count">
+              {feed === 'decisions'
+                ? `${shown.length} ${shown.length === 1 ? 'decision' : 'decisions'}`
+                : `${episodes.length} episodes`}
+            </span>
+          )}
         </div>
-      ) : offline ? (
-        <p className="app-empty">Lore isn't running — no activity to show.</p>
-      ) : feed === 'decisions' ? (
-        shown.length === 0 ? (
+
+        {loading ? (
+          <div className="act-loading">
+            <Spinner size={20} />
+          </div>
+        ) : offline ? (
+          <p className="app-empty">Lore isn't running — no activity to show.</p>
+        ) : feed === 'decisions' ? (
+          shown.length === 0 ? (
+            <p className="app-empty">
+              {scope === 'memories' && decisions.length > 0
+                ? 'No memory decisions yet — Lore has been watching, but nothing has earned a place. Turn on engine steps to see what it did instead.'
+                : 'No decisions yet. As episodes close, every choice Lore makes — remembered, staged, or passed over — is recorded here.'}
+            </p>
+          ) : (
+            <div className="act-list">
+              {shown.map((d, i) => (
+                <DecisionRow key={i} decision={d} />
+              ))}
+            </div>
+          )
+        ) : episodes.length === 0 ? (
           <p className="app-empty">
-            {scope === 'memories' && decisions.length > 0
-              ? 'No memory decisions yet — Lore has been watching, but nothing has earned a place. Turn on engine steps to see what it did instead.'
-              : 'No decisions yet. As episodes close, every choice Lore makes — remembered, staged, or passed over — is recorded here.'}
+            No episodes yet. An episode is a stretch of related activity; it
+            closes after a break and is summarized for the distiller.
           </p>
         ) : (
           <div className="act-list">
-            {shown.map((d, i) => (
-              <DecisionRow key={i} decision={d} />
+            {episodes.map((e) => (
+              <EpisodeCard key={e.id} episode={e} />
             ))}
           </div>
-        )
-      ) : episodes.length === 0 ? (
-        <p className="app-empty">
-          No episodes yet. An episode is a stretch of related activity; it
-          closes after a break and is summarized for the distiller.
-        </p>
-      ) : (
-        <div className="act-list">
-          {episodes.map((e) => (
-            <EpisodeCard key={e.id} episode={e} />
-          ))}
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   );
 }
 

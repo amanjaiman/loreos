@@ -12,6 +12,7 @@ import {
   type MemoryKind,
   type MemoryStats,
 } from '../api';
+import { PageHeader } from '../chrome/PageHeader';
 import { Button, Spinner } from '../design-system';
 import { formatRelative } from '../lib/format';
 import { Icon } from '../lib/Icon';
@@ -31,6 +32,13 @@ const EMPTY_STATS: MemoryStats = {
   archived: 0,
   total_active: 0,
 };
+
+/** The decision actions that mean "this ended up in memory" — the single definition. */
+const KEPT_ACTIONS = ['promoted', 'revised', 'user_promoted'] as const;
+
+function isKept(decision: Decision): boolean {
+  return (KEPT_ACTIONS as readonly string[]).includes(decision.action);
+}
 
 /** Keep in step with the `land` / `collapse` keyframes in today.css. */
 const LAND_MS = 900;
@@ -78,7 +86,7 @@ export function Today(): JSX.Element {
       // active memories and tally them in the browser purely to draw a five-row bar.
       const [economy, decisions, staged, stats] = await Promise.all([
         api.economy(),
-        api.decisions(100),
+        api.decisions(500),
         api.listMemories({ status: 'staged', limit: 20 }),
         api.memoryStats(),
       ]);
@@ -136,20 +144,23 @@ export function Today(): JSX.Element {
   const episodes = counts['closed'] ?? 0;
   const passed = counts['no_facts'] ?? 0;
   const stagedToday = counts['staged'] ?? 0;
+  // NOT economy.promoted_today — that counts only the literal `promoted` action, so a
+  // memory Lore rewrote today (`revised`) or one the user kept by hand doesn't register.
+  // The list below counts all three, which is why the lead read "kept 1" over a list of
+  // five. Same definition, one source, and it comes from the day's full decision counts
+  // rather than the capped feed.
+  const keptToday = KEPT_ACTIONS.reduce(
+    (total, action) => total + (counts[action] ?? 0),
+    0,
+  );
 
   return (
-    // The header is a sibling of .app-page, not a child: it needs to span the full pane
-    // width and carry no margins (see the sticky note in chrome.css).
     <>
-      <div className="app-page__head">
-        <span className="app-page__crumb">Home</span>
-        <span className="app-page__sep">/</span>
-        <span className="app-page__mini">
-          {data.staged.length > 0
-            ? `${data.staged.length} awaiting your judgment`
-            : 'Nothing awaiting your judgment'}
-        </span>
-        <div className="app-page__acts">
+      <PageHeader
+        eyebrow="// home"
+        title="Memory, kept warm."
+        description="What Lore noticed today, what it kept, and what still needs your judgment."
+        action={
           <Button
             variant="secondary"
             size="sm"
@@ -158,8 +169,8 @@ export function Today(): JSX.Element {
           >
             Search memory
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       <div className="app-page">
         {offline ? (
@@ -191,9 +202,8 @@ export function Today(): JSX.Element {
                   leading with it made a handful of pending items own the screen. */}
               <section className="today-lead">
                 <p>
-                  Lore kept <b>{data.economy.promoted_today}</b> of the{' '}
-                  <b>{episodes}</b> {episodes === 1 ? 'episode' : 'episodes'} it
-                  saw today.
+                  Lore kept <b>{keptToday}</b> of the <b>{episodes}</b>{' '}
+                  {episodes === 1 ? 'episode' : 'episodes'} it saw today.
                 </p>
               </section>
 
@@ -555,15 +565,6 @@ function EvidenceThread({
         </article>
       ))}
     </div>
-  );
-}
-
-/** The decision actions that mean "this ended up in memory". */
-function isKept(decision: Decision): boolean {
-  return (
-    decision.action === 'promoted' ||
-    decision.action === 'revised' ||
-    decision.action === 'user_promoted'
   );
 }
 

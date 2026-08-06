@@ -131,113 +131,115 @@ export function Memory(): JSX.Element {
       }) ?? []);
 
   return (
-    <div className="app-page">
+    <>
       <PageHeader
         eyebrow="// memory"
         title="What Lore knows."
         description="Every durable fact is visible, editable, and yours to remove."
       />
-      <div className="mem-toolbar">
-        <Tabs
-          tabs={[
-            { value: 'profile', label: 'Profile' },
-            { value: 'staged', label: 'Staged' },
-            { value: 'archived', label: 'Archived' },
-          ]}
-          value={section}
-          onChange={(v) => setSection(v as Section)}
-        />
-        <form className="mem-search" onSubmit={onSearch}>
-          <Input
-            icon="search"
-            placeholder="Search your memory…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            aria-label="Search memories"
+      <div className="app-page">
+        <div className="mem-toolbar">
+          <Tabs
+            tabs={[
+              { value: 'profile', label: 'Profile' },
+              { value: 'staged', label: 'Staged' },
+              { value: 'archived', label: 'Archived' },
+            ]}
+            value={section}
+            onChange={(v) => setSection(v as Section)}
           />
-          <Button type="submit" variant="secondary">
-            Search
-          </Button>
-        </form>
-        {items !== null && !offline && (
-          <span className="mem-total">
-            {items.length} {items.length === 1 ? 'memory' : 'memories'}
-            {submitted.trim().length > 0 && ' matched'}
-          </span>
+          <form className="mem-search" onSubmit={onSearch}>
+            <Input
+              icon="search"
+              placeholder="Search your memory…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              aria-label="Search memories"
+            />
+            <Button type="submit" variant="secondary">
+              Search
+            </Button>
+          </form>
+          {items !== null && !offline && (
+            <span className="mem-total">
+              {items.length} {items.length === 1 ? 'memory' : 'memories'}
+              {submitted.trim().length > 0 && ' matched'}
+            </span>
+          )}
+        </div>
+
+        {items === null ? (
+          <div className="mem-loading">
+            <Spinner size={20} />
+          </div>
+        ) : offline ? (
+          <p className="app-empty">
+            Lore isn't running — memory is unavailable right now.
+          </p>
+        ) : items.length === 0 ? (
+          <p className="app-empty">
+            {submitted.trim().length > 0
+              ? `Nothing matches “${submitted.trim()}”.`
+              : section === 'staged'
+                ? 'Nothing is staged right now.'
+                : section === 'archived'
+                  ? 'Nothing has been archived yet.'
+                  : 'No memories yet. Lore stages a candidate when an episode reveals something durable, and keeps it once a second episode agrees.'}
+          </p>
+        ) : (
+          <>
+            {groups.map(({ kind, memories }) => (
+              <section key={kind} className="mem-group">
+                <div className="mem-group__head">
+                  <span className="mem-group__icon">
+                    <Icon name={kindIcon(kind)} size={15} />
+                  </span>
+                  <div>
+                    <h2>{KIND_LABELS[kind] ?? kind}</h2>
+                    <span>{memories.length}</span>
+                  </div>
+                </div>
+                <div className="mem-list">
+                  {memories.map((m) => (
+                    <MemoryCard
+                      key={m.id}
+                      memory={m}
+                      section={section}
+                      open={openId === m.id}
+                      onToggle={() =>
+                        setOpenId((id) => (id === m.id ? null : m.id))
+                      }
+                      onChanged={refresh}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
+            {ungrouped.length > 0 && (
+              <section className={searching ? 'mem-results' : 'mem-group'}>
+                {!searching && (
+                  <p className="app-eyebrow">{'// from before the restart'}</p>
+                )}
+                <div className="mem-list">
+                  {ungrouped.map((m) => (
+                    <MemoryCard
+                      key={m.id}
+                      memory={m}
+                      section={section}
+                      open={openId === m.id}
+                      onToggle={() =>
+                        setOpenId((id) => (id === m.id ? null : m.id))
+                      }
+                      onChanged={refresh}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+          </>
         )}
       </div>
-
-      {items === null ? (
-        <div className="mem-loading">
-          <Spinner size={20} />
-        </div>
-      ) : offline ? (
-        <p className="app-empty">
-          Lore isn't running — memory is unavailable right now.
-        </p>
-      ) : items.length === 0 ? (
-        <p className="app-empty">
-          {submitted.trim().length > 0
-            ? `Nothing matches “${submitted.trim()}”.`
-            : section === 'staged'
-              ? 'Nothing is staged right now.'
-              : section === 'archived'
-                ? 'Nothing has been archived yet.'
-                : 'No memories yet. Lore stages a candidate when an episode reveals something durable, and keeps it once a second episode agrees.'}
-        </p>
-      ) : (
-        <>
-          {groups.map(({ kind, memories }) => (
-            <section key={kind} className="mem-group">
-              <div className="mem-group__head">
-                <span className="mem-group__icon">
-                  <Icon name={kindIcon(kind)} size={15} />
-                </span>
-                <div>
-                  <h2>{KIND_LABELS[kind] ?? kind}</h2>
-                  <span>{memories.length}</span>
-                </div>
-              </div>
-              <div className="mem-list">
-                {memories.map((m) => (
-                  <MemoryCard
-                    key={m.id}
-                    memory={m}
-                    section={section}
-                    open={openId === m.id}
-                    onToggle={() =>
-                      setOpenId((id) => (id === m.id ? null : m.id))
-                    }
-                    onChanged={refresh}
-                  />
-                ))}
-              </div>
-            </section>
-          ))}
-          {ungrouped.length > 0 && (
-            <section className={searching ? 'mem-results' : 'mem-group'}>
-              {!searching && (
-                <p className="app-eyebrow">{'// from before the restart'}</p>
-              )}
-              <div className="mem-list">
-                {ungrouped.map((m) => (
-                  <MemoryCard
-                    key={m.id}
-                    memory={m}
-                    section={section}
-                    open={openId === m.id}
-                    onToggle={() =>
-                      setOpenId((id) => (id === m.id ? null : m.id))
-                    }
-                    onChanged={refresh}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-        </>
-      )}
-    </div>
+    </>
   );
 }
 
