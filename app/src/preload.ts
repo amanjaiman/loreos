@@ -9,11 +9,22 @@ contextBridge.exposeInMainWorld('lore', {
   pickDocument: (): Promise<string | null> =>
     ipcRenderer.invoke('lore:pick-document'),
 
+  /** Minimise / maximise / close, driven by the renderer's own window controls. */
+  windowCommand: (command: 'minimize' | 'toggle-maximize' | 'close'): void =>
+    ipcRenderer.send('lore:window-command', command),
+
+  /** Current maximised state, for the correct restore glyph on first paint. */
+  isMaximized: (): Promise<boolean> => ipcRenderer.invoke('lore:is-maximized'),
+
   /**
-   * Recolour the native window-control overlay to match the active theme. The overlay's
-   * colours are set when the window is built and do not follow CSS, so the renderer
-   * pushes them after each theme switch (v2-004). Main validates both values.
+   * Subscribe to maximise/restore. The window state changes without our button being
+   * touched — double-clicking the strip, Win+Up, edge snapping — so the glyph has to
+   * follow the window rather than our own last click. Returns an unsubscribe function.
    */
-  setTitleBar: (color: string, symbolColor: string): void =>
-    ipcRenderer.send('lore:set-titlebar', color, symbolColor),
+  onWindowState: (listener: (maximized: boolean) => void): (() => void) => {
+    const handler = (_event: unknown, maximized: boolean): void =>
+      listener(maximized);
+    ipcRenderer.on('lore:window-state', handler);
+    return () => ipcRenderer.removeListener('lore:window-state', handler);
+  },
 });

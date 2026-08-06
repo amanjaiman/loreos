@@ -3,13 +3,13 @@ import { useCallback, useRef, useState, type CSSProperties } from 'react';
 import { api } from '../api';
 import { useConfig, useRailSummary, useSystemStatus } from '../lib/hooks';
 import { useRouter, type Route } from '../lib/router';
-import { useTitleBarSync } from '../lib/useTitleBarSync';
 import { Activity } from '../views/Activity';
 import { Memory } from '../views/Memory';
 import { Settings } from '../views/settings/Settings';
 import { Today } from '../views/Today';
 import { type AmbientStatus } from './LiveElement';
 import { Rail } from './Rail';
+import { WindowControls } from './WindowControls';
 
 const VIEWS = {
   today: Today,
@@ -36,8 +36,6 @@ const ORDER: Route[] = ['today', 'memory', 'activity', 'settings'];
 export function AppShell(): JSX.Element {
   const { route } = useRouter();
   const View = VIEWS[route];
-
-  useTitleBarSync();
 
   const { status: system, offline } = useSystemStatus();
   const { config, refresh } = useConfig();
@@ -81,7 +79,9 @@ export function AppShell(): JSX.Element {
 
   return (
     <div className="app-ground">
-      <div className="app-strip" />
+      <div className="app-strip">
+        <WindowControls />
+      </div>
       <Rail
         status={status}
         staged={staged}
