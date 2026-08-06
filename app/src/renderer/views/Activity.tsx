@@ -9,6 +9,35 @@ import './activity.css';
 
 type Feed = 'decisions' | 'episodes';
 
+/** Whether the decision trail shows only memory-bearing rows, or the engine's full trace. */
+type Scope = 'memories' | 'all';
+
+/**
+ * Raw reason codes leak straight from the engine. Translate the ones a user might
+ * actually meet; everything else at least loses its underscores.
+ */
+const REASON_LABELS: Record<string, string> = {
+  continuity_break_or_bound: 'activity moved on, so the episode closed',
+  idle_timeout: 'the window went idle',
+  max_duration: 'the episode hit its length limit',
+  shutdown: 'Lore shut down',
+};
+
+function humanizeReason(reason: string): string {
+  return REASON_LABELS[reason] ?? reason.replace(/_/g, ' ');
+}
+
+/**
+ * A decision is about a *memory* when it carries a statement. Episode housekeeping —
+ * "episode closed · continuity_break_or_bound", "nothing durable" — never does.
+ *
+ * Deriving it from the statement rather than an action allow-list means new engine
+ * actions land on the right side of the filter without anyone remembering to update it.
+ */
+function isAboutAMemory(decision: Decision): boolean {
+  return decision.statement.trim().length > 0;
+}
+
 const ACTION_LABELS: Record<string, string> = {
   closed: 'episode closed',
   no_facts: 'nothing durable',
@@ -33,6 +62,7 @@ const ACTION_LABELS: Record<string, string> = {
  */
 export function Activity(): JSX.Element {
   const [feed, setFeed] = useState<Feed>('decisions');
+  const [scope, setScope] = useState<Scope>('memories');
   const [decisions, setDecisions] = useState<Decision[] | null>(null);
   const [episodes, setEpisodes] = useState<Episode[] | null>(null);
   const [offline, setOffline] = useState(false);
@@ -55,6 +85,14 @@ export function Activity(): JSX.Element {
   }, [load]);
 
   const loading = decisions === null || episodes === null;
+  // The engine's own housekeeping ("episode closed · idle_timeout") is the bulk of the
+  // trail and answers nothing a user asked. It stays available, just not by default.
+  const shown =
+    decisions === null
+      ? []
+      : scope === 'all'
+        ? decisions
+        : decisions.filter(isAboutAMemory);
 
   return (
     <div className="app-page">
@@ -72,10 +110,21 @@ export function Activity(): JSX.Element {
           value={feed}
           onChange={(v) => setFeed(v as Feed)}
         />
+        {!loading && !offline && feed === 'decisions' && (
+          <button
+            type="button"
+            className="act-toolbar__scope"
+            aria-pressed={scope === 'all'}
+            onClick={() => setScope((s) => (s === 'all' ? 'memories' : 'all'))}
+          >
+            <Icon name={scope === 'all' ? 'eye' : 'eye-off'} size={13} />
+            {scope === 'all' ? 'Showing engine steps' : 'Show engine steps'}
+          </button>
+        )}
         {!loading && !offline && (
           <span className="act-toolbar__count">
             {feed === 'decisions'
-              ? `${decisions.length} decisions`
+              ? `${shown.length} ${shown.length === 1 ? 'decision' : 'decisions'}`
               : `${episodes.length} episodes`}
           </span>
         )}
@@ -88,14 +137,15 @@ export function Activity(): JSX.Element {
       ) : offline ? (
         <p className="app-empty">Lore isn't running — no activity to show.</p>
       ) : feed === 'decisions' ? (
-        decisions.length === 0 ? (
+        shown.length === 0 ? (
           <p className="app-empty">
-            No decisions yet. As episodes close, every choice Lore makes —
-            remembered, staged, or passed over — is recorded here.
+            {scope === 'memories' && decisions.length > 0
+              ? 'No memory decisions yet — Lore has been watching, but nothing has earned a place. Turn on engine steps to see what it did instead.'
+              : 'No decisions yet. As episodes close, every choice Lore makes — remembered, staged, or passed over — is recorded here.'}
           </p>
         ) : (
           <div className="act-list">
-            {decisions.map((d, i) => (
+            {shown.map((d, i) => (
               <DecisionRow key={i} decision={d} />
             ))}
           </div>
@@ -117,6 +167,25 @@ export function Activity(): JSX.Element {
 }
 
 function DecisionRow({ decision }: { decision: Decision }): JSX.Element {
+  const label = ACTION_LABELS[decision.action] ?? decision.action;
+  const reason = humanizeReason(decision.reason);
+
+  // Housekeeping gets a single quiet line, not a card. It only appears at all when the
+  // user has asked for engine steps, and giving it the same weight as a real memory
+  // decision is what made the trail unreadable.
+  if (!isAboutAMemory(decision)) {
+    return (
+      <div className="act-step">
+        <span className="act-step__dot" aria-hidden="true" />
+        <span className="act-step__label">{label}</span>
+        {reason.length > 0 && (
+          <span className="act-step__reason">{reason}</span>
+        )}
+        <span className="act-step__time">{formatRelative(decision.at)}</span>
+      </div>
+    );
+  }
+
   return (
     <Card className="act-row">
       <span className={`act-row__marker act-row__marker--${decision.action}`}>
@@ -124,15 +193,11 @@ function DecisionRow({ decision }: { decision: Decision }): JSX.Element {
       </span>
       <div className="act-row__content">
         <div className="act-row__head">
-          <Tag>{ACTION_LABELS[decision.action] ?? decision.action}</Tag>
+          <Tag>{label}</Tag>
           <span className="act-row__time">{formatRelative(decision.at)}</span>
         </div>
-        {decision.statement.length > 0 && (
-          <p className="act-row__statement">{decision.statement}</p>
-        )}
-        {decision.reason.length > 0 && (
-          <p className="act-row__reason">{decision.reason}</p>
-        )}
+        <p className="act-row__statement">{decision.statement}</p>
+        {reason.length > 0 && <p className="act-row__reason">{reason}</p>}
       </div>
     </Card>
   );

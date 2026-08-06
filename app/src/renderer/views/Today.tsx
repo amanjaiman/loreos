@@ -52,9 +52,10 @@ const KIND_LABELS: Record<MemoryKind, string> = {
 /**
  * Home (v2-004). A two-column app pane, not a document:
  *
- *   left  — the work, in priority order. The staged queue leads because it is the only
- *           thing on this screen that requires the user; the day's kept memories follow
- *           as a dense, deliberately recessive record.
+ *   left  — status first (one sentence on the day), then what Lore learned, then the
+ *           judgment queue as an expandable inbox. Judgment used to lead as a stack of
+ *           large cards; a card says "dwell on this", but this is triage, and a handful
+ *           of pending items ended up owning the whole pane.
  *   right — context you glance at and never operate on. Nothing here is a control, which
  *           is what makes the split legible.
  *
@@ -137,7 +138,9 @@ export function Today(): JSX.Element {
   const stagedToday = counts['staged'] ?? 0;
 
   return (
-    <div className="app-page">
+    // The header is a sibling of .app-page, not a child: it needs to span the full pane
+    // width and carry no margins (see the sticky note in chrome.css).
+    <>
       <div className="app-page__head">
         <span className="app-page__crumb">Home</span>
         <span className="app-page__sep">/</span>
@@ -158,143 +161,162 @@ export function Today(): JSX.Element {
         </div>
       </div>
 
-      {offline ? (
-        <section className="today-offline">
-          <span className="today-offline__icon">
-            <Icon name="moon" size={20} />
-          </span>
-          <div>
-            <strong>Lore is resting.</strong>
-            <p>
-              The local agent is not responding. This view will fill in when it
-              returns.
-            </p>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            icon="refresh-cw"
-            onClick={() => void load()}
-          >
-            Check again
-          </Button>
-        </section>
-      ) : (
-        <div className="today-layout">
-          <div className="today-work">
-            <section>
-              <div className="today-shead">
-                <h2>Needs your judgment</h2>
-                {data.staged.length > 0 && (
-                  <span className="today-chip">{data.staged.length}</span>
+      <div className="app-page">
+        {offline ? (
+          <section className="today-offline">
+            <span className="today-offline__icon">
+              <Icon name="moon" size={20} />
+            </span>
+            <div>
+              <strong>Lore is resting.</strong>
+              <p>
+                The local agent is not responding. This view will fill in when
+                it returns.
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              icon="refresh-cw"
+              onClick={() => void load()}
+            >
+              Check again
+            </Button>
+          </section>
+        ) : (
+          <div className="today-layout">
+            <div className="today-work">
+              {/* Status first: one sentence on what happened today, then what you got
+                  out of it. Judgment moves below — it matters, but it is triage, and
+                  leading with it made a handful of pending items own the screen. */}
+              <section className="today-lead">
+                <p>
+                  Lore kept <b>{data.economy.promoted_today}</b> of the{' '}
+                  <b>{episodes}</b> {episodes === 1 ? 'episode' : 'episodes'} it
+                  saw today.
+                </p>
+              </section>
+
+              <section className="today-record">
+                <div className="today-shead today-shead--quiet">
+                  <h2>Learned today</h2>
+                  <span className="today-shead__spacer" />
+                  <span className="today-shead__count">{kept.length}</span>
+                </div>
+                {kept.length === 0 ? (
+                  <p className="app-empty">
+                    Nothing new has earned a place yet. Lore is still paying
+                    attention.
+                  </p>
+                ) : (
+                  <div className="today-recs">
+                    {kept.map((decision, index) => (
+                      <div
+                        className={
+                          fresh.has(decision.memory_id)
+                            ? 'today-rec today-rec--new'
+                            : 'today-rec'
+                        }
+                        key={`${decision.memory_id}-${index}`}
+                      >
+                        <span className="today-rec__dot" aria-hidden="true" />
+                        <span className="today-rec__text">
+                          {decision.statement}
+                        </span>
+                        <span className="today-rec__kind">{decision.kind}</span>
+                        <span className="today-rec__time">
+                          {formatRelative(decision.at)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 )}
-              </div>
-              {data.staged.length === 0 ? (
-                <p className="app-empty">
-                  The staging area is clear. Uncertain memories wait here until
-                  more evidence arrives.
-                </p>
-              ) : (
-                <div className="today-queue">
-                  {data.staged.map((memory) => (
-                    <QueueCard key={memory.id} memory={memory} onActed={load} />
-                  ))}
-                </div>
-              )}
-            </section>
+              </section>
 
-            <section className="today-record">
-              <div className="today-shead today-shead--quiet">
-                <h2>Kept today</h2>
-                <span className="today-shead__spacer" />
-                <span className="today-shead__count">{kept.length}</span>
-              </div>
-              {kept.length === 0 ? (
-                <p className="app-empty">
-                  Nothing new has earned a place yet. Lore is still paying
-                  attention.
-                </p>
-              ) : (
-                <div className="today-recs">
-                  {kept.map((decision, index) => (
-                    <div
-                      className={
-                        fresh.has(decision.memory_id)
-                          ? 'today-rec today-rec--new'
-                          : 'today-rec'
-                      }
-                      key={`${decision.memory_id}-${index}`}
-                    >
-                      <span className="today-rec__dot" aria-hidden="true" />
-                      <span className="today-rec__text">
-                        {decision.statement}
-                      </span>
-                      <span className="today-rec__kind">{decision.kind}</span>
-                      <span className="today-rec__time">
-                        {formatRelative(decision.at)}
-                      </span>
-                    </div>
-                  ))}
+              <section>
+                <div className="today-shead today-shead--quiet">
+                  <h2>Needs your judgment</h2>
+                  <span className="today-shead__spacer" />
+                  {data.staged.length > 0 && (
+                    <span className="today-chip">{data.staged.length}</span>
+                  )}
                 </div>
-              )}
-            </section>
-          </div>
-
-          <aside className="today-ctx" aria-label="Today at a glance">
-            <div className="today-ctx__block">
-              <span className="today-vlabel">Today</span>
-              <dl className="today-dl">
-                <div>
-                  <dt>Episodes observed</dt>
-                  <dd>{episodes}</dd>
-                </div>
-                <div>
-                  <dt>Kept</dt>
-                  <dd>{data.economy.promoted_today}</dd>
-                </div>
-                <div>
-                  <dt>Passed over</dt>
-                  <dd>{passed}</dd>
-                </div>
-              </dl>
-              <Ratio
-                kept={data.economy.promoted_today}
-                staged={stagedToday}
-                passed={passed}
-              />
+                {data.staged.length === 0 ? (
+                  <p className="app-empty">
+                    The staging area is clear. Uncertain memories wait here
+                    until more evidence arrives.
+                  </p>
+                ) : (
+                  <div className="today-inbox">
+                    {data.staged.map((memory) => (
+                      <QueueItem
+                        key={memory.id}
+                        memory={memory}
+                        onActed={load}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
             </div>
 
-            <div className="today-ctx__rule" />
-
-            <div className="today-ctx__block">
-              <span className="today-vlabel">Memory budget</span>
-              <dl className="today-dl">
-                <div>
-                  <dt>Used today</dt>
-                  <dd>
-                    {data.economy.promoted_today} of {data.economy.daily_budget}
-                  </dd>
-                </div>
-              </dl>
-              <div className="today-meter">
-                <span
-                  style={{
-                    width: `${budgetPercent(
-                      data.economy.promoted_today,
-                      data.economy.daily_budget,
-                    )}%`,
-                  }}
+            <aside className="today-ctx" aria-label="Today at a glance">
+              <div className="today-ctx__block">
+                <span className="today-vlabel">Today</span>
+                <dl className="today-dl">
+                  <div>
+                    <dt>Episodes observed</dt>
+                    <dd>{episodes}</dd>
+                  </div>
+                  <div>
+                    <dt>Kept</dt>
+                    <dd>{data.economy.promoted_today}</dd>
+                  </div>
+                  <div>
+                    <dt>Passed over</dt>
+                    <dd>{passed}</dd>
+                  </div>
+                </dl>
+                <Ratio
+                  kept={data.economy.promoted_today}
+                  staged={stagedToday}
+                  passed={passed}
                 />
               </div>
-            </div>
 
-            <div className="today-ctx__rule" />
+              <div className="today-ctx__rule" />
 
-            <Composition stats={data.stats} />
-          </aside>
-        </div>
-      )}
-    </div>
+              <div className="today-ctx__block">
+                <span className="today-vlabel">Memory budget</span>
+                <dl className="today-dl">
+                  <div>
+                    <dt>Used today</dt>
+                    <dd>
+                      {data.economy.promoted_today} of{' '}
+                      {data.economy.daily_budget}
+                    </dd>
+                  </div>
+                </dl>
+                <div className="today-meter">
+                  <span
+                    style={{
+                      width: `${budgetPercent(
+                        data.economy.promoted_today,
+                        data.economy.daily_budget,
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="today-ctx__rule" />
+
+              <Composition stats={data.stats} />
+            </aside>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -384,7 +406,7 @@ function Composition({ stats }: { stats: MemoryStats }): JSX.Element {
  * you actually have when judging one of these — "why does Lore think this?" — which the
  * previous list-row treatment left unanswerable.
  */
-function QueueCard({
+function QueueItem({
   memory,
   onActed,
 }: {
@@ -393,9 +415,10 @@ function QueueCard({
 }): JSX.Element {
   const [busy, setBusy] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [open, setOpen] = useState(false);
   const meta = metaOf(memory);
 
-  // Collapse the card out of the list before refetching, so the queue visibly heals
+  // Collapse the row out of the list before refetching, so the queue visibly heals
   // itself rather than an item blinking out from under the cursor.
   const act = async (fn: (id: string) => Promise<unknown>): Promise<void> => {
     setBusy(true);
@@ -429,35 +452,46 @@ function QueueCard({
 
   return (
     <article
-      className={removing ? 'today-qcard today-qcard--removing' : 'today-qcard'}
+      className={removing ? 'today-item today-item--removing' : 'today-item'}
     >
-      <span className="today-qcard__mark">
-        <span aria-hidden="true" />
-        {meta === null
-          ? 'Awaiting evidence'
-          : `${meta.kind} · awaiting evidence`}
-      </span>
-      <p>{memory.memory}</p>
-      <p className="today-qcard__why">{evidence}</p>
-      {episodes > 0 && <Evidence memoryId={memory.id} />}
-      <div className="today-qcard__foot">
-        <Button
-          size="sm"
-          variant="primary"
-          disabled={busy}
-          onClick={() => void act(api.promoteStaged)}
-        >
-          Keep
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          disabled={busy}
-          onClick={() => void act(api.dismissStaged)}
-        >
-          Dismiss
-        </Button>
-      </div>
+      <button
+        type="button"
+        className="today-item__summary"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <span className="today-item__chevron" aria-hidden="true">
+          <Icon name={open ? 'chevron-down' : 'chevron-right'} size={14} />
+        </span>
+        <span className="today-item__dot" aria-hidden="true" />
+        <span className="today-item__text">{memory.memory}</span>
+        {meta !== null && <span className="today-item__kind">{meta.kind}</span>}
+      </button>
+
+      {open && (
+        <div className="today-item__body">
+          <p className="today-item__why">{evidence}</p>
+          {episodes > 0 && <Evidence memoryId={memory.id} />}
+          <div className="today-item__foot">
+            <Button
+              size="sm"
+              variant="primary"
+              disabled={busy}
+              onClick={() => void act(api.promoteStaged)}
+            >
+              Keep
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={busy}
+              onClick={() => void act(api.dismissStaged)}
+            >
+              Dismiss
+            </Button>
+          </div>
+        </div>
+      )}
     </article>
   );
 }
