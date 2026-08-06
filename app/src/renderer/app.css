@@ -15,6 +15,18 @@
   }
 }
 
+/* Border-box everywhere. The design system's styles.css is @import lines only — it
+   assumes the consuming app supplies the reset, and this file never did. Under the
+   default content-box, any `width: 100%` element that also has padding computes to
+   100% + padding and pushes its container into horizontal scroll; that is exactly what
+   .app-page did on every screen once its padding moved here. Fixing the cause rather
+   than the symptom, since the next `width: 100%` + padding would do it again. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 html,
 body {
   height: 100%;

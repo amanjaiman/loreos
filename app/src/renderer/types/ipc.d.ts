@@ -5,7 +5,11 @@ interface Window {
   lore: {
     /** Open a native PDF picker; resolves to an absolute path, or null if cancelled. */
     pickDocument: () => Promise<string | null>;
-    /** Recolour the native window-control overlay to match the active theme (v2-004). */
-    setTitleBar: (color: string, symbolColor: string) => void;
+    /** Minimise / maximise / close, driven by the renderer's own window controls. */
+    windowCommand: (command: 'minimize' | 'toggle-maximize' | 'close') => void;
+    /** Current maximised state, for the correct restore glyph on first paint. */
+    isMaximized: () => Promise<boolean>;
+    /** Subscribe to maximise/restore; returns an unsubscribe function. */
+    onWindowState: (listener: (maximized: boolean) => void) => () => void;
   };
 }

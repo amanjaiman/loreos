@@ -12,6 +12,7 @@ import {
   type MemoryKind,
   type MemoryStats,
 } from '../api';
+import { PageHeader } from '../chrome/PageHeader';
 import { Button, Spinner } from '../design-system';
 import { formatRelative } from '../lib/format';
 import { Icon } from '../lib/Icon';
@@ -31,6 +32,13 @@ const EMPTY_STATS: MemoryStats = {
   archived: 0,
   total_active: 0,
 };
+
+/** The decision actions that mean "this ended up in memory" — the single definition. */
+const KEPT_ACTIONS = ['promoted', 'revised', 'user_promoted'] as const;
+
+function isKept(decision: Decision): boolean {
+  return (KEPT_ACTIONS as readonly string[]).includes(decision.action);
+}
 
 /** Keep in step with the `land` / `collapse` keyframes in today.css. */
 const LAND_MS = 900;
@@ -78,7 +86,7 @@ export function Today(): JSX.Element {
       // active memories and tally them in the browser purely to draw a five-row bar.
       const [economy, decisions, staged, stats] = await Promise.all([
         api.economy(),
-        api.decisions(100),
+        api.decisions(500),
         api.listMemories({ status: 'staged', limit: 20 }),
         api.memoryStats(),
       ]);
@@ -136,20 +144,22 @@ export function Today(): JSX.Element {
   const episodes = counts['closed'] ?? 0;
   const passed = counts['no_facts'] ?? 0;
   const stagedToday = counts['staged'] ?? 0;
+  // NOT economy.promoted_today — that counts only the literal `promoted` action, so a
+  // memory Lore rewrote today (`revised`) or one the user kept by hand doesn't register.
+  // The list below counts all three, which is why the lead read "kept 1" over a list of
+  // five. Same definition, one source, and it comes from the day's full decision counts
+  // rather than the capped feed.
+  const keptToday = KEPT_ACTIONS.reduce(
+    (total, action) => total + (counts[action] ?? 0),
+    0,
+  );
 
   return (
-    // The header is a sibling of .app-page, not a child: it needs to span the full pane
-    // width and carry no margins (see the sticky note in chrome.css).
     <>
-      <div className="app-page__head">
-        <span className="app-page__crumb">Home</span>
-        <span className="app-page__sep">/</span>
-        <span className="app-page__mini">
-          {data.staged.length > 0
-            ? `${data.staged.length} awaiting your judgment`
-            : 'Nothing awaiting your judgment'}
-        </span>
-        <div className="app-page__acts">
+      <PageHeader
+        eyebrow="// home"
+        title="Memory, kept warm."
+        action={
           <Button
             variant="secondary"
             size="sm"
@@ -158,8 +168,8 @@ export function Today(): JSX.Element {
           >
             Search memory
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       <div className="app-page">
         {offline ? (
@@ -191,9 +201,8 @@ export function Today(): JSX.Element {
                   leading with it made a handful of pending items own the screen. */}
               <section className="today-lead">
                 <p>
-                  Lore kept <b>{data.economy.promoted_today}</b> of the{' '}
-                  <b>{episodes}</b> {episodes === 1 ? 'episode' : 'episodes'} it
-                  saw today.
+                  Lore kept <b>{keptToday}</b> of the <b>{episodes}</b>{' '}
+                  {episodes === 1 ? 'episode' : 'episodes'} it saw today.
                 </p>
               </section>
 
@@ -270,43 +279,14 @@ export function Today(): JSX.Element {
                   </div>
                   <div>
                     <dt>Kept</dt>
-                    <dd>{data.economy.promoted_today}</dd>
+                    <dd>{keptToday}</dd>
                   </div>
                   <div>
                     <dt>Passed over</dt>
                     <dd>{passed}</dd>
                   </div>
                 </dl>
-                <Ratio
-                  kept={data.economy.promoted_today}
-                  staged={stagedToday}
-                  passed={passed}
-                />
-              </div>
-
-              <div className="today-ctx__rule" />
-
-              <div className="today-ctx__block">
-                <span className="today-vlabel">Memory budget</span>
-                <dl className="today-dl">
-                  <div>
-                    <dt>Used today</dt>
-                    <dd>
-                      {data.economy.promoted_today} of{' '}
-                      {data.economy.daily_budget}
-                    </dd>
-                  </div>
-                </dl>
-                <div className="today-meter">
-                  <span
-                    style={{
-                      width: `${budgetPercent(
-                        data.economy.promoted_today,
-                        data.economy.daily_budget,
-                      )}%`,
-                    }}
-                  />
-                </div>
+                <Ratio kept={keptToday} staged={stagedToday} passed={passed} />
               </div>
 
               <div className="today-ctx__rule" />
@@ -437,18 +417,6 @@ function QueueItem({
   };
 
   const episodes = meta?.episodes.length ?? 0;
-  const evidence = [
-    episodes > 0
-      ? `Seen in ${episodes} ${episodes === 1 ? 'episode' : 'episodes'}`
-      : 'Not yet corroborated',
-    meta !== null && meta.established_at > 0
-      ? `first noticed ${formatRelative(
-          new Date(meta.established_at * 1000).toISOString(),
-        )}`
-      : null,
-  ]
-    .filter((part): part is string => part !== null)
-    .join(' · ');
 
   return (
     <article
@@ -470,8 +438,7 @@ function QueueItem({
 
       {open && (
         <div className="today-item__body">
-          <p className="today-item__why">{evidence}</p>
-          {episodes > 0 && <Evidence memoryId={memory.id} />}
+          <EvidenceThread memoryId={memory.id} hasEpisodes={episodes > 0} />
           <div className="today-item__foot">
             <Button
               size="sm"
@@ -497,83 +464,102 @@ function QueueItem({
 }
 
 /**
- * The episodes that support a staged memory (v2-004 T009), fetched on demand from
- * v2-005 R3. This answers the question the evidence *line* only summarises — "why does
- * Lore think this?" — without which judging a staged memory is guesswork.
+ * The evidence behind a staged memory, as a thread.
  *
- * Titles here come from the same filter chain capture applies, so nothing appears that
+ * This used to sit behind a second "Show evidence" disclosure with a "seen in 1 episode"
+ * summary above it — two clicks and a line that restated what the thread already shows.
+ * Opening the row IS the request to see why, so the thread loads with it.
+ *
+ * Titles come from the same filter chain capture applies, so nothing appears here that
  * Lore would not have captured in the first place.
  */
-function Evidence({ memoryId }: { memoryId: string }): JSX.Element {
-  const [open, setOpen] = useState(false);
+function EvidenceThread({
+  memoryId,
+  hasEpisodes,
+}: {
+  memoryId: string;
+  hasEpisodes: boolean;
+}): JSX.Element {
   const [episodes, setEpisodes] = useState<Episode[] | null>(null);
   const [failed, setFailed] = useState(false);
 
-  const toggle = async (): Promise<void> => {
-    const next = !open;
-    setOpen(next);
-    if (!next || episodes !== null) {
+  useEffect(() => {
+    if (!hasEpisodes) {
       return;
     }
-    try {
-      const result = await api.memoryEvidence(memoryId);
-      setEpisodes(result.episodes);
-      setFailed(false);
-    } catch {
-      setFailed(true);
-    }
-  };
+    let alive = true;
+    void (async (): Promise<void> => {
+      try {
+        const result = await api.memoryEvidence(memoryId);
+        if (alive) {
+          setEpisodes(result.episodes);
+        }
+      } catch {
+        if (alive) {
+          setFailed(true);
+        }
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [memoryId, hasEpisodes]);
+
+  if (!hasEpisodes) {
+    return (
+      <p className="today-thread__note">
+        Nothing corroborates this yet — it is waiting for a second episode.
+      </p>
+    );
+  }
+  if (failed) {
+    return (
+      <p className="today-thread__note">
+        The supporting episodes couldn&rsquo;t be loaded.
+      </p>
+    );
+  }
+  if (episodes === null) {
+    return (
+      <p className="today-thread__note">
+        Looking for what supports this&hellip;
+      </p>
+    );
+  }
+  if (episodes.length === 0) {
+    return (
+      <p className="today-thread__note">
+        The supporting episodes are no longer stored.
+      </p>
+    );
+  }
 
   return (
-    <div className="today-evidence">
-      <button
-        type="button"
-        className="today-evidence__toggle"
-        aria-expanded={open}
-        onClick={() => void toggle()}
-      >
-        <Icon name={open ? 'chevron-down' : 'chevron-right'} size={13} />
-        {open ? 'Hide evidence' : 'Show evidence'}
-      </button>
-      {open && (
-        <div className="today-evidence__body">
-          {failed ? (
-            <span className="today-vnote">
-              Evidence isn&rsquo;t available right now.
+    <div className="today-thread">
+      {episodes.map((episode) => (
+        <article className="today-thread__entry" key={episode.id}>
+          <span className="today-thread__rail" aria-hidden="true" />
+          <div className="today-thread__head">
+            <span className="today-thread__app">
+              {episode.executables[0] ?? 'Unknown app'}
             </span>
-          ) : episodes === null ? (
-            <span className="today-vnote">Loading&hellip;</span>
-          ) : episodes.length === 0 ? (
-            <span className="today-vnote">
-              The supporting episodes are no longer stored.
+            <span className="today-thread__when">
+              {formatRelative(episode.started_at)}
             </span>
-          ) : (
-            episodes.map((episode) => (
-              <div className="today-evidence__row" key={episode.id}>
-                <span className="today-evidence__app">
-                  {episode.executables.join(', ') || 'Unknown app'}
-                </span>
-                <span className="today-evidence__title">
-                  {episode.titles[0] ?? 'No window title'}
-                </span>
-                <span className="today-evidence__when">
-                  {formatRelative(episode.started_at)}
-                </span>
-              </div>
-            ))
+          </div>
+          {episode.titles.length > 0 && (
+            <p className="today-thread__title">{episode.titles[0]}</p>
           )}
-        </div>
-      )}
+          {episode.samples.length > 0 && (
+            <p className="today-thread__sample">{episode.samples[0]}</p>
+          )}
+          <span className="today-thread__meta">
+            {episode.observation_count}{' '}
+            {episode.observation_count === 1 ? 'observation' : 'observations'}
+          </span>
+        </article>
+      ))}
     </div>
-  );
-}
-
-/** The decision actions that mean "this ended up in memory". */
-function isKept(decision: Decision): boolean {
-  return (
-    decision.action === 'promoted' ||
-    decision.action === 'revised' ||
-    decision.action === 'user_promoted'
   );
 }
 
@@ -585,8 +571,4 @@ function isToday(iso: string): boolean {
     date.getMonth() === now.getMonth() &&
     date.getDate() === now.getDate()
   );
-}
-
-function budgetPercent(used: number, budget: number): number {
-  return budget <= 0 ? 0 : Math.min(100, Math.round((used / budget) * 100));
 }

@@ -82,7 +82,13 @@ export function Rail({
             <Icon name={icon} size={17} />
             <span>{label}</span>
             {r === 'memory' && staged > 0 && (
-              <span className="navitem__badge">{staged}</span>
+              <span
+                className="navitem__badge"
+                title={`${staged} ${staged === 1 ? 'memory needs' : 'memories need'} your judgment`}
+                aria-label={`${staged} awaiting your judgment`}
+              >
+                {staged}
+              </span>
             )}
           </button>
         ))}

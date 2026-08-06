@@ -3,13 +3,13 @@ import { useCallback, useRef, useState, type CSSProperties } from 'react';
 import { api } from '../api';
 import { useConfig, useRailSummary, useSystemStatus } from '../lib/hooks';
 import { useRouter, type Route } from '../lib/router';
-import { useTitleBarSync } from '../lib/useTitleBarSync';
 import { Activity } from '../views/Activity';
 import { Memory } from '../views/Memory';
 import { Settings } from '../views/settings/Settings';
 import { Today } from '../views/Today';
 import { type AmbientStatus } from './LiveElement';
 import { Rail } from './Rail';
+import { WindowControls } from './WindowControls';
 
 const VIEWS = {
   today: Today,
@@ -36,8 +36,6 @@ const ORDER: Route[] = ['today', 'memory', 'activity', 'settings'];
 export function AppShell(): JSX.Element {
   const { route } = useRouter();
   const View = VIEWS[route];
-
-  useTitleBarSync();
 
   const { status: system, offline } = useSystemStatus();
   const { config, refresh } = useConfig();
@@ -81,7 +79,9 @@ export function AppShell(): JSX.Element {
 
   return (
     <div className="app-ground">
-      <div className="app-strip" />
+      <div className="app-strip">
+        <WindowControls />
+      </div>
       <Rail
         status={status}
         staged={staged}
@@ -96,7 +96,12 @@ export function AppShell(): JSX.Element {
           style={{ '--dir': descending ? '12px' : '-12px' } as CSSProperties}
           // Drives the page header's condense-on-scroll. Read off the event target
           // rather than a ref so it survives the keyed remount below.
-          onScroll={(event) => setScrolled(event.currentTarget.scrollTop > 28)}
+          // Any scroll at all condenses the header. The old 28px threshold existed to
+          // avoid twitching, but it meant pages with only a little overflow never
+          // condensed at all — and because the header is now out of flow, there is no
+          // scroll-height feedback to guard against. It also closes the window where a
+          // still-transparent expanded header would have content sliding under it.
+          onScroll={(event) => setScrolled(event.currentTarget.scrollTop > 0)}
         >
           {/* Keyed on the route so the entrance animation replays on every change. */}
           <View key={route} />

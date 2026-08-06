@@ -21,12 +21,6 @@ if (require('electron-squirrel-startup')) {
 // (it in turn supervises memoryd — spec 002). A no-op in dev, where it's run separately.
 const agent = new AgentProcess();
 
-/** Height of the app's own drag strip; the native controls are sized to match (v2-004). */
-const TITLE_BAR_HEIGHT = 44;
-
-/** Coastal (light) window-control colours — the first paint, before the renderer reports in. */
-const DEFAULT_OVERLAY = { color: '#fbf7ef', symbolColor: '#565049' };
-
 /**
  * The application menu is *hidden*, not removed. `Menu.setApplicationMenu(null)` also
  * unregisters the accelerators the roles carry, which on Windows silently breaks
@@ -50,11 +44,19 @@ const createWindow = (): void => {
     minHeight: 600,
     title: 'Lore',
     backgroundColor: '#fbf7ef', // Coastal --bg, avoids a white flash before styles load
-    // Frameless, but NOT `frame: false` — that removes the non-client area and with it
-    // Windows 11 Snap Layouts (the flyout on hover over Maximize). 'hidden' + an overlay
-    // keeps real, snap-aware controls in a strip whose colours we own (v2-004 AC 2).
-    titleBarStyle: 'hidden',
-    titleBarOverlay: { ...DEFAULT_OVERLAY, height: TITLE_BAR_HEIGHT },
+    // Fully frameless, with the window controls drawn by the renderer.
+    //
+    // This started as `titleBarStyle: 'hidden'` + `titleBarOverlay`, which keeps the real
+    // OS buttons (and with them Windows 11 Snap Layouts). The overlay is painted by the OS
+    // as an OPAQUE rectangle, though, and no combination of colour, ground gradient or
+    // shadow clamping made it disappear into the strip — it stayed visible as a box over
+    // the app. Owning the buttons removes that whole class of problem: they are now our
+    // elements, on our background, themed by our tokens.
+    //
+    // The cost is the Snap Layouts flyout on hover over Maximize. Win+Arrow and edge-drag
+    // snapping are unaffected. Revert to titleBarOverlay if that flyout matters more than
+    // the seam.
+    frame: false,
     webPreferences: {
       // contextIsolation on / nodeIntegration off (Electron defaults). The renderer is
       // a pure client of the local API (005) over loopback fetch — there is no
@@ -63,32 +65,46 @@ const createWindow = (): void => {
     },
   });
 
+  // The maximize/restore glyph has to follow the real window state, which the user can
+  // change without touching our button (double-click the strip, Win+Up, snapping).
+  const reportState = (): void => {
+    if (!mainWindow.isDestroyed()) {
+      mainWindow.webContents.send(
+        'lore:window-state',
+        mainWindow.isMaximized(),
+      );
+    }
+  };
+  mainWindow.on('maximize', reportState);
+  mainWindow.on('unmaximize', reportState);
+
   void mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 };
 
-/** `#rrggbb` only — the renderer is untrusted input like any other caller. */
-const isHexColor = (value: unknown): value is string =>
-  typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value);
+// Window controls, driven by the renderer's own buttons. The command is validated
+// against a closed set — the renderer is untrusted input like any other caller.
+ipcMain.on('lore:window-command', (event, command: unknown): void => {
+  const window = BrowserWindow.fromWebContents(event.sender);
+  if (window === null) {
+    return;
+  }
+  if (command === 'minimize') {
+    window.minimize();
+  } else if (command === 'toggle-maximize') {
+    if (window.isMaximized()) {
+      window.unmaximize();
+    } else {
+      window.maximize();
+    }
+  } else if (command === 'close') {
+    window.close();
+  }
+});
 
-// The overlay's colours are fixed at construction and do not follow CSS, so the renderer
-// reports the resolved theme colours after each switch (v2-004 AC 4).
-ipcMain.on(
-  'lore:set-titlebar',
-  (event, color: unknown, symbolColor: unknown): void => {
-    if (!isHexColor(color) || !isHexColor(symbolColor)) {
-      return;
-    }
-    const window = BrowserWindow.fromWebContents(event.sender);
-    // setTitleBarOverlay only exists where an overlay is in use (Windows/Linux).
-    if (window !== null && typeof window.setTitleBarOverlay === 'function') {
-      window.setTitleBarOverlay({
-        color,
-        symbolColor,
-        height: TITLE_BAR_HEIGHT,
-      });
-    }
-  },
-);
+ipcMain.handle('lore:is-maximized', (event): boolean => {
+  const window = BrowserWindow.fromWebContents(event.sender);
+  return window !== null && window.isMaximized();
+});
 
 // Native document picker for import (T009). The renderer can't obtain a real filesystem
 // path on its own; it asks the main process, which returns the chosen PDF's absolute path.

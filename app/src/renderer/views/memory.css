@@ -1,23 +1,12 @@
+/* A quiet count beside the tabs. It used to be a bordered plaque in the page header's
+   action slot, which gave a number more presence than the search box next to it. */
 .mem-total {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
-}
-
-.mem-total strong {
-  color: var(--text);
+  margin-left: auto;
+  align-self: center;
   font-family: var(--font-mono);
-  font-size: var(--text-md);
-  font-weight: var(--fw-medium);
-}
-
-.mem-total span {
+  font-size: var(--text-2xs);
   color: var(--text-subtle);
-  font-size: var(--text-xs);
+  white-space: nowrap;
 }
 
 .mem-toolbar {
@@ -33,8 +22,11 @@
   border-bottom: 0;
 }
 
+/* Search lives in the page header's action slot, so it condenses along with the header
+   and stays reachable from anywhere on the page. It was previously boxed to 390px between
+   the tabs and the count, with nothing to align to — which is why it read as parked in the
+   middle of the screen. */
 .mem-search {
-  width: min(100%, 390px);
   display: flex;
   align-items: flex-start;
   gap: var(--space-2);
@@ -50,6 +42,7 @@
   padding: var(--space-16) 0;
 }
 
+/* Keyed off the pane container, not the viewport — see the note in settings.css. */
 .mem-group {
   display: grid;
   grid-template-columns: 190px minmax(0, 1fr);
@@ -189,7 +182,7 @@
   font-family: var(--font-mono);
 }
 
-@media (max-width: 720px) {
+@container pane (max-width: 640px) {
   .mem-toolbar {
     align-items: stretch;
     flex-direction: column;
@@ -203,4 +196,38 @@
     grid-template-columns: 1fr;
     gap: var(--space-3);
   }
+}
+
+/* A memory is free text and may contain a URL or path with no break opportunity. */
+.mem-card,
+.mem-card__text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ---- inline editor ----
+   Editing used to open a design-system Dialog: a full-viewport overlay, centred on the
+   whole window rather than the pane, dimming the rail and the strip along with it. A
+   memory is a row in a list, so it opens where it lives — the same expand-in-place
+   pattern the judgment inbox uses on Home. */
+.mem-card--open {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+}
+
+.mem-card__editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: var(--border-width) solid var(--border);
+  cursor: default;
+}
+
+/* Search results are one ranked list — no kind headings to scatter the best matches. */
+.mem-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }

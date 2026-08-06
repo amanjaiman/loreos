@@ -1,6 +1,6 @@
 /* The v2-004 desktop frame: one ground plane, a rail sitting on it, and the content
-   floating above it in an inset card. No OS title bar, no menu bar — the top strip of
-   ground is ours, and the native window controls sit in it. */
+   floating above it in an inset card. No OS title bar, no menu bar, and no OS window
+   controls either — the top strip of ground is ours, and so are the buttons in it. */
 
 .app-ground {
   height: 100vh;
@@ -22,22 +22,9 @@
      cross-fade the ground: gradient stops can't be transitioned, a flat colour can.
      Two low-alpha blobs rather than one — a blur over a flat fill reads as grey wash.
 
-     CRITICAL: both blobs must stay clear of the top-right corner. The native window
-     controls are painted by the OS as a flat rectangle in `titleBarOverlay.color`, which
-     is the resolved `--bg`. Anywhere a gradient tints the ground beneath that rectangle,
-     the flat fill no longer matches and the overlay reads as a visible box clipped over
-     the app. The tone blob therefore stops at 62% width (clear of the controls at every
-     window size down to the 900px minimum) and the primary blob is anchored bottom-right
-     with only 58% vertical reach, so it never climbs into the 44px strip. */
-  /* The card's elevation, clamped so it CANNOT paint above the card's own top edge.
-     --shadow-lg is `0 16px 44px` with no spread, and a 44px blur against a 16px offset
-     reaches ~6px upward — into the 44px strip. The native window-control overlay is an
-     opaque fill, so it covers that 6px of shadow and nothing else, which is exactly the
-     rectangle: not a colour mismatch, a *missing shadow*. Negative spread keeps the
-     whole shadow below the card, so the strip is uniform and the overlay disappears
-     into it. Any future change here must keep (offset + |spread|) >= blur / 2. */
-  --card-shadow: 0 18px 44px -8px rgba(20, 16, 12, 0.13);
-
+     The blobs are kept clear of the top-right corner. That began as an attempt to make
+     the OS window-control overlay blend in — it never did, and the controls are ours now
+     — but a quiet corner behind the buttons is still the right call, so it stays. */
   background-color: var(--bg);
   background-image:
     radial-gradient(
@@ -60,8 +47,6 @@
 }
 
 :root[data-mode='dark'] .app-ground {
-  --card-shadow: 0 14px 34px -8px rgba(0, 0, 0, 0.6);
-
   background-image:
     radial-gradient(
       62% 62% at 0% 0%,
@@ -79,7 +64,57 @@
 .app-strip {
   grid-column: 2;
   grid-row: 1;
+  display: flex;
+  justify-content: flex-end;
   -webkit-app-region: drag;
+}
+
+/* ---- our own window controls ----
+   Conventional metrics and order so nothing has to be relearned, but drawn with our
+   tokens on our background — which is the entire point: the OS overlay was an opaque
+   rectangle we could never make disappear into the strip. */
+.wincontrols {
+  display: flex;
+  align-items: stretch;
+  -webkit-app-region: no-drag;
+}
+
+.wincontrols__btn {
+  width: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.wincontrols__btn svg {
+  width: 10px;
+  height: 10px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1;
+}
+
+.wincontrols__btn:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.wincontrols__btn:focus-visible {
+  outline: none;
+  box-shadow: inset var(--ring);
+}
+
+/* The one place a system convention outranks the palette: close is red everywhere. */
+.wincontrols__btn--close:hover {
+  background: #c42b1c;
+  color: #ffffff;
 }
 
 /* ============================== rail ============================== */
@@ -530,7 +565,7 @@
   border-radius: var(--r-tl) var(--r-tr) var(--r-br) var(--r-bl);
   background: color-mix(in srgb, var(--surface) 84%, transparent);
   backdrop-filter: blur(22px) saturate(135%);
-  box-shadow: var(--card-shadow);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -558,7 +593,6 @@
    empty margins is what made the content read as a pasted document; routes that are
    genuinely long-form opt back in with .app-page--reading. */
 .app-page {
-  width: 100%;
   max-width: 1120px;
   margin: 0 auto;
   padding: var(--space-8);
@@ -582,84 +616,125 @@
   }
 }
 
-/* NOTE — the backdrop-filter clip bug. In Chromium an element with backdrop-filter
-   escapes its ancestor's overflow:hidden + border-radius clip and repaints SQUARE
-   corners over it, which flattens the card's top edge. The header therefore carries its
-   own top radii, so it paints the right shape whether or not the ancestor clip applies.
-   Any future blurred element pinned to the card's edge needs the same treatment. */
-/* top: 0 is correct here — a sticky element's offset is measured from the scrollport,
-   and for an overflow:auto box the scrollport starts at the padding box. So 0 pins the
-   header flush to the card's inner top edge, which is what the negative margins above
-   line it up with. A negative offset would let it slide under the card's clip. */
-.app-page__head {
+/* ---- the one page header ----
+   Full by default; condenses to a thin glass bar once content scrolls beneath it, so the
+   page keeps its identity instead of leaving an empty strip. `data-scrolled` lives on
+   .app-card (AppShell sets it), so every page condenses together.
+
+   NOTE — the backdrop-filter clip bug. In Chromium an element with backdrop-filter escapes
+   its ancestor's overflow:hidden + border-radius clip and repaints SQUARE corners over it,
+   which flattens the card's top edge. The header therefore carries its own top radii, so it
+   paints the right shape whether or not the ancestor clip applies. Any future blurred
+   element pinned to the card's edge needs the same treatment. */
+/* Zero-height sticky slot: the header overlays the content instead of occupying flow, so
+   collapsing it cannot change the scroll height (see the note in PageHeader.tsx). */
+.page-head-slot {
   position: sticky;
   top: 0;
+  height: 0;
   z-index: var(--z-sticky);
+}
+
+.page-head {
+  padding: var(--space-8) 0 var(--space-6);
+  border-bottom: var(--border-width) solid transparent;
+  border-radius: var(--r-tl) var(--r-tr) 0 0;
+  background: transparent;
+  transition:
+    padding var(--dur) var(--ease),
+    background-color var(--dur) var(--ease),
+    border-color var(--dur) var(--ease);
+}
+
+.page-head__inner {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding-inline: var(--space-8);
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  justify-content: space-between;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.page-head__copy {
+  min-width: 0;
+  max-width: 680px;
+}
+
+.page-head__eyebrow {
+  display: block;
+  margin-bottom: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.page-head__title {
   margin: 0;
-  padding: var(--space-3) var(--space-5);
-  border-bottom: var(--border-width) solid var(--border);
-  border-radius: var(--r-tl) var(--r-tr) 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(var(--text-2xl), 4vw, var(--text-3xl));
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--tracking-tighter);
+  color: var(--text);
+  transition: font-size var(--dur) var(--ease);
+}
+
+/* Actions live through the condense — Memory keeps its search here, so it has to stay
+   usable in the thin bar as well as the tall one. */
+.page-head__action {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.page-head__action .mem-search {
+  width: min(46vw, 420px);
+}
+
+/* ---- condensed ---- */
+.app-card[data-scrolled='true'] .page-head {
+  padding-block: var(--space-4);
+  border-bottom-color: var(--border);
   background: color-mix(in srgb, var(--surface) 62%, transparent);
   backdrop-filter: blur(20px) saturate(150%);
 }
 
-/* Condense once content passes underneath: the bar tightens and the page's own title
-   fades in beside the crumb, so context survives the hero scrolling away. Functional
-   motion — it replaces information that left the screen. */
-.app-card[data-scrolled='true'] .app-page__head {
-  padding-block: var(--space-2);
+.app-card[data-scrolled='true'] .page-head__inner {
+  align-items: center;
 }
 
-.app-page__head {
-  transition:
-    padding var(--dur) var(--ease),
-    background-color var(--dur-slow) var(--ease);
-}
-
-.app-page__crumb {
-  font-size: var(--text-sm);
-  font-weight: var(--fw-semibold);
+.app-card[data-scrolled='true'] .page-head__title {
+  font-size: var(--text-md);
   letter-spacing: var(--tracking-tight);
-  color: var(--text);
 }
 
-.app-page__mini {
-  min-width: 0;
-  opacity: 0;
-  transform: translateY(5px);
-  color: var(--text-muted);
-  font-size: var(--text-sm);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  pointer-events: none;
-  transition:
-    opacity var(--dur) var(--ease),
-    transform var(--dur) var(--ease-out);
-}
-
-.app-page__sep {
-  opacity: 0;
-  color: var(--border-strong);
-  transition: opacity var(--dur) var(--ease);
-}
-
-.app-card[data-scrolled='true'] .app-page__mini {
-  opacity: 1;
-  transform: none;
-}
-
-.app-card[data-scrolled='true'] .app-page__sep {
-  opacity: 1;
-}
-
-.app-page__acts {
-  margin-left: auto;
+/* Condensed, the copy becomes one line: eyebrow then title. The eyebrow is the page's
+   name and the only colour in the bar, so it is what makes a collapsed header still say
+   where you are. */
+.app-card[data-scrolled='true'] .page-head__copy {
   display: flex;
-  gap: var(--space-2);
+  align-items: baseline;
+  gap: var(--space-3);
+  max-width: none;
+}
+
+.app-card[data-scrolled='true'] .page-head__eyebrow {
+  margin-bottom: 0;
+  flex: none;
+}
+
+/* Reserve the header's expanded height; PageHeader measures it, since it depends on how
+   the title and description wrap at the current pane width. The fallback covers the first
+   paint before the measurement lands. */
+.page-head-slot + .app-page {
+  padding-top: var(--page-head-h, 168px);
 }
 
 /* ============================== shared page bits ============================== */
@@ -692,47 +767,6 @@
   color: var(--text-muted);
   font-size: var(--text-base);
   text-align: center;
-  line-height: var(--lh-relaxed);
-}
-
-.page-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--space-8);
-  padding: var(--space-2) 0;
-}
-
-.page-header__copy {
-  max-width: 680px;
-}
-
-.page-header__eyebrow {
-  display: block;
-  margin-bottom: var(--space-3);
-  font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-  font-weight: var(--fw-medium);
-  letter-spacing: var(--tracking-eyebrow);
-  text-transform: uppercase;
-  color: var(--primary);
-}
-
-.page-header__title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(var(--text-2xl), 4vw, var(--text-3xl));
-  font-weight: var(--fw-semibold);
-  line-height: var(--lh-snug);
-  letter-spacing: var(--tracking-tighter);
-  color: var(--text);
-}
-
-.page-header__description {
-  margin: var(--space-3) 0 0;
-  max-width: 590px;
-  color: var(--text-muted);
-  font-size: var(--text-base);
   line-height: var(--lh-relaxed);
 }
 

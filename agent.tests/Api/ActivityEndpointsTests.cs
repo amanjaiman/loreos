@@ -16,6 +16,11 @@ namespace Lore.Agent.Tests.Api;
 /// still-true confirmation, and the capture economy.</summary>
 public sealed class ActivityEndpointsTests : IDisposable
 {
+    /// <summary>An explicit budget so the assertion tests that the endpoint reports the
+    /// CONFIGURED value, rather than restating whatever the production default happens
+    /// to be (which is a runaway guard and free to change).</summary>
+    private const int ConfiguredBudget = 12;
+
     private sealed class FixedTime : TimeProvider
     {
         public DateTimeOffset Now { get; set; } = new(2026, 7, 15, 12, 0, 0, TimeSpan.Zero);
@@ -34,7 +39,7 @@ public sealed class ActivityEndpointsTests : IDisposable
         {
             services.AddSingleton(_activity);
             services.AddSingleton<IMemoryService>(_memory);
-            services.AddSingleton(new LifecycleOptions());
+            services.AddSingleton(new LifecycleOptions { DailyBudget = ConfiguredBudget });
             services.AddSingleton<TimeProvider>(_time);
         },
         app =>
@@ -105,8 +110,10 @@ public sealed class ActivityEndpointsTests : IDisposable
         Assert.Equal(
             "Figma — Lore rebrand",
             Assert.Single(ep.GetProperty("titles").EnumerateArray().ToArray()).GetString());
-        // The evidence view carries when/where, not the raw sample captures.
-        Assert.False(ep.TryGetProperty("samples", out _));
+        // Samples are the evidence: a window title alone does not answer "why does Lore
+        // think this?". Same data and same filter chain as /episodes.
+        Assert.True(ep.TryGetProperty("samples", out JsonElement samples));
+        Assert.NotEmpty(samples.EnumerateArray().ToArray());
     }
 
     [Fact]
@@ -146,7 +153,8 @@ public sealed class ActivityEndpointsTests : IDisposable
         JsonElement economy = await harness.Client.GetFromJsonAsync<JsonElement>("/system/economy");
 
         Assert.Equal(1, economy.GetProperty("promoted_today").GetInt64());
-        Assert.Equal(10, economy.GetProperty("daily_budget").GetInt64());
+        Assert.Equal(
+            ConfiguredBudget, economy.GetProperty("daily_budget").GetInt64());
         Assert.Equal(
             1, economy.GetProperty("decisions_today").GetProperty("no_facts").GetInt64());
     }

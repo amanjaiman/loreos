@@ -127,7 +127,13 @@ public sealed class LifecycleEngineTests : IDisposable
     private readonly FakeMemory _memory = new();
     private readonly ActivityStore _activity = new(":memory:");
     private readonly FakeTimeProvider _time = new();
-    private readonly LifecycleOptions _options = new();
+    // A deliberately tiny budget: these tests are about what happens AT the cap, and
+    // seeding the production default's worth of decisions to reach it made them depend on
+    // a tunable that exists to be raised (it since was — it is a runaway guard, not a
+    // daily allowance). The cap's behaviour is what is under test, not its value.
+    private const int TestDailyBudget = 3;
+
+    private readonly LifecycleOptions _options = new() { DailyBudget = TestDailyBudget };
 
     public void Dispose() => _activity.Dispose();
 
@@ -473,8 +479,8 @@ public sealed class LifecycleEngineTests : IDisposable
     [Fact]
     public async Task Budget_defers_promotion_but_never_drops()
     {
-        // Exhaust today's budget (default 10) with prior 'promoted' decisions.
-        for (int i = 0; i < 10; i++)
+        // Exhaust today's budget with prior 'promoted' decisions.
+        for (int i = 0; i < TestDailyBudget; i++)
         {
             await _activity.LogDecisionAsync(new DecisionEntry(
                 _time.Now.AddHours(-1), $"ep-{i}", "promoted", "seed", "s", "state", $"m{i}"));
@@ -496,7 +502,7 @@ public sealed class LifecycleEngineTests : IDisposable
     [Fact]
     public async Task Budget_resets_at_utc_midnight()
     {
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < TestDailyBudget; i++)
         {
             await _activity.LogDecisionAsync(new DecisionEntry(
                 _time.Now.AddHours(-1), $"ep-{i}", "promoted", "seed", "s", "state", $"m{i}"));

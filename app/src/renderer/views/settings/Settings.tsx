@@ -38,45 +38,43 @@ export function Settings(): JSX.Element {
   const { config, refresh } = useConfig();
 
   return (
-    <div className="app-page">
-      <PageHeader
-        eyebrow="// settings"
-        title="Make Lore yours."
-        description="Configure the local model, set clear boundaries, and choose how Lore meets your tools."
-      />
-      <div className="set-layout">
-        <nav className="set-nav" aria-label="Settings sections">
-          {TABS.map((item) => (
-            <button
-              key={item.value}
-              type="button"
-              className={
-                item.value === tab
-                  ? 'set-nav__item set-nav__item--active'
-                  : 'set-nav__item'
-              }
-              aria-current={item.value === tab ? 'page' : undefined}
-              onClick={() => setTab(item.value)}
-            >
-              <Icon name={item.icon} size={16} />
-              <span>{item.label}</span>
-              <Icon name="chevron-right" size={14} />
-            </button>
-          ))}
-        </nav>
-        <section className="set-content">
-          {tab === 'model' && (
-            <ModelMemory config={config} onSaved={() => void refresh()} />
-          )}
-          {tab === 'capture' && (
-            <CapturePrivacy config={config} onSaved={() => void refresh()} />
-          )}
-          {tab === 'connections' && <Connections />}
-          {tab === 'appearance' && <Appearance />}
-          {tab === 'data' && <Data onReset={() => void refresh()} />}
-          {tab === 'about' && <About />}
-        </section>
+    <>
+      <PageHeader eyebrow="// settings" title="Make Lore yours." />
+      <div className="app-page">
+        <div className="set-layout">
+          <nav className="set-nav" aria-label="Settings sections">
+            {TABS.map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                className={
+                  item.value === tab
+                    ? 'set-nav__item set-nav__item--active'
+                    : 'set-nav__item'
+                }
+                aria-current={item.value === tab ? 'page' : undefined}
+                onClick={() => setTab(item.value)}
+              >
+                <Icon name={item.icon} size={16} />
+                <span>{item.label}</span>
+                <Icon name="chevron-right" size={14} />
+              </button>
+            ))}
+          </nav>
+          <section className="set-content">
+            {tab === 'model' && (
+              <ModelMemory config={config} onSaved={() => void refresh()} />
+            )}
+            {tab === 'capture' && (
+              <CapturePrivacy config={config} onSaved={() => void refresh()} />
+            )}
+            {tab === 'connections' && <Connections />}
+            {tab === 'appearance' && <Appearance />}
+            {tab === 'data' && <Data onReset={() => void refresh()} />}
+            {tab === 'about' && <About />}
+          </section>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
