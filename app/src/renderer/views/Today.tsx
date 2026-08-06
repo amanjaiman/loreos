@@ -280,18 +280,14 @@ export function Today(): JSX.Element {
                   </div>
                   <div>
                     <dt>Kept</dt>
-                    <dd>{data.economy.promoted_today}</dd>
+                    <dd>{keptToday}</dd>
                   </div>
                   <div>
                     <dt>Passed over</dt>
                     <dd>{passed}</dd>
                   </div>
                 </dl>
-                <Ratio
-                  kept={data.economy.promoted_today}
-                  staged={stagedToday}
-                  passed={passed}
-                />
+                <Ratio kept={keptToday} staged={stagedToday} passed={passed} />
               </div>
 
               <div className="today-ctx__rule" />

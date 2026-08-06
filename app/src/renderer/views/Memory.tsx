@@ -138,6 +138,31 @@ export function Memory(): JSX.Element {
         description="Every durable fact is visible, editable, and yours to remove."
       />
       <div className="app-page">
+        <form className="mem-search" onSubmit={onSearch}>
+          <Input
+            icon="search"
+            placeholder="Search your memory…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            aria-label="Search memories"
+          />
+          <Button type="submit" variant="secondary">
+            Search
+          </Button>
+          {submitted.trim().length > 0 && (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setQuery('');
+                setSubmitted('');
+              }}
+            >
+              Clear
+            </Button>
+          )}
+        </form>
+
         <div className="mem-toolbar">
           <Tabs
             tabs={[
@@ -148,18 +173,6 @@ export function Memory(): JSX.Element {
             value={section}
             onChange={(v) => setSection(v as Section)}
           />
-          <form className="mem-search" onSubmit={onSearch}>
-            <Input
-              icon="search"
-              placeholder="Search your memory…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              aria-label="Search memories"
-            />
-            <Button type="submit" variant="secondary">
-              Search
-            </Button>
-          </form>
           {items !== null && !offline && (
             <span className="mem-total">
               {items.length} {items.length === 1 ? 'memory' : 'memories'}

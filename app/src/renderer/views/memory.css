@@ -22,8 +22,10 @@
   border-bottom: 0;
 }
 
+/* Search sits on its own full-width row above the tabs, because it scopes everything
+   below it. Boxed to 390px between the tabs and the count, it had nothing to align to and
+   read as though it had been parked in the middle of the screen. */
 .mem-search {
-  width: min(100%, 390px);
   display: flex;
   align-items: flex-start;
   gap: var(--space-2);
