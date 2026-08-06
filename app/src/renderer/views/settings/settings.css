@@ -1,3 +1,7 @@
+/* The pane, not the viewport, is what this has to fit: the rail takes 236px before the
+   content sees any width, so a viewport media query fires far too late and the fixed
+   column pushes the page into horizontal scroll. Keyed off the `pane` container declared
+   on .app-card__scroll instead. */
 .set-layout {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
@@ -155,7 +159,7 @@
   font-size: var(--text-base);
 }
 
-@media (max-width: 780px) {
+@container pane (max-width: 720px) {
   .set-layout {
     grid-template-columns: 1fr;
   }
@@ -165,4 +169,13 @@
     display: grid;
     grid-template-columns: repeat(2, 1fr);
   }
+}
+
+/* Settings surfaces carry model ids, base URLs and key references — long, unbroken
+   strings that would otherwise set the pane's minimum width and scroll it sideways. */
+.set-panel,
+.set-row,
+.set-subtle {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }

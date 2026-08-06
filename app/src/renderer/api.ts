@@ -195,8 +195,10 @@ export interface Episodes {
  * Every episode-returning call normalises through `toEpisode` below, so the rest of the app
  * keeps the strict type and no view has to defend itself.
  */
-interface WireEpisode
-  extends Omit<Episode, 'executables' | 'titles' | 'samples'> {
+interface WireEpisode extends Omit<
+  Episode,
+  'executables' | 'titles' | 'samples'
+> {
   executables?: string[] | null;
   titles?: string[] | null;
   samples?: string[] | null;
@@ -454,7 +456,9 @@ export const api = {
   dismissStaged: (id: string) =>
     mutateJson<Memory>('POST', `/staging/${encodeURIComponent(id)}/dismiss`),
   episodes: async (limit?: number): Promise<Episodes> => {
-    const wire = await getJson<{ items: WireEpisode[] }>('/episodes', { limit });
+    const wire = await getJson<{ items: WireEpisode[] }>('/episodes', {
+      limit,
+    });
     return { items: wire.items.map(toEpisode) };
   },
   getEpisode: async (id: string): Promise<Episode> =>

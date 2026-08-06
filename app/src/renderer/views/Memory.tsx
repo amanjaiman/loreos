@@ -14,7 +14,6 @@ import {
   Badge,
   Button,
   Card,
-  Dialog,
   Input,
   Select,
   Spinner,
@@ -41,13 +40,43 @@ type Section = 'profile' | 'staged' | 'archived';
  * staging area (candidates awaiting a second look), and the read-only archive.
  * Edit / pin / delete / confirm are user authority — every write outranks capture.
  */
+/**
+ * Semantic search returns the whole store ranked, not a filtered set: against 18 active
+ * memories a query scored every one of them between 0.47 and 0.70. The list therefore
+ * never visibly changed and search read as broken.
+ *
+ * Two rules turn a ranking into a result set:
+ *  - keep anything whose text literally contains the query, whatever it scored, so
+ *    searching a word that is right there on screen always finds it;
+ *  - otherwise keep only hits close to the best one. A RELATIVE cutoff, because the
+ *    absolute numbers depend on the embedding model and shift under it — the useful
+ *    signal is the gap between the top hit and the baseline, not the value itself.
+ */
+const RELEVANCE_CUTOFF = 0.85;
+
+function rankSearch(query: string, results: MemoryRecord[]): MemoryRecord[] {
+  const needle = query.trim().toLowerCase();
+  const scored = results.filter((m) => typeof m.score === 'number');
+  // No scores (or none at all) — nothing to rank by, so show what came back.
+  if (scored.length === 0) {
+    return results;
+  }
+  const top = Math.max(...scored.map((m) => m.score ?? 0));
+  const floor = top * RELEVANCE_CUTOFF;
+  return results
+    .filter(
+      (m) => m.memory.toLowerCase().includes(needle) || (m.score ?? 0) >= floor,
+    )
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+}
+
 export function Memory(): JSX.Element {
   const [section, setSection] = useState<Section>('profile');
   const [query, setQuery] = useState('');
   const [submitted, setSubmitted] = useState('');
   const [items, setItems] = useState<MemoryRecord[] | null>(null);
   const [offline, setOffline] = useState(false);
-  const [selected, setSelected] = useState<MemoryRecord | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const load = useCallback(async (q: string, s: Section): Promise<void> => {
     setItems(null);
@@ -59,7 +88,7 @@ export function Memory(): JSX.Element {
           limit: 50,
           filters: { status: s === 'profile' ? 'active' : s },
         });
-        setItems(res.results);
+        setItems(rankSearch(q, res.results));
       } else {
         const status = s === 'profile' ? 'active' : s;
         const page = await api.listMemories({ status, limit: 500 });
@@ -84,18 +113,22 @@ export function Memory(): JSX.Element {
     setSubmitted(query);
   };
 
+  // While searching, ranking IS the order — regrouping by kind would scatter the best
+  // matches down the page behind headings.
+  const searching = submitted.trim().length > 0;
   const groups =
-    items === null
+    items === null || searching
       ? []
       : MEMORY_KINDS.map((kind) => ({
           kind,
           memories: items.filter((m) => (metaOf(m)?.kind ?? '') === kind),
         })).filter((g) => g.memories.length > 0);
-  const ungrouped =
-    items?.filter((m) => {
-      const kind = metaOf(m)?.kind ?? '';
-      return !MEMORY_KINDS.includes(kind as MemoryKind);
-    }) ?? [];
+  const ungrouped = searching
+    ? (items ?? [])
+    : (items?.filter((m) => {
+        const kind = metaOf(m)?.kind ?? '';
+        return !MEMORY_KINDS.includes(kind as MemoryKind);
+      }) ?? []);
 
   return (
     <div className="app-page">
@@ -103,14 +136,6 @@ export function Memory(): JSX.Element {
         eyebrow="// memory"
         title="What Lore knows."
         description="Every durable fact is visible, editable, and yours to remove."
-        action={
-          items !== null && !offline ? (
-            <span className="mem-total">
-              <strong>{items.length}</strong>
-              <span>{items.length === 1 ? 'memory' : 'memories'}</span>
-            </span>
-          ) : undefined
-        }
       />
       <div className="mem-toolbar">
         <Tabs
@@ -134,6 +159,12 @@ export function Memory(): JSX.Element {
             Search
           </Button>
         </form>
+        {items !== null && !offline && (
+          <span className="mem-total">
+            {items.length} {items.length === 1 ? 'memory' : 'memories'}
+            {submitted.trim().length > 0 && ' matched'}
+          </span>
+        )}
       </div>
 
       {items === null ? (
@@ -173,7 +204,10 @@ export function Memory(): JSX.Element {
                     key={m.id}
                     memory={m}
                     section={section}
-                    onSelect={() => setSelected(m)}
+                    open={openId === m.id}
+                    onToggle={() =>
+                      setOpenId((id) => (id === m.id ? null : m.id))
+                    }
                     onChanged={refresh}
                   />
                 ))}
@@ -181,15 +215,20 @@ export function Memory(): JSX.Element {
             </section>
           ))}
           {ungrouped.length > 0 && (
-            <section className="mem-group">
-              <p className="app-eyebrow">{'// from before the restart'}</p>
+            <section className={searching ? 'mem-results' : 'mem-group'}>
+              {!searching && (
+                <p className="app-eyebrow">{'// from before the restart'}</p>
+              )}
               <div className="mem-list">
                 {ungrouped.map((m) => (
                   <MemoryCard
                     key={m.id}
                     memory={m}
                     section={section}
-                    onSelect={() => setSelected(m)}
+                    open={openId === m.id}
+                    onToggle={() =>
+                      setOpenId((id) => (id === m.id ? null : m.id))
+                    }
                     onChanged={refresh}
                   />
                 ))}
@@ -197,17 +236,6 @@ export function Memory(): JSX.Element {
             </section>
           )}
         </>
-      )}
-
-      {selected !== null && (
-        <MemoryDialog
-          memory={selected}
-          onClose={() => setSelected(null)}
-          onChanged={() => {
-            setSelected(null);
-            refresh();
-          }}
-        />
       )}
     </div>
   );
@@ -233,12 +261,14 @@ function kindIcon(kind: string): string {
 function MemoryCard({
   memory,
   section,
-  onSelect,
+  open,
+  onToggle,
   onChanged,
 }: {
   memory: MemoryRecord;
   section: Section;
-  onSelect: () => void;
+  open: boolean;
+  onToggle: () => void;
   onChanged: () => void;
 }): JSX.Element {
   const meta = metaOf(memory);
@@ -259,14 +289,15 @@ function MemoryCard({
       interactive
       role="button"
       tabIndex={0}
-      onClick={onSelect}
+      aria-expanded={open}
+      onClick={onToggle}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          onSelect();
+          onToggle();
         }
       }}
-      className="mem-card"
+      className={open ? 'mem-card mem-card--open' : 'mem-card'}
     >
       <p className="mem-card__text">{memory.memory}</p>
       <div className="mem-card__meta">
@@ -314,11 +345,25 @@ function MemoryCard({
           </span>
         )}
       </div>
+      {open && (
+        <div
+          className="mem-card__editor"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+          role="presentation"
+        >
+          <MemoryEditor
+            memory={memory}
+            onClose={onToggle}
+            onChanged={onChanged}
+          />
+        </div>
+      )}
     </Card>
   );
 }
 
-function MemoryDialog({
+function MemoryEditor({
   memory,
   onClose,
   onChanged,
@@ -358,45 +403,7 @@ function MemoryDialog({
     );
 
   return (
-    <Dialog
-      open
-      onClose={onClose}
-      title="Memory"
-      footer={
-        <div className="mem-dialog__footer">
-          {confirmDelete ? (
-            <Button
-              variant="danger"
-              onClick={() => void run(() => api.deleteMemory(memory.id))}
-              disabled={busy}
-            >
-              Confirm delete
-            </Button>
-          ) : (
-            <Button
-              variant="ghost"
-              icon="trash-2"
-              onClick={() => setConfirmDelete(true)}
-              disabled={busy}
-            >
-              Delete
-            </Button>
-          )}
-          <div className="mem-dialog__right">
-            <Button variant="ghost" onClick={onClose} disabled={busy}>
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              onClick={() => void save()}
-              disabled={(!textDirty && !kindDirty) || busy}
-            >
-              {busy ? 'Saving…' : 'Save'}
-            </Button>
-          </div>
-        </div>
-      }
-    >
+    <>
       <Textarea
         label="Statement"
         rows={4}
@@ -404,6 +411,38 @@ function MemoryDialog({
         onChange={(e) => setText(e.target.value)}
         aria-label="Memory statement"
       />
+      <div className="mem-dialog__footer">
+        {confirmDelete ? (
+          <Button
+            variant="danger"
+            onClick={() => void run(() => api.deleteMemory(memory.id))}
+            disabled={busy}
+          >
+            Confirm delete
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            icon="trash-2"
+            onClick={() => setConfirmDelete(true)}
+            disabled={busy}
+          >
+            Delete
+          </Button>
+        )}
+        <div className="mem-dialog__right">
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => void save()}
+            disabled={(!textDirty && !kindDirty) || busy}
+          >
+            {busy ? 'Saving…' : 'Save'}
+          </Button>
+        </div>
+      </div>
       {meta !== null && (
         <>
           <div className="mem-dialog__row">
@@ -454,6 +493,6 @@ function MemoryDialog({
         </>
       )}
       {error !== null && <p className="mem-dialog__error">{error}</p>}
-    </Dialog>
+    </>
   );
 }
