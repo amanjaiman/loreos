@@ -16,6 +16,12 @@ namespace Lore.Agent.Tests.Api;
 /// still-true confirmation, and the capture economy.</summary>
 public sealed class ActivityEndpointsTests : IDisposable
 {
+    /// <summary>A fixed non-UTC zone. Without this the fake would inherit the machine's, so
+    /// these tests would pass on a UTC CI runner whatever the day boundary did — the whole
+    /// point is that "today" follows the user's clock, not the server's.</summary>
+    private static readonly TimeZoneInfo TestZone =
+        TimeZoneInfo.CreateCustomTimeZone("lore-test", TimeSpan.FromHours(-5), "Test", "Test");
+
     /// <summary>An explicit budget so the assertion tests that the endpoint reports the
     /// CONFIGURED value, rather than restating whatever the production default happens
     /// to be (which is a runaway guard and free to change).</summary>
@@ -26,6 +32,8 @@ public sealed class ActivityEndpointsTests : IDisposable
         public DateTimeOffset Now { get; set; } = new(2026, 7, 15, 12, 0, 0, TimeSpan.Zero);
 
         public override DateTimeOffset GetUtcNow() => Now;
+
+        public override TimeZoneInfo LocalTimeZone => TestZone;
     }
 
     private readonly ActivityStore _activity = new(":memory:");

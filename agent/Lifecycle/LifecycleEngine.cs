@@ -444,10 +444,9 @@ public sealed class LifecycleEngine : IEpisodeProcessor
 
     private async Task<bool> BudgetAllowsAsync(CancellationToken ct)
     {
-        DateTimeOffset midnightUtc = new(
-            _time.GetUtcNow().UtcDateTime.Date, TimeSpan.Zero);
+        DateTimeOffset midnight = DayBoundary.StartOfToday(_time);
         int today = await _activity
-            .CountDecisionsSinceAsync("promoted", midnightUtc, ct).ConfigureAwait(false);
+            .CountDecisionsSinceAsync("promoted", midnight, ct).ConfigureAwait(false);
         return today < _options.DailyBudget;
     }
 

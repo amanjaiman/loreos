@@ -55,14 +55,14 @@ public static class ActivityEndpoints
                 new DecisionsDto(decisions.Select(DecisionDto.From).ToArray()), ResponseJson);
         });
 
-        // The day's capture economy: decision counts since UTC midnight + the budget.
+        // The day's capture economy: decision counts since LOCAL midnight + the budget.
         app.MapGet("/system/economy", async (
             [FromServices] ActivityStore activity,
             [FromServices] LifecycleOptions lifecycle,
             [FromServices] TimeProvider time,
             CancellationToken ct) =>
         {
-            var midnight = new DateTimeOffset(time.GetUtcNow().UtcDateTime.Date, TimeSpan.Zero);
+            DateTimeOffset midnight = DayBoundary.StartOfToday(time);
             IReadOnlyDictionary<string, int> counts = await activity
                 .GetDecisionCountsSinceAsync(midnight, ct).ConfigureAwait(false);
             int promoted = counts.GetValueOrDefault("promoted");
@@ -288,7 +288,7 @@ public sealed record DecisionDto(
 public sealed record DecisionsDto(
     [property: JsonPropertyName("items")] IReadOnlyList<DecisionDto> Items);
 
-/// <summary>The day's capture economy since UTC midnight, plus the promotion budget.</summary>
+/// <summary>The day's capture economy since local midnight, plus the promotion budget.</summary>
 public sealed record EconomyDto(
     [property: JsonPropertyName("decisions_today")] IReadOnlyDictionary<string, int> DecisionsToday,
     [property: JsonPropertyName("promoted_today")] int PromotedToday,

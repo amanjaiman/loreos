@@ -10,12 +10,20 @@ namespace Lore.Agent.Tests.Lifecycle;
 
 public sealed class LifecycleEngineTests : IDisposable
 {
+    /// <summary>A fixed non-UTC zone. Without this the fake would inherit the machine's, so
+    /// these tests would pass on a UTC CI runner whatever the day boundary did — the whole
+    /// point is that "today" follows the user's clock, not the server's.</summary>
+    private static readonly TimeZoneInfo TestZone =
+        TimeZoneInfo.CreateCustomTimeZone("lore-test", TimeSpan.FromHours(-5), "Test", "Test");
+
     private sealed class FakeTimeProvider : TimeProvider
     {
         public DateTimeOffset Now { get; set; } =
             new(2026, 7, 15, 12, 0, 0, TimeSpan.Zero);
 
         public override DateTimeOffset GetUtcNow() => Now;
+
+        public override TimeZoneInfo LocalTimeZone => TestZone;
     }
 
     /// <summary>Routes by prompt: distillation requests get <see cref="DistillJson"/>;
@@ -500,7 +508,7 @@ public sealed class LifecycleEngineTests : IDisposable
     }
 
     [Fact]
-    public async Task Budget_resets_at_utc_midnight()
+    public async Task Budget_resets_at_local_midnight()
     {
         for (int i = 0; i < TestDailyBudget; i++)
         {
@@ -514,6 +522,32 @@ public sealed class LifecycleEngineTests : IDisposable
         await BuildEngine().ProcessAsync(Episode);
 
         Assert.Equal(MemoryStatuses.Active, Assert.Single(_memory.Stored).Metadata.Status);
+    }
+
+
+    [Fact]
+    public async Task Budget_survives_UTC_rollover_inside_the_local_day()
+    {
+        // 21:00 local on the 15th is 02:00 UTC on the 16th (the fake clock is UTC-5): UTC has
+        // rolled over, the user's day has not. Under the old UTC boundary the budget silently
+        // refilled mid-evening — which is exactly what made the app's "today" counters reset
+        // at 8pm and the evening's captures appear to vanish.
+        _time.Now = new DateTimeOffset(2026, 7, 16, 2, 0, 0, TimeSpan.Zero);
+        var earlierSameLocalDay = new DateTimeOffset(2026, 7, 15, 15, 0, 0, TimeSpan.Zero);
+        for (int i = 0; i < TestDailyBudget; i++)
+        {
+            await _activity.LogDecisionAsync(new DecisionEntry(
+                earlierSameLocalDay, $"ep-{i}", "promoted", "seed", "s", "state", $"m{i}"));
+        }
+
+        _backend.DistillJson = FactJson(confidence: 0.9);
+
+        await BuildEngine().ProcessAsync(Episode);
+
+        Assert.Equal(MemoryStatuses.Staged, Assert.Single(_memory.Stored).Metadata.Status);
+        Assert.Contains(
+            await Decisions(),
+            d => d.Action.StartsWith("deferred", StringComparison.Ordinal));
     }
 
     [Fact]

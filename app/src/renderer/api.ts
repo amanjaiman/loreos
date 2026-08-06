@@ -228,7 +228,7 @@ export interface Decisions {
   items: Decision[];
 }
 
-/** Today's capture economy since UTC midnight, against the promotion budget. */
+/** Today's capture economy since local midnight, against the promotion budget. */
 export interface Economy {
   decisions_today: Record<string, number>;
   promoted_today: number;
