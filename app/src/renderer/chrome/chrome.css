@@ -593,7 +593,6 @@
    empty margins is what made the content read as a pasted document; routes that are
    genuinely long-form opt back in with .app-page--reading. */
 .app-page {
-  width: 100%;
   max-width: 1120px;
   margin: 0 auto;
   padding: var(--space-8);
