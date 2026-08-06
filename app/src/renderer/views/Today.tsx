@@ -52,9 +52,10 @@ const KIND_LABELS: Record<MemoryKind, string> = {
 /**
  * Home (v2-004). A two-column app pane, not a document:
  *
- *   left  — the work, in priority order. The staged queue leads because it is the only
- *           thing on this screen that requires the user; the day's kept memories follow
- *           as a dense, deliberately recessive record.
+ *   left  — status first (one sentence on the day), then what Lore learned, then the
+ *           judgment queue as an expandable inbox. Judgment used to lead as a stack of
+ *           large cards; a card says "dwell on this", but this is triage, and a handful
+ *           of pending items ended up owning the whole pane.
  *   right — context you glance at and never operate on. Nothing here is a control, which
  *           is what makes the split legible.
  *
@@ -185,34 +186,20 @@ export function Today(): JSX.Element {
         ) : (
           <div className="today-layout">
             <div className="today-work">
-              <section>
-                <div className="today-shead">
-                  <h2>Needs your judgment</h2>
-                  {data.staged.length > 0 && (
-                    <span className="today-chip">{data.staged.length}</span>
-                  )}
-                </div>
-                {data.staged.length === 0 ? (
-                  <p className="app-empty">
-                    The staging area is clear. Uncertain memories wait here
-                    until more evidence arrives.
-                  </p>
-                ) : (
-                  <div className="today-queue">
-                    {data.staged.map((memory) => (
-                      <QueueCard
-                        key={memory.id}
-                        memory={memory}
-                        onActed={load}
-                      />
-                    ))}
-                  </div>
-                )}
+              {/* Status first: one sentence on what happened today, then what you got
+                  out of it. Judgment moves below — it matters, but it is triage, and
+                  leading with it made a handful of pending items own the screen. */}
+              <section className="today-lead">
+                <p>
+                  Lore kept <b>{data.economy.promoted_today}</b> of the{' '}
+                  <b>{episodes}</b> {episodes === 1 ? 'episode' : 'episodes'} it
+                  saw today.
+                </p>
               </section>
 
               <section className="today-record">
                 <div className="today-shead today-shead--quiet">
-                  <h2>Kept today</h2>
+                  <h2>Learned today</h2>
                   <span className="today-shead__spacer" />
                   <span className="today-shead__count">{kept.length}</span>
                 </div>
@@ -241,6 +228,32 @@ export function Today(): JSX.Element {
                           {formatRelative(decision.at)}
                         </span>
                       </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              <section>
+                <div className="today-shead today-shead--quiet">
+                  <h2>Needs your judgment</h2>
+                  <span className="today-shead__spacer" />
+                  {data.staged.length > 0 && (
+                    <span className="today-chip">{data.staged.length}</span>
+                  )}
+                </div>
+                {data.staged.length === 0 ? (
+                  <p className="app-empty">
+                    The staging area is clear. Uncertain memories wait here
+                    until more evidence arrives.
+                  </p>
+                ) : (
+                  <div className="today-inbox">
+                    {data.staged.map((memory) => (
+                      <QueueItem
+                        key={memory.id}
+                        memory={memory}
+                        onActed={load}
+                      />
                     ))}
                   </div>
                 )}
@@ -393,7 +406,7 @@ function Composition({ stats }: { stats: MemoryStats }): JSX.Element {
  * you actually have when judging one of these — "why does Lore think this?" — which the
  * previous list-row treatment left unanswerable.
  */
-function QueueCard({
+function QueueItem({
   memory,
   onActed,
 }: {
@@ -402,9 +415,10 @@ function QueueCard({
 }): JSX.Element {
   const [busy, setBusy] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [open, setOpen] = useState(false);
   const meta = metaOf(memory);
 
-  // Collapse the card out of the list before refetching, so the queue visibly heals
+  // Collapse the row out of the list before refetching, so the queue visibly heals
   // itself rather than an item blinking out from under the cursor.
   const act = async (fn: (id: string) => Promise<unknown>): Promise<void> => {
     setBusy(true);
@@ -438,35 +452,46 @@ function QueueCard({
 
   return (
     <article
-      className={removing ? 'today-qcard today-qcard--removing' : 'today-qcard'}
+      className={removing ? 'today-item today-item--removing' : 'today-item'}
     >
-      <span className="today-qcard__mark">
-        <span aria-hidden="true" />
-        {meta === null
-          ? 'Awaiting evidence'
-          : `${meta.kind} · awaiting evidence`}
-      </span>
-      <p>{memory.memory}</p>
-      <p className="today-qcard__why">{evidence}</p>
-      {episodes > 0 && <Evidence memoryId={memory.id} />}
-      <div className="today-qcard__foot">
-        <Button
-          size="sm"
-          variant="primary"
-          disabled={busy}
-          onClick={() => void act(api.promoteStaged)}
-        >
-          Keep
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          disabled={busy}
-          onClick={() => void act(api.dismissStaged)}
-        >
-          Dismiss
-        </Button>
-      </div>
+      <button
+        type="button"
+        className="today-item__summary"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <span className="today-item__chevron" aria-hidden="true">
+          <Icon name={open ? 'chevron-down' : 'chevron-right'} size={14} />
+        </span>
+        <span className="today-item__dot" aria-hidden="true" />
+        <span className="today-item__text">{memory.memory}</span>
+        {meta !== null && <span className="today-item__kind">{meta.kind}</span>}
+      </button>
+
+      {open && (
+        <div className="today-item__body">
+          <p className="today-item__why">{evidence}</p>
+          {episodes > 0 && <Evidence memoryId={memory.id} />}
+          <div className="today-item__foot">
+            <Button
+              size="sm"
+              variant="primary"
+              disabled={busy}
+              onClick={() => void act(api.promoteStaged)}
+            >
+              Keep
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={busy}
+              onClick={() => void act(api.dismissStaged)}
+            >
+              Dismiss
+            </Button>
+          </div>
+        </div>
+      )}
     </article>
   );
 }

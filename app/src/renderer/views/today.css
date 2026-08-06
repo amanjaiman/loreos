@@ -76,33 +76,124 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* ---- the queue: elevated, operable ---- */
+/* ---- status lead ---- */
 
-.today-queue {
+.today-lead p {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: var(--fw-medium);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-muted);
+}
+
+.today-lead b {
+  color: var(--text);
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- the judgment inbox ----
+   One container per item, collapsed to a single line, expanding like a thread. Cards
+   were the wrong form: a card says "dwell on this", but the job here is triage, and a
+   handful of pending items ended up owning the whole pane. */
+
+.today-inbox {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
-}
-
-.today-qcard {
-  padding: var(--space-5) var(--space-6);
   border: var(--border-width) solid var(--border);
   border-radius: var(--radius-xl);
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
-  transition:
-    box-shadow var(--dur) var(--ease),
-    transform var(--dur) var(--ease-out);
+  overflow: hidden;
+  background: color-mix(in srgb, var(--bg) 40%, transparent);
 }
 
-.today-qcard:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+.today-item + .today-item {
+  border-top: var(--border-width) solid var(--border);
 }
 
-/* Keep / dismiss collapses the card out so the queue heals itself. Duration is mirrored
+.today-item__summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: none;
+  background: transparent;
+  font-family: var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease);
+}
+
+.today-item__summary:hover {
+  background: var(--surface-hover);
+}
+
+.today-item__summary:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.today-item__chevron {
+  display: inline-flex;
+  flex: none;
+  color: var(--text-subtle);
+}
+
+.today-item__dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: var(--radius-full);
+  background: var(--viz-2);
+}
+
+.today-item__text {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-base);
+  line-height: var(--lh-normal);
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.today-item[open] .today-item__text,
+.today-item__summary[aria-expanded='true'] .today-item__text {
+  white-space: normal;
+}
+
+.today-item__kind {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-subtle);
+}
+
+.today-item__body {
+  padding: 0 var(--space-4) var(--space-4) calc(var(--space-4) + 26px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.today-item__why {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--text-subtle);
+}
+
+.today-item__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Keep / dismiss collapses the row out so the queue heals itself. Duration is mirrored
    by COLLAPSE_MS in Today.tsx, which waits for it before refetching. */
-.today-qcard--removing {
+.today-item--removing {
   overflow: hidden;
   pointer-events: none;
   animation: today-collapse var(--dur-slow) var(--ease) forwards;
@@ -117,47 +208,8 @@
     opacity: 0;
     transform: translateX(14px);
     max-height: 0;
-    margin-bottom: calc(var(--space-4) * -1);
-    padding-block: 0;
     border-width: 0;
   }
-}
-
-.today-qcard__mark {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-  letter-spacing: var(--tracking-eyebrow);
-  text-transform: uppercase;
-  color: var(--viz-2);
-}
-
-.today-qcard__mark span {
-  width: 5px;
-  height: 5px;
-  border-radius: var(--radius-full);
-  background: var(--viz-2);
-}
-
-.today-qcard p {
-  margin: var(--space-3) 0 0;
-  font-size: var(--text-md);
-  line-height: var(--lh-normal);
-  color: var(--text);
-}
-
-.today-qcard__why {
-  font-size: var(--text-xs);
-  color: var(--text-subtle);
-}
-
-.today-qcard__foot {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-5);
 }
 
 /* ---- evidence expansion ---- */
