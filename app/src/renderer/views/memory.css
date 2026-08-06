@@ -22,9 +22,10 @@
   border-bottom: 0;
 }
 
-/* Search sits on its own full-width row above the tabs, because it scopes everything
-   below it. Boxed to 390px between the tabs and the count, it had nothing to align to and
-   read as though it had been parked in the middle of the screen. */
+/* Search lives in the page header's action slot, so it condenses along with the header
+   and stays reachable from anywhere on the page. It was previously boxed to 390px between
+   the tabs and the count, with nothing to align to — which is why it read as parked in the
+   middle of the screen. */
 .mem-search {
   display: flex;
   align-items: flex-start;

@@ -96,11 +96,7 @@ export function Activity(): JSX.Element {
 
   return (
     <>
-      <PageHeader
-        eyebrow="// timeline"
-        title="Every choice, in context."
-        description="See what Lore observed, why it acted, and why most activity never became a memory."
-      />
+      <PageHeader eyebrow="// timeline" title="Every choice, in context." />
       <div className="app-page">
         <div className="act-toolbar">
           <Tabs

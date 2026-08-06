@@ -652,9 +652,10 @@
   margin: 0 auto;
   padding-inline: var(--space-8);
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  gap: var(--space-8);
+  gap: var(--space-6);
+  flex-wrap: wrap;
 }
 
 .page-head__copy {
@@ -684,16 +685,17 @@
   transition: font-size var(--dur) var(--ease);
 }
 
-.page-head__description {
-  margin: var(--space-3) 0 0;
-  max-width: 590px;
-  color: var(--text-muted);
-  font-size: var(--text-base);
-  line-height: var(--lh-relaxed);
-}
-
+/* Actions live through the condense — Memory keeps its search here, so it has to stay
+   usable in the thin bar as well as the tall one. */
 .page-head__action {
   flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.page-head__action .mem-search {
+  width: min(46vw, 420px);
 }
 
 /* ---- condensed ---- */
@@ -715,8 +717,7 @@
 
 /* Condensed, the copy becomes one line: eyebrow then title. The eyebrow is the page's
    name and the only colour in the bar, so it is what makes a collapsed header still say
-   where you are. Only the description goes — hidden rather than animated, because a
-   height transition on wrapping copy janks and the jump reads as intentional. */
+   where you are. */
 .app-card[data-scrolled='true'] .page-head__copy {
   display: flex;
   align-items: baseline;
@@ -727,10 +728,6 @@
 .app-card[data-scrolled='true'] .page-head__eyebrow {
   margin-bottom: 0;
   flex: none;
-}
-
-.app-card[data-scrolled='true'] .page-head__description {
-  display: none;
 }
 
 /* Reserve the header's expanded height; PageHeader measures it, since it depends on how

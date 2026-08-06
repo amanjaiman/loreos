@@ -407,6 +407,21 @@ async function mutateJson<T>(
   return (await response.json()) as T;
 }
 
+/**
+ * Fired after any call that changes what is in memory.
+ *
+ * The rail's staged badge polls, so acting on a memory used to leave it stale for up to
+ * its poll interval: dismiss two items and Home would say 2 while the rail still said 4.
+ * The mutations all pass through this seam, so announcing them here means no view has to
+ * remember to tell the shell what it just did.
+ */
+export const MEMORY_CHANGED = 'lore:memory-changed';
+
+function announceMemoryChange<T>(result: T): T {
+  window.dispatchEvent(new Event(MEMORY_CHANGED));
+  return result;
+}
+
 // ---- The client -----------------------------------------------------------------
 
 export const api = {
@@ -441,20 +456,36 @@ export const api = {
   getMemory: (id: string) =>
     getJson<Memory>(`/memories/${encodeURIComponent(id)}`),
   addMemory: (request: AddRequest) =>
-    mutateJson<AddedMemories>('POST', '/memories', request),
+    mutateJson<AddedMemories>('POST', '/memories', request).then(
+      announceMemoryChange,
+    ),
   updateMemory: (id: string, patch: MemoryPatch) =>
-    mutateJson<Memory>('PATCH', `/memories/${encodeURIComponent(id)}`, patch),
+    mutateJson<Memory>(
+      'PATCH',
+      `/memories/${encodeURIComponent(id)}`,
+      patch,
+    ).then(announceMemoryChange),
   deleteMemory: async (id: string): Promise<void> => {
     await send(`/memories/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    announceMemoryChange(null);
   },
   confirmMemory: (id: string) =>
-    mutateJson<Memory>('POST', `/memories/${encodeURIComponent(id)}/confirm`),
+    mutateJson<Memory>(
+      'POST',
+      `/memories/${encodeURIComponent(id)}/confirm`,
+    ).then(announceMemoryChange),
 
   // v2-001: staging curation, episodes, the decision trail, the day's economy
   promoteStaged: (id: string) =>
-    mutateJson<Memory>('POST', `/staging/${encodeURIComponent(id)}/promote`),
+    mutateJson<Memory>(
+      'POST',
+      `/staging/${encodeURIComponent(id)}/promote`,
+    ).then(announceMemoryChange),
   dismissStaged: (id: string) =>
-    mutateJson<Memory>('POST', `/staging/${encodeURIComponent(id)}/dismiss`),
+    mutateJson<Memory>(
+      'POST',
+      `/staging/${encodeURIComponent(id)}/dismiss`,
+    ).then(announceMemoryChange),
   episodes: async (limit?: number): Promise<Episodes> => {
     const wire = await getJson<{ items: WireEpisode[] }>('/episodes', {
       limit,

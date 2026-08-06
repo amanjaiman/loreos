@@ -159,7 +159,6 @@ export function Today(): JSX.Element {
       <PageHeader
         eyebrow="// home"
         title="Memory, kept warm."
-        description="What Lore noticed today, what it kept, and what still needs your judgment."
         action={
           <Button
             variant="secondary"

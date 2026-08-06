@@ -39,11 +39,7 @@ export function Settings(): JSX.Element {
 
   return (
     <>
-      <PageHeader
-        eyebrow="// settings"
-        title="Make Lore yours."
-        description="Configure the local model, set clear boundaries, and choose how Lore meets your tools."
-      />
+      <PageHeader eyebrow="// settings" title="Make Lore yours." />
       <div className="app-page">
         <div className="set-layout">
           <nav className="set-nav" aria-label="Settings sections">

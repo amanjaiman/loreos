@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   api,
   LoreOfflineError,
+  MEMORY_CHANGED,
   type LoreConfigShape,
   type SystemStatus,
 } from '../api';
@@ -107,9 +108,14 @@ export function useRailSummary(pollMs = 20000): RailSummary {
     };
     void tick();
     const id = window.setInterval(() => void tick(), pollMs);
+    // Re-read immediately when the user acts on a memory, so the badge never disagrees
+    // with the screen that just changed.
+    const onChange = (): void => void tick();
+    window.addEventListener(MEMORY_CHANGED, onChange);
     return () => {
       alive = false;
       window.clearInterval(id);
+      window.removeEventListener(MEMORY_CHANGED, onChange);
     };
   }, [pollMs]);
 

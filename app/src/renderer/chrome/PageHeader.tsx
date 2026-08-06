@@ -17,18 +17,19 @@ import { useEffect, useRef, type ReactNode } from 'react';
  * states, the scroll height never changes, and collapsing is free of side effects.
  *
  * The reserved height is measured rather than hard-coded, because it depends on how the
- * title and description wrap at the current pane width. A stale measurement only shifts
- * spacing slightly — it cannot reintroduce the loop.
+ * title wraps at the current pane width. A stale measurement only shifts spacing slightly
+ * — it cannot reintroduce the loop.
+ *
+ * There is no subtitle: each page's title and its eyebrow already say what it is, and a
+ * sentence explaining it on every screen is a sentence nobody reads twice.
  */
 export function PageHeader({
   eyebrow,
   title,
-  description,
   action,
 }: {
   eyebrow: string;
   title: string;
-  description: string;
   action?: ReactNode;
 }): JSX.Element {
   const headRef = useRef<HTMLElement>(null);
@@ -60,7 +61,6 @@ export function PageHeader({
           <div className="page-head__copy">
             <span className="page-head__eyebrow">{eyebrow}</span>
             <h1 className="page-head__title">{title}</h1>
-            <p className="page-head__description">{description}</p>
           </div>
           {action !== undefined && (
             <div className="page-head__action">{action}</div>

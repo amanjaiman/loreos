@@ -135,34 +135,34 @@ export function Memory(): JSX.Element {
       <PageHeader
         eyebrow="// memory"
         title="What Lore knows."
-        description="Every durable fact is visible, editable, and yours to remove."
+        action={
+          <form className="mem-search" onSubmit={onSearch}>
+            <Input
+              icon="search"
+              placeholder="Search your memory…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              aria-label="Search memories"
+            />
+            <Button type="submit" variant="secondary">
+              Search
+            </Button>
+            {submitted.trim().length > 0 && (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setQuery('');
+                  setSubmitted('');
+                }}
+              >
+                Clear
+              </Button>
+            )}
+          </form>
+        }
       />
       <div className="app-page">
-        <form className="mem-search" onSubmit={onSearch}>
-          <Input
-            icon="search"
-            placeholder="Search your memory…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            aria-label="Search memories"
-          />
-          <Button type="submit" variant="secondary">
-            Search
-          </Button>
-          {submitted.trim().length > 0 && (
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                setQuery('');
-                setSubmitted('');
-              }}
-            >
-              Clear
-            </Button>
-          )}
-        </form>
-
         <div className="mem-toolbar">
           <Tabs
             tabs={[
