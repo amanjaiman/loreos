@@ -96,7 +96,12 @@ export function AppShell(): JSX.Element {
           style={{ '--dir': descending ? '12px' : '-12px' } as CSSProperties}
           // Drives the page header's condense-on-scroll. Read off the event target
           // rather than a ref so it survives the keyed remount below.
-          onScroll={(event) => setScrolled(event.currentTarget.scrollTop > 28)}
+          // Any scroll at all condenses the header. The old 28px threshold existed to
+          // avoid twitching, but it meant pages with only a little overflow never
+          // condensed at all — and because the header is now out of flow, there is no
+          // scroll-height feedback to guard against. It also closes the window where a
+          // still-transparent expanded header would have content sliding under it.
+          onScroll={(event) => setScrolled(event.currentTarget.scrollTop > 0)}
         >
           {/* Keyed on the route so the entrance animation replays on every change. */}
           <View key={route} />

@@ -626,11 +626,16 @@
    which flattens the card's top edge. The header therefore carries its own top radii, so it
    paints the right shape whether or not the ancestor clip applies. Any future blurred
    element pinned to the card's edge needs the same treatment. */
-.page-head {
+/* Zero-height sticky slot: the header overlays the content instead of occupying flow, so
+   collapsing it cannot change the scroll height (see the note in PageHeader.tsx). */
+.page-head-slot {
   position: sticky;
   top: 0;
+  height: 0;
   z-index: var(--z-sticky);
-  margin: 0;
+}
+
+.page-head {
   padding: var(--space-8) 0 var(--space-6);
   border-bottom: var(--border-width) solid transparent;
   border-radius: var(--r-tl) var(--r-tr) 0 0;
@@ -693,7 +698,7 @@
 
 /* ---- condensed ---- */
 .app-card[data-scrolled='true'] .page-head {
-  padding-block: var(--space-3);
+  padding-block: var(--space-4);
   border-bottom-color: var(--border);
   background: color-mix(in srgb, var(--surface) 62%, transparent);
   backdrop-filter: blur(20px) saturate(150%);
@@ -708,16 +713,31 @@
   letter-spacing: var(--tracking-tight);
 }
 
-/* Hidden rather than animated: a height transition on wrapping copy janks, and the jump
-   IS the condense — it reads as intentional. */
-.app-card[data-scrolled='true'] .page-head__eyebrow,
+/* Condensed, the copy becomes one line: eyebrow then title. The eyebrow is the page's
+   name and the only colour in the bar, so it is what makes a collapsed header still say
+   where you are. Only the description goes — hidden rather than animated, because a
+   height transition on wrapping copy janks and the jump reads as intentional. */
+.app-card[data-scrolled='true'] .page-head__copy {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  max-width: none;
+}
+
+.app-card[data-scrolled='true'] .page-head__eyebrow {
+  margin-bottom: 0;
+  flex: none;
+}
+
 .app-card[data-scrolled='true'] .page-head__description {
   display: none;
 }
 
-/* The header owns the top spacing; the page picks up right below it. */
-.page-head + .app-page {
-  padding-top: var(--space-2);
+/* Reserve the header's expanded height; PageHeader measures it, since it depends on how
+   the title and description wrap at the current pane width. The fallback covers the first
+   paint before the measurement lands. */
+.page-head-slot + .app-page {
+  padding-top: var(--page-head-h, 168px);
 }
 
 /* ============================== shared page bits ============================== */
