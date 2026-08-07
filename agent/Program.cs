@@ -23,6 +23,10 @@ internal static class Program
 {
     private static async Task Main(string[] args)
     {
+        // Before anything resolves a path: move an existing data set off the installer-owned
+        // LocalAppData directory. Runs on every launch and is a no-op once done (LorePaths).
+        LorePaths.MigrateLegacyData();
+
         // --mcp (spec 006): serve the MCP tools over stdio, reusing the memory DI graph but
         // opening no HTTP listener (constitution §3.3). This is a distinct host, so branch before
         // the WebApplication/Kestrel host is ever built.

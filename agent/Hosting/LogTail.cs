@@ -1,4 +1,5 @@
 using System.IO;
+using Lore.Agent.Config;
 
 namespace Lore.Agent.Hosting;
 
@@ -22,8 +23,7 @@ public sealed class LogTail
     }
 
     /// <summary>The default log location, alongside the memory data dir.</summary>
-    public static string DefaultPath => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Lore", "lore.log");
+    public static string DefaultPath => LorePaths.LogFile;
 
     /// <summary>The last <paramref name="maxLines"/> lines in file order (oldest first), or an
     /// empty list when the file does not exist yet.</summary>
