@@ -67,7 +67,7 @@ the link as carrying a secret.
 
 ## 2. Point each device at it
 
-On every device, edit `config.json` (in `%AppData%\Lore\`):
+On every device, edit `config.json` (in `%LocalAppData%\LoreData\`):
 
 ```jsonc
 "memory": {
