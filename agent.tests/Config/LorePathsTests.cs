@@ -28,13 +28,19 @@ public sealed class LorePathsTests : IDisposable
         File.WriteAllText(Path.Combine(Legacy, "qdrant", "meta.json"), "{}");
     }
 
-    /// <summary>What Squirrel puts in the same folder. None of it is ours to move.</summary>
-    private void SeedInstallation()
+    /// <summary>What Squirrel and Electron put in the folders data used to share with them.
+    /// None of it is ours to move.</summary>
+    private void SeedForeignFiles()
     {
+        // Squirrel's installation.
         Directory.CreateDirectory(Path.Combine(Legacy, "app-0.1.0"));
         Directory.CreateDirectory(Path.Combine(Legacy, "packages"));
         File.WriteAllText(Path.Combine(Legacy, "Update.exe"), "squirrel");
         File.WriteAllText(Path.Combine(Legacy, "Lore.exe"), "stub");
+        // Electron's userData.
+        Directory.CreateDirectory(Path.Combine(Legacy, "GPUCache"));
+        Directory.CreateDirectory(Path.Combine(Legacy, "Local Storage"));
+        File.WriteAllText(Path.Combine(Legacy, "Preferences"), "{}");
     }
 
     [Fact]
@@ -53,21 +59,24 @@ public sealed class LorePathsTests : IDisposable
     }
 
     [Fact]
-    public void Migration_leaves_the_installation_alone()
+    public void Migration_leaves_other_tools_files_alone()
     {
         SeedLegacy();
-        SeedInstallation();
+        SeedForeignFiles();
 
         LorePaths.MigrateLegacyData(Legacy, Data);
 
-        // The installer still owns a working directory.
+        // The installer and Electron still own working directories.
         Assert.True(Directory.Exists(Path.Combine(Legacy, "app-0.1.0")));
         Assert.True(Directory.Exists(Path.Combine(Legacy, "packages")));
         Assert.True(File.Exists(Path.Combine(Legacy, "Update.exe")));
-        Assert.True(File.Exists(Path.Combine(Legacy, "Lore.exe")));
+        Assert.True(Directory.Exists(Path.Combine(Legacy, "GPUCache")));
+        Assert.True(File.Exists(Path.Combine(Legacy, "Preferences")));
         // ...and none of it followed the data across.
         Assert.False(Directory.Exists(Path.Combine(Data, "app-0.1.0")));
         Assert.False(File.Exists(Path.Combine(Data, "Update.exe")));
+        Assert.False(Directory.Exists(Path.Combine(Data, "GPUCache")));
+        Assert.False(File.Exists(Path.Combine(Data, "Preferences")));
     }
 
     [Fact]
@@ -96,12 +105,38 @@ public sealed class LorePathsTests : IDisposable
     }
 
     [Fact]
-    public void Data_root_is_not_inside_the_installer_root()
+    public void Data_root_is_not_inside_any_directory_another_tool_owns()
     {
-        Assert.False(
-            LorePaths.DataDirectory.StartsWith(
-                LorePaths.LegacyDataDirectory, StringComparison.OrdinalIgnoreCase),
-            "user data must never live inside a directory an installer owns");
+        foreach (string legacy in LorePaths.LegacyDataDirectories)
+        {
+            // Containment, not string prefix: "...\LoreData" starts with "...\Lore" as text
+            // while being a sibling directory, and conflating the two is how a check like this
+            // ends up either useless or wrong.
+            string inside = legacy.TrimEnd(Path.DirectorySeparatorChar)
+                + Path.DirectorySeparatorChar;
+            Assert.False(
+                LorePaths.DataDirectory.StartsWith(inside, StringComparison.OrdinalIgnoreCase),
+                $"user data must never live inside {legacy}, which another tool manages");
+            Assert.NotEqual(legacy, LorePaths.DataDirectory, StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
+    public void Newer_data_wins_when_several_legacy_locations_exist()
+    {
+        // Both previous homes still hold a copy; the migration runs newest-first and never
+        // overwrites, so the newer one must be the copy that survives.
+        string newer = Path.Combine(_root, "newer");
+        string older = Path.Combine(_root, "older");
+        Directory.CreateDirectory(newer);
+        Directory.CreateDirectory(older);
+        File.WriteAllText(Path.Combine(newer, "config.json"), "newer");
+        File.WriteAllText(Path.Combine(older, "config.json"), "older");
+
+        LorePaths.MigrateLegacyData(newer, Data);
+        LorePaths.MigrateLegacyData(older, Data);
+
+        Assert.Equal("newer", File.ReadAllText(Path.Combine(Data, "config.json")));
     }
 
     public void Dispose()

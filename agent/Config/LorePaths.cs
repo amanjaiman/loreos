@@ -4,31 +4,43 @@ namespace Lore.Agent.Config;
 
 /// <summary>Where Lore keeps the user's data, and the one-time move that got it there.</summary>
 /// <remarks>
-/// This used to be <c>%LOCALAPPDATA%\Lore</c> — which is also where the Squirrel installer puts
-/// the application. The install root and the data root were the same folder, so installing over
-/// an existing copy destroyed every memory, and uninstalling would have done the same. For a
-/// product whose entire value is the data it accumulates, that is the worst bug available.
+/// The rule: the data root belongs to Lore alone, and sits inside no directory another tool
+/// manages. It took two goes to get there.
 ///
-/// Data now lives in Roaming AppData, which is both where Electron puts its own userData and a
-/// place no installer writes to. Nothing here is ever inside a directory some other tool owns.
+/// <c>%LOCALAPPDATA%\Lore</c> is where the Squirrel installer puts the application, so the
+/// install root and the data root were the same folder — installing over an existing copy
+/// destroyed every memory, and uninstalling would have too. <c>%APPDATA%\Lore</c> fixed the
+/// installer collision but landed on Electron's own <c>userData</c> directory, putting memories
+/// beside the Chromium cache. Less dangerous, same mistake.
+///
+/// <c>%LOCALAPPDATA%\LoreData</c> is owned by nothing else. It also stays off roaming profiles,
+/// which matters once the vector store is large.
 /// </remarks>
 public static class LorePaths
 {
     /// <summary>The data root: config, logs, the activity store, and the memory store.</summary>
     public static string DataDirectory { get; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Lore");
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LoreData");
 
-    /// <summary>The pre-migration location, which the installer also owns.</summary>
-    public static string LegacyDataDirectory { get; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Lore");
+    /// <summary>Every location data has previously lived, newest first — the order matters,
+    /// since the migration never overwrites and so the first one to supply a file wins.</summary>
+    public static IReadOnlyList<string> LegacyDataDirectories { get; } =
+    [
+        // Electron's userData: where the installer-collision fix briefly put things.
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Lore"),
+        // The original, which the Squirrel installer owns and wipes.
+        Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Lore"),
+    ];
 
     public static string ConfigFile => Path.Combine(DataDirectory, "config.json");
 
     public static string LogFile => Path.Combine(DataDirectory, "lore.log");
 
-    /// <summary>Data artifacts, named explicitly. The legacy directory also contains the
-    /// installer's own files (<c>app-x.y.z</c>, <c>packages</c>, <c>Update.exe</c>), and moving
-    /// the folder wholesale would drag those along and break the installation.</summary>
+    /// <summary>Data artifacts, named explicitly. The legacy directories are shared with other
+    /// tools — the installer's files (<c>app-x.y.z</c>, <c>packages</c>, <c>Update.exe</c>) in one,
+    /// Electron's cache (<c>GPUCache</c>, <c>Local Storage</c>, <c>Preferences</c>) in the other.
+    /// Moving a folder wholesale would drag those along and break what owns them.</summary>
     private static readonly string[] LegacyFiles =
         ["config.json", "activity.db", "history.db", "lore.log"];
 
@@ -41,8 +53,13 @@ public static class LorePaths
     /// start over — the agent carries on with whatever it could move, and the untouched originals
     /// stay where they are.
     /// </remarks>
-    public static void MigrateLegacyData() =>
-        MigrateLegacyData(LegacyDataDirectory, DataDirectory);
+    public static void MigrateLegacyData()
+    {
+        foreach (string legacy in LegacyDataDirectories)
+        {
+            MigrateLegacyData(legacy, DataDirectory);
+        }
+    }
 
     /// <summary>The move itself, against explicit directories so it can be tested.</summary>
     public static void MigrateLegacyData(string legacyDirectory, string dataDirectory)
