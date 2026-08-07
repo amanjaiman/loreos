@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, screen } from 'electron';
 import { AgentProcess } from './agentProcess';
 import { applySquirrelPathHook } from './windowsIntegration';
 
@@ -36,10 +36,24 @@ const installHiddenMenu = (): void => {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 };
 
+/**
+ * Opening size. Onboarding's card is 650px before its own content, and steps 2-6 exceed
+ * that at the old 760px height — the user had to scroll through setup, which is the worst
+ * possible first impression. Roomier by default, but clamped to the display's work area so
+ * a 1366x768 laptop doesn't get a window taller than its screen.
+ */
+const preferredSize = (): { width: number; height: number } => {
+  const { width: availW, height: availH } =
+    screen.getPrimaryDisplay().workAreaSize;
+  return {
+    width: Math.min(1320, Math.max(900, availW - 80)),
+    height: Math.min(900, Math.max(600, availH - 80)),
+  };
+};
+
 const createWindow = (): void => {
   const mainWindow = new BrowserWindow({
-    width: 1180,
-    height: 760,
+    ...preferredSize(),
     minWidth: 900,
     minHeight: 600,
     title: 'Lore',

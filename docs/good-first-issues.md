@@ -14,7 +14,7 @@
 
 **Labels:** `good-first-issue` `area:app` `type:enhancement`
 
-**Background.** `GET /system/log` tails `%LocalAppData%\Lore\lore.log` via `LogTail`,
+**Background.** `GET /system/log` tails `%AppData%\Lore\lore.log` via `LogTail`,
 and a `RedactingLoggerProvider` already exists (`agent/Config/RedactingLogger.cs`) to
 write that log with secrets scrubbed — but it isn't wired into the host yet, so the
 endpoint returns an empty tail in production (see

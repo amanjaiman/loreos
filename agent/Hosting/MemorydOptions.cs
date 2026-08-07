@@ -1,4 +1,5 @@
 using System.IO;
+using Lore.Agent.Config;
 
 namespace Lore.Agent.Hosting;
 
@@ -20,8 +21,7 @@ public sealed class MemorydOptions
     public Uri? RemoteUrl { get; set; }
 
     /// <summary>Lore data dir; the sidecar keeps Qdrant + history here.</summary>
-    public string DataDir { get; set; } =
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Lore");
+    public string DataDir { get; set; } = LorePaths.DataDirectory;
 
     /// <summary>Explicit path to the packaged PyInstaller sidecar. When set and
     /// present it is launched instead of the bundled default or the Python module;

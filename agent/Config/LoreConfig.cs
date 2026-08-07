@@ -40,10 +40,9 @@ public sealed class LoreConfig : IDisposable
         _credentials = credentials;
     }
 
-    /// <summary>The default config location: <c>%LocalAppData%\Lore\config.json</c>, alongside
-    /// the memory data dir.</summary>
-    public static string DefaultPath => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Lore", "config.json");
+    /// <summary>The default config location: <c>%AppData%\Lore\config.json</c>, alongside the
+    /// memory data dir. See <see cref="LorePaths"/> for why it is not under LocalAppData.</summary>
+    public static string DefaultPath => LorePaths.ConfigFile;
 
     /// <summary>Read the current config, scrubbed of any inline secret. Returns an empty object
     /// when the file does not exist yet.</summary>
