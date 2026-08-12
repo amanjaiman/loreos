@@ -189,6 +189,43 @@ Quit Lore
 
 ---
 
+---
+
+## R5 — The app can start a stopped Lore, not just the tray
+
+Stop is reachable from the tray. If Start were *only* reachable from the tray, Stopped
+would be a state the user can enter from one surface and leave from another — and the app
+window, which stays perfectly usable while stopped, would show "Lore isn't running" with no
+way to act on it. That is a trap, and it is the same argument that put pause in the rail
+rather than in Settings.
+
+**Wanted:**
+
+- The rail's live element offers **Start** when the state is Stopped, in the same slot and
+  with the same weight as the pause/resume control it replaces there.
+- Home's "Lore is resting" panel offers it too — that is where a user actually lands.
+- While starting, both say so (`Starting…`) and refuse a second click, then return to the
+  normal running view on their own once the agent answers. If it never answers, they stop
+  claiming progress rather than spinning forever.
+- The control is **absent, not broken**, in a build that has no agent to supervise (dev).
+
+**Note on the seam:** every other control in the app writes through `api.ts` (spec 005 is
+the renderer's only network seam). This one cannot, and the reason is the point of the
+feature: Stopped means nothing is listening on `:7842`. Start therefore goes through the
+preload bridge to the main process, which holds the agent's process handle — the same verb
+the tray's Start item calls. It is not a second network path; it is not a network path.
+
+**Acceptance:**
+
+1. Stop from the tray, then start again from the rail — the agent comes back and the rail
+   returns to Running without touching the tray.
+2. The same from Home's resting panel.
+3. During a start, the control reads `Starting…` and is not clickable; it resolves by
+   itself when the agent answers.
+4. In a dev build (no bundled agent) no Start control appears in either place.
+
+---
+
 ## Non-goals worth stating explicitly
 
 - **No new outbound network calls.** The main process gains a *loopback* client

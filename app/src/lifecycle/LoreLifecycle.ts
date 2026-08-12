@@ -222,10 +222,25 @@ export class LoreLifecycle {
     this.nudge();
   }
 
-  /** Bring the agent back after a Stop. Reachability follows a second or two later. */
-  private startAgent(): void {
+  /**
+   * Bring the agent back after a Stop. Reachability follows a second or two later.
+   *
+   * Public because the app window offers this too: a stopped agent is exactly the case
+   * where the renderer *cannot* ask over the local API (nothing is listening), so the
+   * window's Start button has to come through here rather than through `api.ts`.
+   */
+  startAgent(): void {
     this.agent.start();
     this.nudge();
+  }
+
+  /**
+   * Whether this process can start/stop an agent at all — false in a dev build, where the
+   * agent is run by hand. The renderer asks so it can omit a Start button that could not
+   * work, rather than showing one that silently does nothing.
+   */
+  canControlAgent(): boolean {
+    return this.agent.isSupervising();
   }
 
   // ---- tray ----------------------------------------------------------------------

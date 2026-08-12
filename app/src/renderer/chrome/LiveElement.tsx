@@ -11,29 +11,41 @@ const COPY: Record<AmbientStatus, { label: string; detail: string }> = {
 
 /**
  * The rail's ambient presence (v2-004): a slow pulse, what Lore is watching right now,
- * and the pause control.
+ * and the capture control.
  *
  * Pause lives here rather than in Settings deliberately. For a capture app this is the
  * most consequential switch in the product, and putting it beside the "I'm watching"
  * indicator makes the privacy promise actionable in one click from anywhere — the
  * constitutional posture (§1), not a convenience.
+ *
+ * By the same argument the *offline* state carries a control too (v2-006): if the user can
+ * stop Lore from the tray, the app has to offer the way back, in the same place and with
+ * the same weight as pause/resume. Stopped is otherwise a state you can enter from the UI
+ * but only leave from the tray, which is a trap.
  */
 export function LiveElement({
   status,
   watching,
   onToggle,
   busy = false,
+  onStart,
+  starting = false,
 }: {
   status: AmbientStatus;
   watching: string | null;
   onToggle: () => void;
   busy?: boolean;
+  /** Start a stopped agent. Omitted when this build can't (dev), which hides the control. */
+  onStart?: () => void;
+  starting?: boolean;
 }): JSX.Element {
   const copy = COPY[status];
   const detail =
     status === 'listening' && watching !== null && watching.length > 0
       ? watching
-      : copy.detail;
+      : status === 'offline' && starting
+        ? 'Starting…'
+        : copy.detail;
 
   return (
     <div className={`live live--${status}`}>
@@ -44,7 +56,20 @@ export function LiveElement({
           {detail}
         </span>
       </span>
-      {status !== 'offline' && (
+      {status === 'offline' ? (
+        onStart !== undefined && (
+          <button
+            type="button"
+            className="live__pause"
+            onClick={onStart}
+            disabled={starting}
+            aria-label="Start Lore"
+            title="Start Lore"
+          >
+            <Icon name="power" size={13} />
+          </button>
+        )
+      ) : (
         <button
           type="button"
           className="live__pause"

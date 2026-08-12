@@ -21,6 +21,10 @@ interface Window {
     setAutostart: (enabled: boolean) => Promise<boolean>;
     /** Hint to the main process that the tray's view of capture may be stale. */
     notifyLifecycleChanged: () => void;
+    /** Whether this build can start a stopped agent (false in dev). */
+    canStartLore: () => Promise<boolean>;
+    /** Start the agent — the one lifecycle action that can't go through `api.ts`. */
+    startLore: () => void;
     /** Subscribe to running/paused/stopped as the tray sees it; returns an unsubscribe fn. */
     onLifecycleState: (
       listener: (state: 'running' | 'paused' | 'stopped') => void,

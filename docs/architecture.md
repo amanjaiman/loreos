@@ -89,6 +89,12 @@ one piece of state that matters when there is no window to look at:
 | Paused | up | off (`config.capture.enabled`) | tray menu, or the app's rail |
 | Stopped | down | — (nothing is listening on `:7842`) | tray menu |
 
+Start is reachable from the app as well as the tray (the rail's live element, and Home's
+resting panel), so Stopped is never a state you can enter from one surface and only leave
+from another. That control is the app's one piece of non-`api.ts` behaviour, for the reason
+the state itself describes: while stopped there is no local API to call, so it goes over IPC
+to the main process, which holds the agent's process handle.
+
 Pause and Stop are different things on purpose: a paused agent still answers
 recall for the CLI, MCP and any AI tool wired to Lore; a stopped one answers
 nothing. Quit (tray menu) stops the agent and exits.

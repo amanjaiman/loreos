@@ -76,7 +76,23 @@
 
 ---
 
-## T005 — Docs
+## T005 — The app's own Start control
+
+**Delivers:** R5.
+
+- `LoreLifecycle.startAgent()` / `canControlAgent()` go public; `lore:start-agent` and
+  `lore:can-start` IPC; `preload.ts` exposes `startLore` / `canStartLore`.
+- `useAgentControl(offline)` — one hook holding `canStart` / `starting` / `start`, so the
+  rail and Home share the pending state and the give-up timeout instead of each inventing
+  one.
+- `LiveElement` swaps its pause control for Start when offline; Home's resting panel gains
+  a Start button.
+
+**Verify:** spec R5 acceptance 1–4.
+
+---
+
+## T006 — Docs
 
 - `docs/privacy.md` — the main process now makes loopback calls to `127.0.0.1:7842`;
   still zero egress.

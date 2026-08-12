@@ -17,6 +17,7 @@ import { Button, Spinner } from '../design-system';
 import { formatRelative } from '../lib/format';
 import { Icon } from '../lib/Icon';
 import { useRouter } from '../lib/router';
+import { useAgentControl } from '../lib/useAgentControl';
 import './today.css';
 
 interface TodayData {
@@ -73,6 +74,7 @@ export function Today(): JSX.Element {
   const [data, setData] = useState<TodayData | null>(null);
   const [offline, setOffline] = useState(false);
   const { navigate } = useRouter();
+  const agentControl = useAgentControl(offline);
 
   // The signature moment: a memory *arriving*. Capture is the whole product and it was
   // previously silent. `seen` is null until the first load so the initial paint doesn't
@@ -184,6 +186,19 @@ export function Today(): JSX.Element {
                 it returns.
               </p>
             </div>
+            {/* The way back from a tray Stop, offered where the user actually lands
+                rather than only in the tray they stopped it from (v2-006). */}
+            {agentControl.canStart && (
+              <Button
+                variant="primary"
+                size="sm"
+                icon="power"
+                onClick={agentControl.start}
+                disabled={agentControl.starting}
+              >
+                {agentControl.starting ? 'Starting…' : 'Start Lore'}
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"

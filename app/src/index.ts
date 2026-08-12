@@ -184,6 +184,15 @@ ipcMain.on('lore:lifecycle-refresh', (): void => {
   void lifecycle.refresh();
 });
 
+// Starting a stopped agent is the one lifecycle action the renderer cannot perform through
+// the local API, for the obvious reason: when the agent is stopped, there is no API to call.
+// So it comes through here instead — the same verb the tray's Start item uses.
+ipcMain.handle('lore:can-start', (): boolean => lifecycle.canControlAgent());
+
+ipcMain.handle('lore:start-agent', (): void => {
+  lifecycle.startAgent();
+});
+
 if (isSquirrelLifecycleLaunch) {
   // An install/update/uninstall launch. `electron-squirrel-startup` quits us, but it does
   // so *asynchronously* — it waits for the shortcut-writing Update.exe to close first — so

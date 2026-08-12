@@ -67,6 +67,20 @@ contextBridge.exposeInMainWorld('lore', {
   },
 
   /**
+   * Whether this build can start a stopped agent (false in dev, where it's run by hand).
+   * The app asks so it can omit a Start button that couldn't work.
+   */
+  canStartLore: (): Promise<boolean> => ipcRenderer.invoke('lore:can-start'),
+
+  /**
+   * Start the agent. This is the one lifecycle action that cannot go through `api.ts`:
+   * when the agent is stopped there is no local API to call.
+   */
+  startLore: (): void => {
+    void ipcRenderer.invoke('lore:start-agent');
+  },
+
+  /**
    * Subscribe to running/paused/stopped as the tray sees it. Lets the rail react to a
    * pause issued from the tray menu without waiting out its own poll. Returns an
    * unsubscribe function.

@@ -9,6 +9,7 @@ import {
 import { api } from '../api';
 import { useConfig, useRailSummary, useSystemStatus } from '../lib/hooks';
 import { useRouter, type Route } from '../lib/router';
+import { useAgentControl } from '../lib/useAgentControl';
 import { Activity } from '../views/Activity';
 import { Memory } from '../views/Memory';
 import { Settings } from '../views/settings/Settings';
@@ -63,6 +64,10 @@ export function AppShell(): JSX.Element {
   const descending = ORDER.indexOf(route) >= ORDER.indexOf(previous.current);
   previous.current = route;
 
+  // Stopped is a state the user can enter from the tray but, without this, could only
+  // leave from the tray. The rail offers the way back (v2-006).
+  const agentControl = useAgentControl(offline);
+
   const paused = config?.capture?.enabled === false;
   const status: AmbientStatus = offline
     ? 'offline'
@@ -109,6 +114,8 @@ export function AppShell(): JSX.Element {
         watching={watching}
         onToggleCapture={() => void toggleCapture()}
         busy={busy}
+        onStart={agentControl.canStart ? agentControl.start : undefined}
+        starting={agentControl.starting}
       />
       <main className="app-card" data-scrolled={scrolled ? 'true' : 'false'}>
         <div
