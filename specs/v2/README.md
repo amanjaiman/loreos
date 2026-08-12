@@ -13,6 +13,7 @@ retired v1 shape and are archived per v2-002.
 | [v2-003 — App Redesign](003-app-redesign/specification.md) | Sidebar-free single-column app on the Lore Design System (Coastal/Nocturne), five screens, vendored assets, zero egress. | implemented (shipped with the v2-001 chain + follow-up PRs) |
 | [v2-004 — Shell Redesign](004-shell-redesign/specification.md) | Frameless window on a ground plane, left rail carrying ambient presence, Home as a two-column app pane, Coastal Dark replacing Nocturne. | implemented (T001–T009 on `feat/v2-004-shell-redesign`) |
 | [v2-005 — App Read API](005-app-read-api/specification.md) | Additive read endpoints the v2-004 shell needs: memory counts, the live capture target, memory evidence. | implemented (agent + renderer, same branch) |
+| [v2-006 — Background Running & System Tray](006-background-and-tray/specification.md) | Lore survives its window: close-to-tray, start with Windows, and a tray icon whose artwork carries running/paused/stopped plus a full lifecycle menu. | implemented (T001–T005 on `feat/v2-006-background-and-tray`) |
 
 **Implementation order:** 001's tasks in order (T002 memoryd raw mode first), 002
 interleaved as the deletions become safe (old capture path deletes only after

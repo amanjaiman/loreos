@@ -1,6 +1,9 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, screen } from 'electron';
 import { AgentProcess } from './agentProcess';
 import { initAutoUpdates } from './autoUpdate';
+import * as autostart from './lifecycle/autostart';
+import { LoreLifecycle } from './lifecycle/LoreLifecycle';
+import { consumeFlag } from './lifecycle/prefs';
 import { applySquirrelPathHook } from './windowsIntegration';
 
 // Webpack magic constants injected by Electron Forge's webpack plugin: they
@@ -14,9 +17,15 @@ declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 applySquirrelPathHook();
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-if (require('electron-squirrel-startup')) {
-  app.quit();
-}
+const isSquirrelLifecycleLaunch: boolean = require('electron-squirrel-startup');
+
+// Only one Lore may run at a time (v2-006 R1). This matters far more now that Lore lives
+// in the tray and starts at login: without the lock, launching from the Start menu while
+// Lore is already in the tray would spawn a second app *and* a second agent, and the two
+// would fight over :7842 and the data directory. The loser hands its argv to the winner,
+// which reveals its window.
+const hasInstanceLock =
+  !isSquirrelLifecycleLaunch && app.requestSingleInstanceLock();
 
 // The Lore agent: spawned and supervised for the app's lifetime in a packaged build
 // (it in turn supervises memoryd — spec 002). A no-op in dev, where it's run separately.
@@ -26,6 +35,13 @@ const agent = new AgentProcess();
 // user is looking at the app (prompt to restart) or not (install silently). Null between
 // windows (closed, or before first create).
 let mainWindow: BrowserWindow | null = null;
+
+// Background presence: the tray, the running/paused/stopped state behind it, and the
+// hide-instead-of-close rule (v2-006).
+const lifecycle = new LoreLifecycle(agent, {
+  getWindow: () => mainWindow,
+  createWindow: () => createWindow(),
+});
 
 /**
  * The application menu is *hidden*, not removed. `Menu.setApplicationMenu(null)` also
@@ -92,6 +108,10 @@ const createWindow = (): void => {
     }
   });
 
+  // Close hides rather than destroys, so Lore keeps capturing and reopening is instant
+  // (v2-006 R1). The tray's Quit is the way out.
+  lifecycle.attachWindow(win);
+
   // The maximize/restore glyph has to follow the real window state, which the user can
   // change without touching our button (double-click the strip, Win+Up, snapping).
   const reportState = (): void => {
@@ -143,30 +163,105 @@ ipcMain.handle('lore:pick-document', async (): Promise<string | null> => {
     : result.filePaths[0];
 });
 
-app.on('ready', () => {
-  agent.start();
-  installHiddenMenu();
-  createWindow();
-  // In-app updates via Squirrel + the reused Hazel feed (packaged Windows only; a no-op
-  // otherwise). Started after the window exists so it can prompt the user to restart.
-  initAutoUpdates(() => mainWindow);
+// Start-with-Windows (v2-006 R2). The renderer never touches the registry itself; it reads
+// and writes through here, and always gets back what the OS actually reports.
+ipcMain.handle(
+  'lore:autostart-get',
+  (): { supported: boolean; enabled: boolean } => ({
+    supported: autostart.isSupported(),
+    enabled: autostart.isEnabled(),
+  }),
+);
+
+ipcMain.handle('lore:autostart-set', (_event, enabled: unknown): boolean =>
+  autostart.setEnabled(enabled === true),
+);
+
+// The rail's pause button writes config directly (spec 005 is the renderer's only seam),
+// so the tray would otherwise not see it until its next poll. This lets the renderer say
+// "I just changed something" without the main process growing an opinion about what.
+ipcMain.on('lore:lifecycle-refresh', (): void => {
+  void lifecycle.refresh();
 });
 
-// Quit when all windows are closed, except on macOS where apps conventionally
-// stay active until the user quits explicitly.
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+// Starting a stopped agent is the one lifecycle action the renderer cannot perform through
+// the local API, for the obvious reason: when the agent is stopped, there is no API to call.
+// So it comes through here instead — the same verb the tray's Start item uses.
+ipcMain.handle('lore:can-start', (): boolean => lifecycle.canControlAgent());
+
+ipcMain.handle('lore:start-agent', (): void => {
+  lifecycle.startAgent();
 });
 
-// Tear the agent (and thus memoryd) down cleanly when the app exits.
-app.on('will-quit', () => {
-  agent.stop();
-});
+if (isSquirrelLifecycleLaunch) {
+  // An install/update/uninstall launch. `electron-squirrel-startup` quits us, but it does
+  // so *asynchronously* — it waits for the shortcut-writing Update.exe to close first — so
+  // module execution continues and `ready` still fires. Booting the app here would spawn an
+  // agent and plant a tray icon in the middle of an install, so the wiring below is skipped
+  // entirely and this process does nothing but finish quitting.
+} else if (!hasInstanceLock) {
+  // Another Lore already owns this machine; that instance gets the `second-instance`
+  // event and shows itself. Nothing to do but leave.
+  app.quit();
+} else {
+  bootstrap();
+}
 
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
-  }
-});
+function bootstrap(): void {
+  // A second launch reveals the running instance rather than starting anything (R1 AC 2).
+  app.on('second-instance', () => {
+    lifecycle.showWindow();
+  });
+
+  app.on('ready', () => {
+    agent.start();
+    installHiddenMenu();
+    // The tray comes up before the window, so a hidden start still has a control surface.
+    lifecycle.start();
+
+    // A session start (`--hidden`) or a relaunch after a silent update comes up with no
+    // window: tray only. Anything else is a user launching Lore, who wants to see it.
+    if (
+      !autostart.startsHidden(process.argv) &&
+      !consumeFlag('relaunchHidden')
+    ) {
+      createWindow();
+    }
+
+    // Default autostart on, once, on first run. Deliberately after the window decision so
+    // it can never affect this launch.
+    autostart.applyDefaultOnce();
+
+    // In-app updates via Squirrel + the reused Hazel feed (packaged Windows only; a no-op
+    // otherwise). Started after the window exists so it can prompt the user to restart.
+    initAutoUpdates(() => mainWindow);
+  });
+
+  // Closing the last window no longer quits: Lore is a background app with a tray, and
+  // capture must survive the window (v2-006 R1). The exception is a failed tray — with no
+  // icon there would be no way back to the app and no way to quit it, so fall back to the
+  // old behaviour rather than stranding the user with an invisible process.
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin' && !lifecycle.hasTray()) {
+      app.quit();
+    }
+  });
+
+  // Every quit path funnels through here — the tray's Quit, and the updater's
+  // `quitAndInstall` — so the window's close handler knows to stop intercepting.
+  app.on('before-quit', () => {
+    lifecycle.markQuitting();
+  });
+
+  // Tear the agent (and thus memoryd) down cleanly when the app exits.
+  app.on('will-quit', () => {
+    lifecycle.dispose();
+    agent.stop();
+  });
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    }
+  });
+}

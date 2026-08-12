@@ -16,6 +16,8 @@ import { app, autoUpdater, BrowserWindow, ipcMain } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { setFlag } from './lifecycle/prefs';
+
 /** The reused Hazel deployment (see specs / installer README). Repointed at loreos. */
 const FEED_HOST = 'https://lore-hazel.vercel.app';
 /** Re-check while the app is running; the launch check covers most cases. */
@@ -82,6 +84,13 @@ export function initAutoUpdates(getWindow: () => BrowserWindow | null): void {
       window.webContents.send('lore:update-ready');
     } else {
       // Nobody's looking; apply it now so the next launch is already up to date.
+      //
+      // Since v2-006 this is the *common* case — Lore normally sits in the tray with its
+      // window hidden — and Squirrel relaunches the app afterwards with no arguments. Left
+      // alone, a quiet background update would therefore end with a window appearing on the
+      // user's screen out of nowhere. Remember that we were hidden; the next start consumes
+      // the flag and comes up as tray-only.
+      setFlag('relaunchHidden', true);
       autoUpdater.quitAndInstall();
     }
   });

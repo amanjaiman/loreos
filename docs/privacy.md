@@ -59,6 +59,13 @@ this path reaches a Lore-operated service.
   does the checking, not Lore. This is a deliberate design choice (spec 012) that
   keeps the egress table below unchanged: distributing updates this way adds **no**
   outbound call to the app or agent.
+- **The tray and background mode add nothing outbound.** Since v2-006 Lore keeps
+  running when you close its window, and its Electron main process polls
+  `GET http://127.0.0.1:7842/system/status` (every 5s) to draw the tray icon, plus
+  `PATCH /config` when you pause or resume from the tray menu. Those are the same
+  two calls the app window already makes, to the same loopback address — no new
+  destination, and nothing leaves the machine. Running in the background changes
+  *how long* Lore captures, not *where* anything goes.
 - **mem0 / Qdrant in embedded mode** are local. The bundled `memoryd` sidecar
   runs on loopback and does not leave the machine. **Note:** mem0 OSS ships
   anonymous PostHog telemetry (`us.i.posthog.com`) *enabled by default*;

@@ -1,8 +1,15 @@
-import { useCallback, useRef, useState, type CSSProperties } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react';
 
 import { api } from '../api';
 import { useConfig, useRailSummary, useSystemStatus } from '../lib/hooks';
 import { useRouter, type Route } from '../lib/router';
+import { useAgentControl } from '../lib/useAgentControl';
 import { Activity } from '../views/Activity';
 import { Memory } from '../views/Memory';
 import { Settings } from '../views/settings/Settings';
@@ -57,6 +64,10 @@ export function AppShell(): JSX.Element {
   const descending = ORDER.indexOf(route) >= ORDER.indexOf(previous.current);
   previous.current = route;
 
+  // Stopped is a state the user can enter from the tray but, without this, could only
+  // leave from the tray. The rail offers the way back (v2-006).
+  const agentControl = useAgentControl(offline);
+
   const paused = config?.capture?.enabled === false;
   const status: AmbientStatus = offline
     ? 'offline'
@@ -71,12 +82,25 @@ export function AppShell(): JSX.Element {
     try {
       await api.patchConfig({ capture: { enabled: paused } });
       await refresh();
+      // Nudge the tray so its icon changes with the click rather than on its next poll
+      // (v2-006 R4). It re-reads the agent itself; this only says "look again".
+      window.lore?.notifyLifecycleChanged?.();
     } catch {
       // Offline or rejected: the next config poll re-reports the real state.
     } finally {
       setBusy(false);
     }
   }, [paused, refresh]);
+
+  // The same switch can be thrown from the tray menu while the window is open. Re-read
+  // config when the main process says the state moved, so the rail doesn't sit stale for
+  // up to a poll interval showing the opposite of what the tray shows (v2-006 R4 AC 2).
+  useEffect(() => {
+    const subscribe = window.lore?.onLifecycleState;
+    return typeof subscribe === 'function'
+      ? subscribe(() => void refresh())
+      : undefined;
+  }, [refresh]);
 
   return (
     <div className="app-ground">
@@ -90,6 +114,8 @@ export function AppShell(): JSX.Element {
         watching={watching}
         onToggleCapture={() => void toggleCapture()}
         busy={busy}
+        onStart={agentControl.canStart ? agentControl.start : undefined}
+        starting={agentControl.starting}
       />
       <main className="app-card" data-scrolled={scrolled ? 'true' : 'false'}>
         <div

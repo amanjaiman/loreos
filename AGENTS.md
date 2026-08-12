@@ -126,6 +126,10 @@ block for minutes on review/test/CI — that wait is normal, don't cancel it).
 | `memoryd` | `pip install -e "memoryd[dev]"` | `pytest memoryd` |
 | `app` | `npm --prefix app ci && npm --prefix app run build` | *(no tests yet; app behavior arrives with spec 010)* |
 
+The app's tray icons are **generated**, not hand-drawn art: `app/src/lifecycle/trayIcons.ts`
+is the committed output of `node app/tools/build-tray-icons.mjs` (spec v2-006 D6). Edit the
+generator, re-run it, and commit both — never hand-edit the generated file.
+
 Run the agent: `LoreAgent.exe` (agent mode, local API on :7842) or
 `LoreAgent.exe --mcp` (MCP stdio mode).
 

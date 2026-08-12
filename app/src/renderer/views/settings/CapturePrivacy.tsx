@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { api, LoreOfflineError, type LoreConfigShape } from '../../api';
+import { AutostartToggle } from '../../components/AutostartToggle';
 import { ChipListEditor } from '../../components/ChipListEditor';
 import { Button, Card, Switch } from '../../design-system';
 
@@ -73,6 +74,12 @@ export function CapturePrivacy({
               : 'Capture is paused. Nothing new is read until you turn it back on.'}
           </p>
         </div>
+      </Card>
+
+      {/* Not part of the capture block above: this writes an OS login item, not agent
+          config, so it saves on toggle and has nothing to do with the Save button. */}
+      <Card eyebrow="// startup" title="Startup">
+        <AutostartToggle surface="settings" />
       </Card>
 
       <Card eyebrow="// privacy" title="Blocklist">

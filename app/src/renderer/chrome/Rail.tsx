@@ -29,6 +29,8 @@ export function Rail({
   watching,
   onToggleCapture,
   busy,
+  onStart,
+  starting,
 }: {
   status: AmbientStatus;
   staged: number;
@@ -36,6 +38,9 @@ export function Rail({
   watching: string | null;
   onToggleCapture: () => void;
   busy: boolean;
+  /** Start a stopped agent; omitted when this build can't (v2-006). */
+  onStart?: () => void;
+  starting?: boolean;
 }): JSX.Element {
   const { route, navigate } = useRouter();
   // Drives the sliding pill's offset; -1 would be unreachable (every route is in NAV).
@@ -103,6 +108,8 @@ export function Rail({
         watching={watching}
         onToggle={onToggleCapture}
         busy={busy}
+        onStart={onStart}
+        starting={starting}
       />
 
       {recent.length > 0 && (
