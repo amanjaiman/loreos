@@ -158,7 +158,12 @@ Write-Host "==> Smoke-testing the built CLI"
 # bundle unpacks and the managed entry point runs. The commands that would prove sibling
 # resolution end-to-end (mcp install / skills install) all WRITE to real client config, so
 # they are deliberately not run here.
-$cliOutput = & $cliExe --help 2>&1
+# The 'Continue' scope is load-bearing: 2>&1 folds the CLI's stderr into the success stream,
+# and under 'Stop' PowerShell turns a native command's redirected stderr into a TERMINATING
+# NativeCommandError -- so a CLI that crashes with a stack trace, the exact case the branch
+# below reports, would kill the script one line early and lose the diagnostic. $LASTEXITCODE
+# still crosses the scope boundary, so the build fails either way.
+$cliOutput = & { $ErrorActionPreference = "Continue"; & $cliExe --help 2>&1 }
 if ($LASTEXITCODE -ne 0) {
     Write-Host ($cliOutput | Out-String)
     throw "The built lore.exe failed to run (exit $LASTEXITCODE)."
@@ -216,7 +221,14 @@ $null = $agent.Handle
 function Stop-Agent {
     if ($agent -and -not $agent.HasExited) {
         # /T covers children the agent spawned; taskkill walks the tree, Stop-Process does not.
-        & taskkill.exe /PID $agent.Id /T /F 2>&1 | Out-Null
+        #
+        # Do NOT redirect taskkill's stderr into the success stream: under 'Stop' that becomes a
+        # terminating NativeCommandError, and taskkill writes to stderr (exit 128) whenever the
+        # PID is already gone -- an unavoidable race, since the agent can exit between the
+        # HasExited check above and the kill. The catch covers the same non-zero exit on hosts
+        # where $PSNativeCommandUseErrorActionPreference throws on it. Either way a PID that is
+        # already gone is success here, and the memoryd wait below is what actually gates.
+        try { & taskkill.exe /PID $agent.Id /T /F | Out-Null } catch { }
     }
 
     $memorydExe = Join-Path $Path "memoryd\lore-memoryd.exe"
@@ -281,10 +293,22 @@ try {
 finally {
     # Order matters: the tree has to be down before the scratch root can be removed, and both
     # have to happen even when the smoke test threw.
-    Stop-Agent
-    Remove-Item Env:\LORE_DATA_DIR -ErrorAction SilentlyContinue
-    Remove-Item Env:\capture__Enabled -ErrorAction SilentlyContinue
-    Remove-Item $scratchData -Recurse -Force -ErrorAction SilentlyContinue
+    #
+    # The nested finally matters just as much. Stop-Agent deliberately throws when a payload
+    # memoryd outlives the smoke test (it would block signtool, so that stays a build failure),
+    # and as the first statement here that throw would skip everything after it. Leaking
+    # LORE_DATA_DIR is the worse half of that: build.ps1 runs this script in ITS process, so the
+    # variable outlives the gate, and any LoreAgent.exe started later in the session -- including
+    # one a developer launches by hand in the same shell -- silently runs against a scratch root
+    # that this block was also unable to delete.
+    try {
+        Stop-Agent
+    }
+    finally {
+        Remove-Item Env:\LORE_DATA_DIR -ErrorAction SilentlyContinue
+        Remove-Item Env:\capture__Enabled -ErrorAction SilentlyContinue
+        Remove-Item $scratchData -Recurse -Force -ErrorAction SilentlyContinue
+    }
 }
 
 Write-Host "==> Payload verified: assemblies consistent, CLI runs, agent serves the local API."
