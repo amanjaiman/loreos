@@ -52,8 +52,28 @@ function Invoke-Checked {
 }
 
 # A clean native/ each run so a removed input never lingers in the bundle.
+#
+# The frozen memoryd is the one input worth carrying across that clean. -SkipMemoryd exists
+# precisely to avoid the multi-minute PyInstaller step, but it used to be dead: this wipe ran
+# unconditionally, so the reuse check in step 4 could never find anything and every build paid
+# the freeze no matter what was passed. Stash it first, restore it after — inside
+# installer/build/, which is already gitignored and on the same volume as the repo (Move-Item
+# will not move a directory across volumes, so %TEMP% is not a safe stash location).
+$memorydDir = Join-Path $nativeDir "memoryd"
+$memorydStash = $null
+if ($SkipMemoryd -and (Test-Path (Join-Path $memorydDir "lore-memoryd.exe"))) {
+    $stashRoot = Join-Path $installerDir "build"
+    New-Item -ItemType Directory -Path $stashRoot -Force | Out-Null
+    $memorydStash = Join-Path $stashRoot "memoryd-stash"
+    if (Test-Path $memorydStash) { Remove-Item $memorydStash -Recurse -Force }
+    Write-Host "==> Preserving existing native/memoryd across the clean"
+    Move-Item $memorydDir $memorydStash
+}
+
 if (Test-Path $nativeDir) { Remove-Item $nativeDir -Recurse -Force }
 New-Item -ItemType Directory -Path $nativeDir | Out-Null
+
+if ($null -ne $memorydStash) { Move-Item $memorydStash $memorydDir }
 
 # 1 + 2. Publish the agent and the CLI self-contained into the SAME directory, so
 # lore.exe finds LoreAgent.exe as a sibling (cli McpInstallCommand.ResolveAgentPath).
@@ -80,6 +100,10 @@ if ($SkipMemoryd -and (Test-Path (Join-Path $nativeDir "memoryd\lore-memoryd.exe
     Write-Host "==> Skipping memoryd build (reusing existing native/memoryd)"
 }
 else {
+    if ($SkipMemoryd) {
+        # Say so rather than silently spending the minutes the flag was meant to save.
+        Write-Warning "-SkipMemoryd was passed but no existing native/memoryd was found; building it."
+    }
     Invoke-Checked "Building frozen memoryd" {
         & (Join-Path $installerDir "build-memoryd.ps1") -OutDir $nativeDir
     }

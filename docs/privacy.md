@@ -23,6 +23,7 @@ those seams.
 |---|---|---|---|---|
 | 1 | The **model endpoint you configured** (`provider.type`: Anthropic / OpenAI / Gemini API, or your `openai_compatible` `base_url`) | User (`config.json → provider`) | `IInferenceBackend` (capture analysis) and `memoryd`/mem0 (memory embeddings) | Whenever capture distills an observation or memory embeds. With a local `openai_compatible` endpoint (e.g. Ollama) this is loopback only |
 | 2 | `memory.remote_url` (user-hosted mem0 server) | User (`config.json → memory.remote_url`) | `MemorydClient` | Only when `memory.engine: "remote"`; default `"embedded"` keeps memory on the machine. **Carries your provider config — including the model API key** — because embedding then runs on *your* remote memoryd (see below) |
+| 3 | `https://lore-hazel.vercel.app` — the **update feed**, a Vercel deployment operated by this project | Not configurable | `autoUpdate.ts` (Electron/Squirrel `autoUpdater`) | Packaged Windows builds only: at launch, then every 10 minutes. Sends nothing but the version you are on (it is in the request path) and what any HTTP request reveals — your IP and user agent. Serves back a release manifest and, when one exists, the update package |
 
 **This list is closed.** The model endpoint in row 1 is the single destination
 for all model traffic — Lore never proxies inference and never ships a key (spec
@@ -30,10 +31,25 @@ for all model traffic — Lore never proxies inference and never ships a key (sp
 only to that endpoint (for cloud providers) or kept on loopback (for a local
 `openai_compatible` endpoint). When the provider is a local model (Ollama / LM
 Studio / vLLM by `base_url`) and `memory.engine` is the default `"embedded"`,
-**there are zero non-loopback outbound calls.** `memoryd` + mem0 run locally
-against an on-disk Qdrant store; if you opt in to `engine: "remote"`,
-`MemorydClient` calls the `remote_url` you host (row 2), not a Lore-operated
-service.
+**the only remaining non-loopback call is the update check** (row 3); nothing
+about your activity or memories is in it. `memoryd` + mem0 run locally against an
+on-disk Qdrant store; if you opt in to `engine: "remote"`, `MemorydClient` calls
+the `remote_url` you host (row 2), not a Lore-operated service.
+
+**Row 3 is the one Lore-operated destination, and it deserves plain language.**
+The update feed is not in the data path — it never sees your screen, your
+memories, your config or your key. But a packaged Windows build contacts it every
+ten minutes for as long as Lore is running, which since v2-006 can be whenever
+your machine is on. That is a recurring connection to a host this project
+operates, and it necessarily reveals your IP address and the version you are
+running. We do not log or analyse it, and it is not telemetry in intent — but a
+poll that regular is a heartbeat whether or not anyone counts it, and this
+document exists to tell you it is there rather than to reassure you about it.
+
+**There is currently no way to turn row 3 off** short of blocking the host. If
+that matters to you, install through winget instead and the update *installs* on
+your schedule — but the in-app check still runs. Making it opt-out is on the
+[roadmap](roadmap.md).
 
 **Remote mode sends your provider config to your server.** When
 `memory.engine: "remote"`, the agent applies your provider to the remote memoryd
@@ -52,13 +68,12 @@ this path reaches a Lore-operated service.
   default, and it would appear in the table above.
 - **No cloud sync, no account service, no hosted inference proxy.** These existed
   in the pre-open-source codebase and are deleted, not ported.
-- **No update check.** Lore never reaches out to check for, or download, updates —
-  there is no in-app version check, no "check for updates" button, no auto-updater.
-  Updates flow entirely through your **package manager** (`winget upgrade Lore`),
-  which checks only when *you* run it; the package manager is the trusted party that
-  does the checking, not Lore. This is a deliberate design choice (spec 012) that
-  keeps the egress table below unchanged: distributing updates this way adds **no**
-  outbound call to the app or agent.
+- **No usage, content, or identity in the update check.** Lore *does* check for
+  updates now — row 3 above. This bullet used to say the opposite, and was wrong from
+  the moment in-app updates landed until this correction. What the check sends is the
+  version string already in the request path. It does not send, and there is no code
+  path that could send, a machine identifier, an install ID, a user identifier,
+  capture content, memories, or config.
 - **The tray and background mode add nothing outbound.** Since v2-006 Lore keeps
   running when you close its window, and its Electron main process polls
   `GET http://127.0.0.1:7842/system/status` (every 5s) to draw the tray icon, plus
@@ -93,8 +108,13 @@ chain is the project's most heavily tested code (constitution §6).
 
 ## How to verify these claims yourself
 
-1. Watch the loopback interface while Lore runs — you should see traffic only to a
-   model endpoint **you** configured, and nothing otherwise.
-2. Grep the codebase: outbound HTTP exists only behind `IInferenceBackend` and
-   `MemorydClient`; UI Automation only behind the capture extractor interfaces.
-   Anything else is a bug — please report it (see [`SECURITY.md`](../SECURITY.md)).
+1. Watch your network while Lore runs. You should see traffic to exactly two kinds
+   of destination: a model endpoint **you** configured, and — on a packaged Windows
+   build — `lore-hazel.vercel.app` at launch and every ten minutes thereafter.
+   Anything else is a bug.
+2. Grep the codebase: outbound HTTP exists only behind `IInferenceBackend`,
+   `MemorydClient`, and the app's `autoUpdate.ts`; UI Automation only behind the
+   capture extractor interfaces. Anything else is a bug — please report it (see
+   [`SECURITY.md`](../SECURITY.md)).
+3. Read `app/src/autoUpdate.ts` end to end — it is under 100 lines, and the feed URL
+   it builds is the whole of what the update check sends.

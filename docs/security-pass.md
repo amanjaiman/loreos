@@ -90,6 +90,12 @@ Audited every outbound surface in the codebase against the two-row egress list i
 **Confirmed.** The egress list is complete and matches the code. No telemetry,
 analytics, crash reporting, update check, account, or sync path exists.
 
+> **Superseded on 2026-08-12** (this file is a dated record, so the finding above is
+> left as it stood). Lore has since gained an **in-app update check** against a
+> project-operated feed — row 3 of [privacy.md](privacy.md). The rest of the finding
+> stands: still no telemetry, analytics, crash reporting, account, or sync path. A
+> re-run of this audit should treat the egress list as three rows, not two.
+
 ## 5. Secret scan over full history (gitleaks 8.30.1)
 
 - **`origin/main`: clean** — `gitleaks detect --log-opts="origin/main"` → *no leaks

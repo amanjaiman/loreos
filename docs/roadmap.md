@@ -17,7 +17,11 @@
   desktop app.
 - ✅ One signed-ready Windows installer bundling everything (Python invisible).
 - ✅ Tag-driven releases + **winget** distribution: `winget install Lore` /
-  `winget upgrade Lore`, with no in-app update check (spec 012).
+  `winget upgrade Lore` (spec 012), since joined by in-app Squirrel updates against
+  a Hazel feed — spec 012's "no in-app check" stance was reversed, and
+  [`privacy.md`](privacy.md) row 3 is the disclosure.
+- ✅ Background app: system tray with running/paused/stopped, lifecycle control from
+  the tray and the app, start with Windows (spec v2-006).
 - ⏳ Distribution polish: a code-signing certificate (signing is wired, opt-in), a
   branded installer icon, and a redacting production log sink for `/system/log`.
 
@@ -32,6 +36,7 @@
 | **Memory buckets + retention** | Deferred from the memory spec: scope memories into buckets (work/personal/…) and set retention/expiry policies. | `area:memory` `type:feature` |
 | **More MCP surfaces** | First-class `lore mcp install` presets for additional clients beyond Claude Desktop / Claude Code / Cursor. | `surface:mcp` `area:cli` |
 | **Remote memoryd auth** | Optional authentication for a self-hosted memoryd so multi-device doesn't depend solely on network trust. | `area:memory` `type:feature` |
+| **Opt out of the update check** | A setting to disable the in-app update poll ([`privacy.md`](privacy.md) row 3) for users who want the machine to make no unconfigured outbound calls at all, leaving winget as their update path. | `area:app` `type:feature` |
 
 ## Later
 
