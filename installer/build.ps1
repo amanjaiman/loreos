@@ -8,7 +8,8 @@
   reproducible in CI:
 
     1. dotnet publish the agent  (self-contained win-x64) -> native/
-    2. dotnet publish the CLI    (self-contained, single-file) -> native/  (sibling of the agent)
+    2. dotnet publish the CLI    (self-contained, single-file) -> build/cli-publish,
+                                  then lore.exe -> native/               (sibling of the agent)
     3. stage skills/lore         -> native/skills/lore
     4. build the frozen memoryd  -> native/memoryd          (build-memoryd.ps1)
     5. verify the payload         (assembly versions + agent smoke launch; verify-payload.ps1)
@@ -27,8 +28,8 @@
   Reuse an existing native/memoryd (skip the slow PyInstaller step) for iteration.
 
 .NOTES
-  Signing is opt-in and "build-ready": set the LORE_WINDOWS_SIGN_* environment
-  variables (see Sign-NativeArtifacts and app/forge.config.ts). With them unset the
+  Signing is opt-in and "build-ready": set the LORE_SIGN_* environment variables
+  (see sign-artifacts.ps1 and app/forge.config.ts). With them unset the
   build still produces a working—unsigned—installer, so the pipeline runs without a
   certificate in hand (spec 011 T002 decision).
 #>
