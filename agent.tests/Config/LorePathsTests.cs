@@ -139,6 +139,43 @@ public sealed class LorePathsTests : IDisposable
         Assert.Equal("newer", File.ReadAllText(Path.Combine(Data, "config.json")));
     }
 
+    /// <summary>The redirect exists so a build gate can start the agent without touching the
+    /// developer's real state. If it still migrated, pointing the agent at a scratch directory
+    /// would itself move the real data set into it — worse than the problem it solves.</summary>
+    [Fact]
+    public void Migration_moves_nothing_when_the_data_root_is_overridden()
+    {
+        SeedLegacy();
+        Directory.CreateDirectory(Data);
+        File.WriteAllText(Path.Combine(Data, "scratch.marker"), "scratch");
+
+        LorePaths.MigrateLegacyData(
+            isDataDirectoryOverridden: true, legacyDirectories: [Legacy], dataDirectory: Data);
+
+        // The real data set is untouched, still in the legacy location.
+        Assert.Equal("{\"provider\":{}}", File.ReadAllText(Path.Combine(Legacy, "config.json")));
+        Assert.Equal("activity", File.ReadAllText(Path.Combine(Legacy, "activity.db")));
+        Assert.True(File.Exists(Path.Combine(Legacy, "qdrant", "meta.json")));
+        // ...and nothing followed it into the scratch root, which holds only what it started with.
+        Assert.True(File.Exists(Path.Combine(Data, "scratch.marker")));
+        Assert.False(File.Exists(Path.Combine(Data, "config.json")));
+        Assert.False(Directory.Exists(Path.Combine(Data, "qdrant")));
+        Assert.Single(Directory.GetFileSystemEntries(Data));
+    }
+
+    [Fact]
+    public void Migration_runs_over_every_legacy_location_when_the_root_is_not_overridden()
+    {
+        SeedLegacy();
+
+        LorePaths.MigrateLegacyData(
+            isDataDirectoryOverridden: false, legacyDirectories: [Legacy], dataDirectory: Data);
+
+        Assert.Equal("{\"provider\":{}}", File.ReadAllText(Path.Combine(Data, "config.json")));
+        Assert.True(File.Exists(Path.Combine(Data, "qdrant", "meta.json")));
+        Assert.False(File.Exists(Path.Combine(Legacy, "config.json")));
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_root))

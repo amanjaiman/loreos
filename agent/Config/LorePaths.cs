@@ -80,19 +80,31 @@ public static class LorePaths
     /// start over — the agent carries on with whatever it could move, and the untouched originals
     /// stay where they are.
     /// </remarks>
-    public static void MigrateLegacyData()
+    public static void MigrateLegacyData() =>
+        MigrateLegacyData(IsDataDirectoryOverridden, LegacyDataDirectories, DataDirectory);
+
+    /// <summary>The startup migration against explicit inputs, so both branches of the override
+    /// guard can be tested without touching the real legacy locations.</summary>
+    /// <remarks>
+    /// <see cref="IsDataDirectoryOverridden"/> is read from the environment once at type load, so a
+    /// test cannot flip it in-process; taking it as an argument is what makes the guard reachable.
+    /// </remarks>
+    internal static void MigrateLegacyData(
+        bool isDataDirectoryOverridden,
+        IReadOnlyList<string> legacyDirectories,
+        string dataDirectory)
     {
         // A redirected root is a scratch directory, and the legacy locations are the real ones.
         // Migrating here would move the developer's actual data set into it — the precise harm
         // the redirect exists to avoid — so an overridden root migrates nothing.
-        if (IsDataDirectoryOverridden)
+        if (isDataDirectoryOverridden)
         {
             return;
         }
 
-        foreach (string legacy in LegacyDataDirectories)
+        foreach (string legacy in legacyDirectories)
         {
-            MigrateLegacyData(legacy, DataDirectory);
+            MigrateLegacyData(legacy, dataDirectory);
         }
     }
 
