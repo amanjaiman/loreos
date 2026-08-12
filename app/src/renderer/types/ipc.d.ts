@@ -11,5 +11,9 @@ interface Window {
     isMaximized: () => Promise<boolean>;
     /** Subscribe to maximise/restore; returns an unsubscribe function. */
     onWindowState: (listener: (maximized: boolean) => void) => () => void;
+    /** Subscribe to "an update downloaded and is ready to install"; returns an unsubscribe fn. */
+    onUpdateReady: (listener: () => void) => () => void;
+    /** Restart now to apply a downloaded update. */
+    installUpdate: () => void;
   };
 }

@@ -809,3 +809,69 @@
     padding: var(--space-5);
   }
 }
+
+/* ---- update-ready banner ----
+   A quiet card that floats over the bottom-right of the frame once an update has finished
+   downloading. It only mounts when there's something to say (UpdateBanner.tsx), so it never
+   costs layout otherwise. Fixed to the viewport so it clears the inset card and rail. */
+.update-banner {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: min(420px, calc(100vw - 2 * var(--space-4)));
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-pop);
+  animation: update-banner-in var(--dur-slow) var(--ease-spring, var(--ease));
+}
+
+.update-banner__glyph {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.update-banner__text {
+  min-width: 0;
+}
+
+.update-banner__title {
+  margin: 0;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.update-banner__body {
+  margin: 0;
+  font-size: 0.875em;
+  color: var(--text-muted);
+}
+
+.update-banner__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-inline-start: auto;
+}
+
+@keyframes update-banner-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

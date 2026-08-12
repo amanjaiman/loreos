@@ -1,5 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, screen } from 'electron';
 import { AgentProcess } from './agentProcess';
+import { initAutoUpdates } from './autoUpdate';
 import { applySquirrelPathHook } from './windowsIntegration';
 
 // Webpack magic constants injected by Electron Forge's webpack plugin: they
@@ -20,6 +21,11 @@ if (require('electron-squirrel-startup')) {
 // The Lore agent: spawned and supervised for the app's lifetime in a packaged build
 // (it in turn supervises memoryd — spec 002). A no-op in dev, where it's run separately.
 const agent = new AgentProcess();
+
+// The single app window, held at module scope so the auto-updater can tell whether the
+// user is looking at the app (prompt to restart) or not (install silently). Null between
+// windows (closed, or before first create).
+let mainWindow: BrowserWindow | null = null;
 
 /**
  * The application menu is *hidden*, not removed. `Menu.setApplicationMenu(null)` also
@@ -52,7 +58,7 @@ const preferredSize = (): { width: number; height: number } => {
 };
 
 const createWindow = (): void => {
-  const mainWindow = new BrowserWindow({
+  const win = new BrowserWindow({
     ...preferredSize(),
     minWidth: 900,
     minHeight: 600,
@@ -79,20 +85,24 @@ const createWindow = (): void => {
     },
   });
 
+  mainWindow = win;
+  win.on('closed', () => {
+    if (mainWindow === win) {
+      mainWindow = null;
+    }
+  });
+
   // The maximize/restore glyph has to follow the real window state, which the user can
   // change without touching our button (double-click the strip, Win+Up, snapping).
   const reportState = (): void => {
-    if (!mainWindow.isDestroyed()) {
-      mainWindow.webContents.send(
-        'lore:window-state',
-        mainWindow.isMaximized(),
-      );
+    if (!win.isDestroyed()) {
+      win.webContents.send('lore:window-state', win.isMaximized());
     }
   };
-  mainWindow.on('maximize', reportState);
-  mainWindow.on('unmaximize', reportState);
+  win.on('maximize', reportState);
+  win.on('unmaximize', reportState);
 
-  void mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
+  void win.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 };
 
 // Window controls, driven by the renderer's own buttons. The command is validated
@@ -137,6 +147,9 @@ app.on('ready', () => {
   agent.start();
   installHiddenMenu();
   createWindow();
+  // In-app updates via Squirrel + the reused Hazel feed (packaged Windows only; a no-op
+  // otherwise). Started after the window exists so it can prompt the user to restart.
+  initAutoUpdates(() => mainWindow);
 });
 
 // Quit when all windows are closed, except on macOS where apps conventionally
