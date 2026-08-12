@@ -27,4 +27,20 @@ contextBridge.exposeInMainWorld('lore', {
     ipcRenderer.on('lore:window-state', handler);
     return () => ipcRenderer.removeListener('lore:window-state', handler);
   },
+
+  /**
+   * Subscribe to "an update finished downloading and is ready to install on restart". The
+   * main process only emits this while the window is visible (otherwise it installs
+   * silently), so this fires only when there's a user to prompt. Returns an unsubscribe fn.
+   */
+  onUpdateReady: (listener: () => void): (() => void) => {
+    const handler = (): void => listener();
+    ipcRenderer.on('lore:update-ready', handler);
+    return () => ipcRenderer.removeListener('lore:update-ready', handler);
+  },
+
+  /** Restart now to apply a downloaded update (Squirrel quitAndInstall). */
+  installUpdate: (): void => {
+    void ipcRenderer.invoke('lore:install-update');
+  },
 });

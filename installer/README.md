@@ -108,3 +108,36 @@ human-gated.
 
 When not tagging, bump `Directory.Build.props` `<Version>` and `app/package.json`
 `"version"` **together** (the test fails the build otherwise).
+
+## In-app auto-updates (Hazel)
+
+Separately from winget, packaged **Windows** builds update themselves in the
+background via Squirrel + a [Hazel](https://github.com/vercel/hazel) update server.
+
+- **Client** ([`app/src/autoUpdate.ts`](../app/src/autoUpdate.ts)): the built-in
+  Electron `autoUpdater` (Squirrel.Windows) points at
+  `https://lore-hazel.vercel.app/update/win32/<current-version>`, checks on launch
+  and every 10 minutes, and applies the newest `.nupkg` from the feed. When the
+  window is visible it asks the user to restart; otherwise it installs silently so
+  the next launch is already current. No-op in dev and on non-Windows.
+- **Server**: the `lore-hazel` deployment on Vercel proxies this repo's **private**
+  GitHub Releases. It's configured entirely through Vercel env vars — there is no
+  config in this repo:
+
+  | Var | Value |
+  |---|---|
+  | `ACCOUNT` | `amanjaiman` |
+  | `REPO` | `loreos` |
+  | `TOKEN` | a GitHub PAT with **read** access to the private `loreos` repo (required — the repo is private) |
+  | `URL` | `https://lore-hazel.vercel.app` |
+
+  Changing env vars requires a redeploy to take effect.
+- **Publishing an update** is just cutting a higher-versioned tag (the release flow
+  above): Hazel serves the new Release's `RELEASES` + `.nupkg`, and installed apps
+  pick it up on their next poll.
+
+> **Note — two channels.** This is a second update path alongside the winget
+> distribution (spec 012, which deliberately shipped *no* in-app check). A Squirrel
+> self-update moves the install out from under winget's version tracking, so a
+> machine can report one version in `winget list` and another in the app. Keep
+> Squirrel/Hazel as the primary channel and treat winget as discovery/first-install.
