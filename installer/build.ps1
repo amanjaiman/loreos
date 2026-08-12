@@ -117,6 +117,21 @@ Invoke-Checked "Publishing CLI ($runtime, self-contained, single-file)" {
         -p:PublishSingleFile=true -o $cliStage
 }
 Write-Host "==> Staging lore.exe next to the agent"
+# Lifting a fixed two files out of the stage dir is only safe while those are the only two
+# files in it. PublishSingleFile leaves native assets beside the exe rather than bundling them
+# (IncludeNativeLibrariesForSelfExtract defaults to false), so the day the CLI gains a package
+# with a native component -- or any content file copied to output -- this would ship a lore.exe
+# missing part of itself, silently. Assert the shape instead of trusting it.
+$expectedCliFiles = @("lore.exe", "lore.pdb")
+$unexpected = Get-ChildItem $cliStage -Recurse -File |
+    Where-Object { $expectedCliFiles -notcontains $_.Name } |
+    ForEach-Object { $_.FullName.Substring($cliStage.Length + 1) }
+if ($unexpected) {
+    throw ("The CLI publish left files this step does not carry into native/: " +
+        ($unexpected -join ', ') + ". Single-file publish no longer bundles everything the CLI " +
+        "needs; copy the new files across (or re-bundle them) before shipping.")
+}
+
 Copy-Item (Join-Path $cliStage "lore.exe") $nativeDir -Force
 # The CLI's symbols travel with it so a stack trace off a shipped lore.exe is readable.
 $clipdb = Join-Path $cliStage "lore.pdb"
