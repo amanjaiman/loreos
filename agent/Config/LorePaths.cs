@@ -18,9 +18,36 @@ namespace Lore.Agent.Config;
 /// </remarks>
 public static class LorePaths
 {
+    /// <summary>Environment variable that redirects the data root to a throwaway location.</summary>
+    /// <remarks>
+    /// This exists for the installer's build gate (installer/verify-payload.ps1), which starts the
+    /// freshly built agent to prove it can actually serve the local API. Without a redirect that
+    /// smoke launch runs the real agent against the build machine's real state: it would migrate
+    /// the developer's legacy data, read their config.json (and the API key in it), and start the
+    /// capture loop over their screen. A build must not do any of that.
+    ///
+    /// It is not a user-facing setting. Nothing ships that sets it, and an unset or blank value
+    /// leaves the normal root below untouched.
+    /// </remarks>
+    public const string DataDirectoryVariable = "LORE_DATA_DIR";
+
+    /// <summary>Whether <see cref="DataDirectoryVariable"/> supplied the root. When it did, the
+    /// legacy migration is skipped — pointing the agent at a scratch directory must never become
+    /// a way to move the real data set into it.</summary>
+    public static bool IsDataDirectoryOverridden { get; } =
+        !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(DataDirectoryVariable));
+
     /// <summary>The data root: config, logs, the activity store, and the memory store.</summary>
-    public static string DataDirectory { get; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LoreData");
+    public static string DataDirectory { get; } = ResolveDataDirectory();
+
+    private static string ResolveDataDirectory()
+    {
+        string? overridden = Environment.GetEnvironmentVariable(DataDirectoryVariable);
+        return string.IsNullOrWhiteSpace(overridden)
+            ? Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LoreData")
+            : Path.GetFullPath(overridden);
+    }
 
     /// <summary>Every location data has previously lived, newest first — the order matters,
     /// since the migration never overwrites and so the first one to supply a file wins.</summary>
@@ -53,11 +80,31 @@ public static class LorePaths
     /// start over — the agent carries on with whatever it could move, and the untouched originals
     /// stay where they are.
     /// </remarks>
-    public static void MigrateLegacyData()
+    public static void MigrateLegacyData() =>
+        MigrateLegacyData(IsDataDirectoryOverridden, LegacyDataDirectories, DataDirectory);
+
+    /// <summary>The startup migration against explicit inputs, so both branches of the override
+    /// guard can be tested without touching the real legacy locations.</summary>
+    /// <remarks>
+    /// <see cref="IsDataDirectoryOverridden"/> is read from the environment once at type load, so a
+    /// test cannot flip it in-process; taking it as an argument is what makes the guard reachable.
+    /// </remarks>
+    internal static void MigrateLegacyData(
+        bool isDataDirectoryOverridden,
+        IReadOnlyList<string> legacyDirectories,
+        string dataDirectory)
     {
-        foreach (string legacy in LegacyDataDirectories)
+        // A redirected root is a scratch directory, and the legacy locations are the real ones.
+        // Migrating here would move the developer's actual data set into it — the precise harm
+        // the redirect exists to avoid — so an overridden root migrates nothing.
+        if (isDataDirectoryOverridden)
         {
-            MigrateLegacyData(legacy, DataDirectory);
+            return;
+        }
+
+        foreach (string legacy in legacyDirectories)
+        {
+            MigrateLegacyData(legacy, dataDirectory);
         }
     }
 

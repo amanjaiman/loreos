@@ -42,14 +42,40 @@ installer (T002) lays the frozen folder into that conventional location.
 ./build.ps1 -SkipMemoryd   # reuse an existing native/memoryd while iterating
 ```
 
-Steps: `dotnet publish` the agent and CLI (self-contained `win-x64`) into one flat
-`app/native/` tree, stage `skills/lore`, freeze memoryd into `native/memoryd`, sign
-the native exes (if a cert is configured), then `electron-forge make` bundles
+Steps: `dotnet publish` the agent (self-contained `win-x64`, **not** single-file) into
+`app/native/`; `dotnet publish` the CLI (self-contained, **single-file**) into its own
+stage dir and copy `lore.exe` + `lore.pdb` across; stage `skills/lore`; freeze memoryd
+into `native/memoryd`; **verify the payload** ([`verify-payload.ps1`](verify-payload.ps1));
+sign the native exes (if a cert is configured); then `electron-forge make` bundles
 `native/` and produces the Squirrel installer under `app/out/make/`.
 
 The flat layout matters: the CLI resolves `LoreAgent.exe` and `skills/lore` as
 siblings, and the agent's supervisor resolves `memoryd/lore-memoryd.exe` relative to
 itself (T001). All four ship in one tree that lands in `resources/native`.
+
+Two constraints on that layout are load-bearing — both shipped a dead agent once:
+
+- **The CLI must publish single-file.** Two self-contained apps in one directory share
+  ~200 framework assemblies, and where their versions differ the second publish
+  overwrites the first. The agent needs `System.Text.Json` 10.0.6; the CLI is plain
+  `net8.0` and carries the runtime pack's 8.0.x. Those copies are `PreserveNewest`, so
+  the winner is decided by NuGet cache timestamps — stable on a dev box, a coin flip on
+  a clean runner. v0.1.0 lost it and crash-looped in `Program.Main`. Single-file bundles
+  the CLI's assemblies inside `lore.exe`, so it collides with nothing;
+  `AppContext.BaseDirectory` is still the exe's directory, so sibling resolution holds.
+- **That single-file publish must target its own stage dir, never `native/`.** It cleans
+  the files it bundled out of its output directory and does not distinguish its own from
+  anyone else's — aimed at `native/` it deletes ~180 files, i.e. the agent's entire
+  runtime (`coreclr`, `hostpolicy`, `System.Private.CoreLib`). `build.ps1` asserts the
+  stage dir held nothing but `lore.exe`/`lore.pdb` before copying, so a future CLI
+  dependency with a native asset fails the build instead of shipping a partial exe.
+
+`verify-payload.ps1` is the gate that catches both, and it runs **before** signing and
+packaging: it cross-checks every `deps.json` against the assemblies on disk, runs the
+built `lore.exe`, and launches the agent requiring `GET /system/status` to answer. The
+smoke launch redirects the data root via `LORE_DATA_DIR` and disables capture, so it
+never touches the build machine's real config, API key, or screen. Nothing in this
+pipeline had ever run the binary it shipped before this step existed.
 
 **Runtime** (verified on a VM in T003): the app spawns and supervises `LoreAgent.exe`
 for its lifetime ([app/src/agentProcess.ts](../app/src/agentProcess.ts)); the agent
