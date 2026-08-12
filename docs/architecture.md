@@ -73,7 +73,25 @@ integration surface is a translation layer, never a new copy of the logic.
 | `agent` | C# / .NET 8 (`net8.0-windows10.0.19041.0`) | Capture pipeline, MCP server, local API host, supervisor |
 | `cli` (`lore`) | C# / .NET 8 console | Thin client of the local API |
 | `memoryd` | Python 3.11+, FastAPI, mem0 | Bundled sidecar wrapping mem0; Qdrant on-disk vector store. Alternatively, a user-hosted instance targeted via `engine: "remote"`. |
-| `app` | Electron + React + TS | Onboarding, library, settings — talks only to the local API |
+| `app` | Electron + React + TS | Onboarding, library, settings — talks only to the local API. Runs in the background with a system-tray presence; the window is a view onto the process, not the process itself (v2-006) |
+
+## Process lifetime
+
+Launching the app starts the agent, which starts `memoryd` — one launch brings up
+the whole loopback stack. Since v2-006 that stack outlives the **window**: closing
+it hides it and capture continues, and the app registers a login item so it comes
+back with your Windows session (tray only, no window). The tray icon carries the
+one piece of state that matters when there is no window to look at:
+
+| Tray state | Agent process | Capture | Reached from |
+|---|---|---|---|
+| Running | up | on | the default |
+| Paused | up | off (`config.capture.enabled`) | tray menu, or the app's rail |
+| Stopped | down | — (nothing is listening on `:7842`) | tray menu |
+
+Pause and Stop are different things on purpose: a paused agent still answers
+recall for the CLI, MCP and any AI tool wired to Lore; a stopped one answers
+nothing. Quit (tray menu) stops the agent and exits.
 
 ## Trust-critical path
 
