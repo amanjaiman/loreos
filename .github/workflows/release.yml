@@ -27,6 +27,13 @@ jobs:
   release:
     name: release
     runs-on: windows-latest
+    # Surface the signing-cert secret as a job-level env var so the "Stage signing
+    # certificate" step can gate on its presence. The `secrets` context is NOT allowed in
+    # an `if:` condition — referencing it there makes the whole workflow fail to compile
+    # (a "workflow file issue" that fails every run at startup) — but `env` is allowed.
+    # Empty when the secret is unset → an unsigned but otherwise identical build.
+    env:
+      LORE_SIGN_CERT_BASE64: ${{ secrets.LORE_SIGN_CERT_BASE64 }}
     steps:
       - uses: actions/checkout@v4
 
@@ -58,10 +65,8 @@ jobs:
       # build at it. With the secret unset these are empty and the build produces an
       # unsigned—but otherwise identical—installer (spec 011 T002 / 012 decision).
       - name: Stage signing certificate
-        if: ${{ secrets.LORE_SIGN_CERT_BASE64 != '' }}
+        if: ${{ env.LORE_SIGN_CERT_BASE64 != '' }}
         shell: pwsh
-        env:
-          LORE_SIGN_CERT_BASE64: ${{ secrets.LORE_SIGN_CERT_BASE64 }}
         run: |
           $pfx = Join-Path $env:RUNNER_TEMP "lore-signing.pfx"
           [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:LORE_SIGN_CERT_BASE64))
