@@ -8,8 +8,10 @@
 // the renderer just talks to whatever is already on :7842, degrading to the "Lore
 // isn't running" state if nothing is.
 //
-// Background capture while the window is closed (tray persistence) is product
-// behavior left to a later spec; here the agent lives for the app's lifetime.
+// Since v2-006 the agent's lifetime is the *app's* lifetime, not the *window's*: closing
+// the window hides it and capture continues, and the user can stop and restart the agent
+// from the tray. That makes start/stop a repeatable cycle rather than a one-way trip —
+// see `stop()`.
 
 import { spawn, ChildProcess } from 'child_process';
 import { app } from 'electron';
@@ -36,7 +38,21 @@ export class AgentProcess {
   private stopping = false;
   private restartTimer: NodeJS.Timeout | null = null;
 
-  /** Launches the agent if one is bundled; a no-op in dev. */
+  /**
+   * Whether there is a bundled agent for this process to supervise at all. False in dev,
+   * where the agent is run by hand — which is what greys out the tray's Stop/Start items
+   * instead of offering controls that would silently do nothing (v2-006 D7).
+   */
+  isSupervising(): boolean {
+    return resolveAgentExe() !== null;
+  }
+
+  /** Whether a supervised agent process is currently alive. */
+  isRunning(): boolean {
+    return this.child !== null;
+  }
+
+  /** Launches the agent if one is bundled; a no-op in dev. Safe to call after `stop()`. */
   start(): void {
     const exe = resolveAgentExe();
     if (!exe) {
@@ -45,6 +61,12 @@ export class AgentProcess {
           '(`dotnet run --project agent`) and the app will find it on 127.0.0.1:7842',
       );
       return;
+    }
+    // Clear the stop latch: a tray Stop followed by a tray Start must actually restart,
+    // and without this the new child's exit handler would still be suppressed.
+    this.stopping = false;
+    if (this.child) {
+      return; // already up — start is idempotent
     }
     this.spawn(exe);
   }
@@ -74,7 +96,13 @@ export class AgentProcess {
     });
   }
 
-  /** Stops the agent and prevents any pending restart. Called on app quit. */
+  /**
+   * Stops the agent and prevents the auto-restart from firing. Called on app quit and by
+   * the tray's Stop. Reversible: `start()` clears the latch this sets.
+   *
+   * The agent shuts memoryd down on its own exit; if a forceful kill outruns that, the
+   * next agent start adopts the orphan (MemorydSupervisor, spec 002 §3.3).
+   */
   stop(): void {
     this.stopping = true;
     if (this.restartTimer) {
