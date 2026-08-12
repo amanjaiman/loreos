@@ -15,5 +15,15 @@ interface Window {
     onUpdateReady: (listener: () => void) => () => void;
     /** Restart now to apply a downloaded update. */
     installUpdate: () => void;
+    /** Start-with-Windows: `supported` is false in dev and off Windows (v2-006 R2). */
+    getAutostart: () => Promise<{ supported: boolean; enabled: boolean }>;
+    /** Register/remove the login item; resolves to the state the OS reports afterwards. */
+    setAutostart: (enabled: boolean) => Promise<boolean>;
+    /** Hint to the main process that the tray's view of capture may be stale. */
+    notifyLifecycleChanged: () => void;
+    /** Subscribe to running/paused/stopped as the tray sees it; returns an unsubscribe fn. */
+    onLifecycleState: (
+      listener: (state: 'running' | 'paused' | 'stopped') => void,
+    ) => () => void;
   };
 }

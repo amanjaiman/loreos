@@ -43,4 +43,42 @@ contextBridge.exposeInMainWorld('lore', {
   installUpdate: (): void => {
     void ipcRenderer.invoke('lore:install-update');
   },
+
+  /**
+   * Start-with-Windows (v2-006 R2). `supported` is false in dev and off Windows, where
+   * there is no Squirrel stub to register — the settings toggle explains itself rather
+   * than writing a login item that would launch the wrong thing. `enabled` is read from
+   * the OS every time, so it cannot drift from what Windows will actually do.
+   */
+  getAutostart: (): Promise<{ supported: boolean; enabled: boolean }> =>
+    ipcRenderer.invoke('lore:autostart-get'),
+
+  /** Register/remove the login item; resolves to the state the OS reports afterwards. */
+  setAutostart: (enabled: boolean): Promise<boolean> =>
+    ipcRenderer.invoke('lore:autostart-set', enabled),
+
+  /**
+   * Tell the main process that something which affects the tray just changed — in
+   * practice, that the rail wrote `capture.enabled`. It re-reads the agent rather than
+   * trusting the renderer, so this is a hint, not a state push.
+   */
+  notifyLifecycleChanged: (): void => {
+    ipcRenderer.send('lore:lifecycle-refresh');
+  },
+
+  /**
+   * Subscribe to running/paused/stopped as the tray sees it. Lets the rail react to a
+   * pause issued from the tray menu without waiting out its own poll. Returns an
+   * unsubscribe function.
+   */
+  onLifecycleState: (
+    listener: (state: 'running' | 'paused' | 'stopped') => void,
+  ): (() => void) => {
+    const handler = (
+      _event: unknown,
+      state: 'running' | 'paused' | 'stopped',
+    ): void => listener(state);
+    ipcRenderer.on('lore:lifecycle-state', handler);
+    return () => ipcRenderer.removeListener('lore:lifecycle-state', handler);
+  },
 });

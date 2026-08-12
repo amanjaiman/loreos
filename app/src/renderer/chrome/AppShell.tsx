@@ -1,4 +1,10 @@
-import { useCallback, useRef, useState, type CSSProperties } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react';
 
 import { api } from '../api';
 import { useConfig, useRailSummary, useSystemStatus } from '../lib/hooks';
@@ -71,12 +77,25 @@ export function AppShell(): JSX.Element {
     try {
       await api.patchConfig({ capture: { enabled: paused } });
       await refresh();
+      // Nudge the tray so its icon changes with the click rather than on its next poll
+      // (v2-006 R4). It re-reads the agent itself; this only says "look again".
+      window.lore?.notifyLifecycleChanged?.();
     } catch {
       // Offline or rejected: the next config poll re-reports the real state.
     } finally {
       setBusy(false);
     }
   }, [paused, refresh]);
+
+  // The same switch can be thrown from the tray menu while the window is open. Re-read
+  // config when the main process says the state moved, so the rail doesn't sit stale for
+  // up to a poll interval showing the opposite of what the tray shows (v2-006 R4 AC 2).
+  useEffect(() => {
+    const subscribe = window.lore?.onLifecycleState;
+    return typeof subscribe === 'function'
+      ? subscribe(() => void refresh())
+      : undefined;
+  }, [refresh]);
 
   return (
     <div className="app-ground">

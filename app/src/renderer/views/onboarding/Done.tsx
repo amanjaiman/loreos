@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { AutostartToggle } from '../../components/AutostartToggle';
 import { Button } from '../../design-system';
 
 export function Done({
@@ -35,6 +36,15 @@ export function Done({
           ? 'Lore will start keeping your memory warm in the background.'
           : 'Lore is paused for now — turn it on whenever you like.'}
       </p>
+      <p className="onb-subtle">
+        Lore lives in your system tray. Closing its window doesn&rsquo;t stop it
+        — right-click the tray icon to pause, stop, or quit.
+      </p>
+
+      {/* Asked here rather than assumed: background capture is the promise this step
+          makes, and starting with the session is what keeps it true after a reboot. */}
+      <AutostartToggle surface="onboarding" />
+
       <p className="onb-subtle">
         Next, head to Connect to wire up your AI tools so they can recall what
         Lore keeps.
