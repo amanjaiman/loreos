@@ -131,9 +131,9 @@ user has no reason to suspect otherwise.
 - A tray icon exists whenever Lore is running, window or no window.
 - Its **artwork** differs per state — not only its tooltip — because the tooltip requires
   a hover and the point is at-a-glance legibility:
-  - **Running** — the Lore mark, Cerulean.
-  - **Paused** — the Lore mark, amber, with the arcs dropped (the mark stops "speaking").
-  - **Stopped** — the Lore mark, grey, hollow.
+  - **Running** — the full-colour, transparent Lore mark.
+  - **Paused** — the Lore mark with an amber pause badge.
+  - **Stopped** — the Lore mark with a grey, hollow stop badge.
 - The icon must stay legible on both a light and a dark Windows taskbar.
 - Its **tooltip** names the state in words: `Lore — capturing`, `Lore — paused`,
   `Lore — stopped`.

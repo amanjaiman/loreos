@@ -146,15 +146,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-md);
-  background: var(--text);
   box-shadow: var(--shadow-sm);
 }
 
 .rail__mark svg {
-  width: 15px;
-  height: 15px;
-  color: var(--bg);
+  width: 26px;
+  height: 26px;
 }
 
 .rail__word {

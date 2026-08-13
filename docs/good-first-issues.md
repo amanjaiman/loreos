@@ -33,26 +33,7 @@ redacted, not in clear text. Add a test that the provider writes to the expected
 
 ---
 
-## 2. Add a branded installer + app icon
-
-**Labels:** `good-first-issue` `area:installer` `surface:app`
-
-**Background.** The Squirrel installer and the app currently use the default Electron
-icon (`app/forge.config.ts` sets no `setupIcon`/`icon`). There's a glyph to start from
-at `app/src/renderer/design-system/assets/lore-glyph.svg`.
-
-**Task.** Produce a multi-resolution `.ico` (and PNGs as needed) from the Lore glyph,
-add it under `app/`, and wire `packagerConfig.icon` + `MakerSquirrel`'s `setupIcon`
-(and `iconUrl`) in `forge.config.ts`.
-
-**Acceptance.** `installer/build.ps1` produces an installer and app that show the Lore
-icon (taskbar, Add/Remove Programs, the setup exe).
-
-**Difficulty.** Small (asset + config).
-
----
-
-## 3. Fix the MCP integration docs to lead with `lore mcp install`
+## 2. Fix the MCP integration docs to lead with `lore mcp install`
 
 **Labels:** `good-first-issue` `area:docs`
 
@@ -73,7 +54,7 @@ won't exist after a normal install; the `lore mcp install` flow is the primary p
 
 ---
 
-## 4. Add a `lore mcp install` preset for another MCP client
+## 3. Add a `lore mcp install` preset for another MCP client
 
 **Labels:** `good-first-issue` `surface:mcp` `area:cli`
 
@@ -94,7 +75,7 @@ entry into that client's config; a test covers it.
 
 ---
 
-## 5. Ship a curated default blocklist seed for onboarding
+## 4. Ship a curated default blocklist seed for onboarding
 
 **Labels:** `good-first-issue` `area:capture`
 
@@ -114,7 +95,7 @@ still fully editable by the user; the list is documented.
 
 ---
 
-## 6. Add an app tray icon and keep capturing when the window is closed
+## 5. Add an app tray icon and keep capturing when the window is closed
 
 **Labels:** `good-first-issue` `surface:app` `type:feature`
 
@@ -134,7 +115,7 @@ quit. (Pairs well with #2, the icon asset.)
 
 ---
 
-## 7. Expand the provider setup docs with more local + hosted presets
+## 6. Expand the provider setup docs with more local + hosted presets
 
 **Labels:** `good-first-issue` `area:providers` `area:docs`
 

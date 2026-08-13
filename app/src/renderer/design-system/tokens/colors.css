@@ -21,13 +21,13 @@
 
 :root {
   /* ---- Coastal brand roles (base / default theme) ---- */
-  --primary: #0081af;          /* Cerulean */
+  --primary: #0081af; /* Cerulean */
   --primary-fg: #ffffff;
-  --accent: #f76c5e;           /* Vibrant Coral */
+  --accent: #f76c5e; /* Vibrant Coral */
   --accent-fg: #ffffff;
-  --secondary: #eaba6b;        /* Sunlit Clay */
+  --secondary: #eaba6b; /* Sunlit Clay */
   --secondary-fg: #3a2c14;
-  --tone: #ead2ac;             /* Wheat */
+  --tone: #ead2ac; /* Wheat */
 
   /* warm-neutral ramp (anchored on Carbon Black #1B2021) */
   --n-0: #fbf7ef;
@@ -42,10 +42,14 @@
   --n-9: #1b2021;
 
   /* status (--info follows the palette accent) */
-  --success: #3a9d78;  --success-fg: #ffffff;
-  --warning: #eaba6b;  --warning-fg: #3a2c14;
-  --danger:  #d2503f;  --danger-fg: #ffffff;
-  --info: var(--accent); --info-fg: var(--accent-fg);
+  --success: #3a9d78;
+  --success-fg: #ffffff;
+  --warning: #eaba6b;
+  --warning-fg: #3a2c14;
+  --danger: #d2503f;
+  --danger-fg: #ffffff;
+  --info: var(--accent);
+  --info-fg: var(--accent-fg);
 
   /* ---- semantic mapping · LIGHT (default) ---- */
   --bg: var(--n-0);
@@ -92,7 +96,7 @@
    instead of bottoming out at the cool Carbon #1B2021, so the dark ground reads as
    a lamp-lit room. Wheat (--tone) is deliberately untouched — it is what carries
    the Coastal feeling into the dark. */
-:root[data-mode="dark"] {
+:root[data-mode='dark'] {
   --n-6: #554c40;
   --n-7: #322b23;
   --n-8: #221d17;
@@ -134,5 +138,3 @@
 
   color-scheme: dark;
 }
-
-

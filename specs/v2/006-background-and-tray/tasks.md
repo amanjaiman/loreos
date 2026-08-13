@@ -31,9 +31,10 @@
 
 **Delivers:** R3, and R1 acceptance 4.
 
-- `app/tools/build-tray-icons.mjs` — the generator (D6). Committed, and pointed at from
-  `AGENTS.md`'s build reference so nobody hand-edits its output.
+- `app/tools/build-tray-icons.mjs` — the tray and Windows app-icon generator (D6).
+  Committed, and pointed at from `AGENTS.md` so nobody hand-edits its output.
 - `app/src/lifecycle/trayIcons.ts` — generated output, base64, four sizes per state.
+- `app/assets/lore.ico` / `lore.png` — generated app and installer icons.
 - `LoreLifecycle` creates the `Tray`, swaps image + tooltip on every state transition,
   and fires the one-time "still running" balloon on first hide.
 

@@ -22,8 +22,8 @@
   [`privacy.md`](privacy.md) row 3 is the disclosure.
 - ✅ Background app: system tray with running/paused/stopped, lifecycle control from
   the tray and the app, start with Windows (spec v2-006).
-- ⏳ Distribution polish: a code-signing certificate (signing is wired, opt-in), a
-  branded installer icon, and a redacting production log sink for `/system/log`.
+- ⏳ Distribution polish: a code-signing certificate (signing is wired, opt-in) and a
+  redacting production log sink for `/system/log`.
 
 ## Next
 

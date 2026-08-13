@@ -90,26 +90,24 @@ updater and leaves its visible-window path untouched.
 
 ### D6 — Icons are generated once, committed, and reproducible
 
-Electron's `nativeImage` cannot rasterise SVG, so the tray needs real bitmaps and the
-repo has no icon assets at all. `app/tools/build-tray-icons.mjs` renders the three states
-analytically (the Lore mark is a filled circle plus two stroked arcs — all exactly
-expressible as signed-distance functions) into 16/20/24/32 px PNGs, using only Node's
-`zlib`. No new dependency, no binary blob whose provenance is a mystery: re-running the
-script reproduces the committed bytes.
+Electron's `nativeImage` cannot rasterise SVG, so the tray needs real bitmaps.
+`app/tools/build-tray-icons.mjs` renders the transparent mark's three rounded layers into
+16/20/24/32 px PNGs using only Node's `zlib`. The same pass emits the
+multi-resolution Windows `.ico` used by the packaged app and Squirrel installer. No new
+dependency, no binary blob whose provenance is a mystery: re-running the script
+reproduces the committed bytes.
 
-State is carried by **shape as well as colour** — two arcs running, one paused, none (and
-hollow) stopped — so it survives a colour-blind viewer, and each state's artwork is
-re-centred in the icon box (dropping the arcs otherwise leaves the mark hugging the left
-edge of its tray slot, which reads as a rendering bug rather than a state).
+Running uses the unmodified mark. Paused and stopped add amber pause and grey hollow
+badges, respectively, so state is carried by **shape as well as colour** and the brand
+mark remains consistent across every surface.
 
 The generated PNGs are embedded as base64 in `trayIcons.ts` rather than shipped as
 files, because a tray icon read from `resources/` at runtime is one more path that can be
 wrong in a packaged build for no benefit — they total under 4 KB.
 
-**Colours** deviate from the design tokens on purpose. Running uses `--primary` Cerulean
-`#0081AF` unchanged. Paused uses `#D9973A`, a deepened `--secondary` `#EABA6B`, because
-the token value is a light amber that disappears against a light taskbar. Stopped uses
-`--n-5` `#7D7565`. All three were chosen to hold contrast on both taskbar themes.
+The pause badge uses `#D9973A`, a deepened amber that remains visible against a light
+taskbar. The stopped badge uses `--n-5` `#7D7565` and is hollow. The transparent mark
+uses the same artwork on both light and dark taskbars.
 
 ### D7 — Stop must be reversible, which `AgentProcess` currently isn't
 

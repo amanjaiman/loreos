@@ -20,6 +20,7 @@ import { rendererConfig } from './webpack.renderer.config';
 // otherwise fail packaging).
 const nativePayload = path.join(__dirname, 'native');
 const extraResource = fs.existsSync(nativePayload) ? [nativePayload] : [];
+const windowsIcon = path.join(__dirname, 'assets', 'lore.ico');
 
 // Code-signing is build-ready but opt-in (spec 011 T002): forge signs the Electron
 // app binaries + the Squirrel setup exe when a certificate is configured via env, and
@@ -39,6 +40,7 @@ const windowsSign = certFile
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
+    icon: windowsIcon,
     // The native payload (agent + CLI + skill + frozen memoryd) lands in
     // resources/native; the CLI finds LoreAgent.exe as a sibling and the supervisor
     // finds memoryd at memoryd/lore-memoryd.exe (spec 011 T001).
@@ -51,6 +53,7 @@ const config: ForgeConfig = {
     new MakerSquirrel({
       name: 'Lore',
       setupExe: 'LoreSetup.exe',
+      setupIcon: windowsIcon,
       ...(windowsSign ? { windowsSign } : {}),
     }),
     new MakerZIP({}, ['darwin']),
