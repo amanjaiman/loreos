@@ -29,6 +29,8 @@ import { setFlag } from './lifecycle/prefs';
 const FEED_HOST = 'https://lore-hazel.vercel.app';
 /** Re-check while the app is running; the launch check covers most cases. */
 const CHECK_INTERVAL_MS = 10 * 60 * 1000;
+/** Release metadata is optional; never hide a staged update behind a slow feed. */
+const RELEASE_INFO_TIMEOUT_MS = 5_000;
 
 /** A downloaded, ready-to-install update, as the rail and the changelog modal see it. */
 export interface PendingUpdate {
@@ -64,15 +66,18 @@ function logToFile(message: string): void {
  * event carries no usable notes on Windows (it only ever saw the RELEASES manifest), so we
  * hit the JSON feed for the same version and read back `{ name, notes }`. `app.getVersion()`
  * is still the *old* version at this point, which is exactly what makes the feed report the
- * newer release. Any failure degrades to the version alone with no notes — never throws.
+ * newer release. Any failure degrades to a version-less label with no notes rather than
+ * claiming the installed version is the staged update — and never throws.
  */
 async function fetchReleaseInfo(): Promise<PendingUpdate> {
   const fallback: PendingUpdate = {
-    version: `v${app.getVersion()}`,
+    version: 'a new version',
     notes: '',
   };
   try {
-    const res = await fetch(`${FEED_HOST}/update/win32/${app.getVersion()}`);
+    const res = await fetch(`${FEED_HOST}/update/win32/${app.getVersion()}`, {
+      signal: AbortSignal.timeout(RELEASE_INFO_TIMEOUT_MS),
+    });
     if (!res.ok) {
       logToFile(`notes fetch: HTTP ${res.status}`);
       return fallback;
@@ -158,7 +163,20 @@ export function initAutoUpdates(host: UpdateHost): void {
     }
   };
 
+  let checkTimer: NodeJS.Timeout | null = null;
+  let updateDownloaded = false;
+
   autoUpdater.on('update-downloaded', () => {
+    // Squirrel has staged the package. Further checks can only rediscover and re-stage the
+    // same update while the user is deciding when to restart, so stop polling immediately.
+    if (updateDownloaded) {
+      return;
+    }
+    updateDownloaded = true;
+    if (checkTimer) {
+      clearInterval(checkTimer);
+      checkTimer = null;
+    }
     logToFile('update downloaded; awaiting the user to install');
     void (async () => {
       const info = await fetchReleaseInfo();
@@ -175,5 +193,5 @@ export function initAutoUpdates(host: UpdateHost): void {
   });
 
   check();
-  setInterval(check, CHECK_INTERVAL_MS);
+  checkTimer = setInterval(check, CHECK_INTERVAL_MS);
 }

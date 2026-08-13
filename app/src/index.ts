@@ -31,8 +31,8 @@ const hasInstanceLock =
 // (it in turn supervises memoryd — spec 002). A no-op in dev, where it's run separately.
 const agent = new AgentProcess();
 
-// The single app window, held at module scope so the auto-updater can tell whether the
-// user is looking at the app (prompt to restart) or not (install silently). Null between
+// The single app window, held at module scope so the auto-updater can preserve whether a
+// user-initiated update restart came from a visible or tray-only session. Null between
 // windows (closed, or before first create).
 let mainWindow: BrowserWindow | null = null;
 
@@ -220,8 +220,8 @@ function bootstrap(): void {
     // The tray comes up before the window, so a hidden start still has a control surface.
     lifecycle.start();
 
-    // A session start (`--hidden`) or a relaunch after a silent update comes up with no
-    // window: tray only. Anything else is a user launching Lore, who wants to see it.
+    // A session start (`--hidden`) or a relaunch after the user installed an update from a
+    // tray-only session comes up with no window. Any other launch is user-visible.
     if (
       !autostart.startsHidden(process.argv) &&
       !consumeFlag('relaunchHidden')
