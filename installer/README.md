@@ -143,8 +143,8 @@ background via Squirrel + a [Hazel](https://github.com/vercel/hazel) update serv
 - **Client** ([`app/src/autoUpdate.ts`](../app/src/autoUpdate.ts)): the built-in
   Electron `autoUpdater` (Squirrel.Windows) points at
   `https://lore-hazel.vercel.app/update/win32/<current-version>`, checks on launch
-  and every 10 minutes, and **downloads** the newest `.nupkg` in the background — but
-  never installs it on its own. A downloaded update is surfaced as a card in the rail
+  and every 10 minutes until an update is staged, and **downloads** the newest `.nupkg`
+  in the background — but never installs it on its own. A downloaded update is surfaced as a card in the rail
   (above the "Now" block) and as a "Restart to update" row in the tray menu; the
   restart happens only when the user chooses it. Clicking the rail card opens a
   changelog modal whose notes come from Hazel's `notes` field (GitHub's auto-generated

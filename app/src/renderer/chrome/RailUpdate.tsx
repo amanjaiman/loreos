@@ -40,6 +40,7 @@ export function RailUpdate(): JSX.Element | null {
   if (!update) {
     return null;
   }
+  const versionKnown = update.version !== 'a new version';
 
   return (
     <>
@@ -47,7 +48,11 @@ export function RailUpdate(): JSX.Element | null {
         type="button"
         className="rail-update"
         onClick={() => setOpen(true)}
-        title={`Lore ${update.version} is ready — see what's new`}
+        title={
+          versionKnown
+            ? `Lore ${update.version} is ready — see what's new`
+            : `A new Lore version is ready — see what's new`
+        }
       >
         <span className="rail-update__glyph" aria-hidden="true">
           <Icon name="sparkles" size={15} />
@@ -63,7 +68,7 @@ export function RailUpdate(): JSX.Element | null {
       <Dialog
         open={open}
         onClose={() => setOpen(false)}
-        title={`What’s new in ${update.version}`}
+        title={versionKnown ? `What’s new in ${update.version}` : `What’s new`}
         footer={
           <div className="update-modal__footer">
             <Button variant="ghost" onClick={() => setOpen(false)}>
