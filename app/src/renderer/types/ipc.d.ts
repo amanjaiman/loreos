@@ -29,6 +29,17 @@ interface Window {
     canStartLore: () => Promise<boolean>;
     /** Start the agent — the one lifecycle action that can't go through `api.ts`. */
     startLore: () => void;
+    /** Install Lore's portable skill and any detected desktop connection. */
+    connectAgents: () => Promise<{
+      supported: boolean;
+      connected: Array<{
+        client: string;
+        surface: string;
+        path: string;
+        action: string;
+      }>;
+      error: string | null;
+    }>;
     /** Subscribe to running/paused/stopped as the tray sees it; returns an unsubscribe fn. */
     onLifecycleState: (
       listener: (state: 'running' | 'paused' | 'stopped') => void,

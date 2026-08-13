@@ -30,6 +30,20 @@ public sealed class CaptureAgentTests
             Task.FromResult(_result);
     }
 
+    private sealed class GatedExtractor : ITextExtractor
+    {
+        public TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public async Task<ExtractedText> ExtractAsync(
+            WindowSnapshot window, CancellationToken cancellationToken = default)
+        {
+            Entered.SetResult();
+            await Release.Task.WaitAsync(cancellationToken);
+            return new ExtractedText("private draft", ExtractionSource.UiAutomation);
+        }
+    }
+
     private sealed class AllowProbe : IWindowSecurityProbe
     {
         public bool HasProtectedContent(WindowSnapshot window) => false;
@@ -66,6 +80,8 @@ public sealed class CaptureAgentTests
         public required CaptureAgent Agent { get; init; }
         public required FakeTimeProvider Time { get; init; }
         public required RecordingEpisodeProcessor Episodes { get; init; }
+        public required LiveCaptureSettings Settings { get; init; }
+        public required CaptureStatusTracker Status { get; init; }
 
         public void Dispose() => Activity.Dispose();
     }
@@ -82,19 +98,25 @@ public sealed class CaptureAgentTests
         var time = new FakeTimeProvider();
         var activity = new ActivityStore(":memory:");
         var metrics = new CaptureMetrics();
-        var filter = new SensitivityFilter(
-            new Blocklist(blockedApps ?? [], []), new AllowProbe());
         var monitor = new WindowMonitor(
             windowSource?.Invoke(time) ?? new FixedSource(Window), time, TimeSpan.Zero);
         CaptureOptions captureOptions = options ?? new CaptureOptions();
+        var settings = new LiveCaptureSettings(new CaptureOptions
+        {
+            Enabled = captureOptions.Enabled,
+            BlocklistApps = (blockedApps ?? []).ToArray(),
+        });
+        var filter = new SensitivityFilter(settings, new AllowProbe());
         var processor = new RecordingEpisodeProcessor();
 
+        var status = new CaptureStatusTracker();
         var agent = new CaptureAgent(
             captureOptions,
+            settings,
             monitor,
             extractor ?? new StubExtractor(extractedText),
             filter,
-            new CaptureStatusTracker(),
+            status,
             activity,
             metrics,
             new ReadySignal(),
@@ -110,6 +132,8 @@ public sealed class CaptureAgentTests
             Agent = agent,
             Time = time,
             Episodes = processor,
+            Settings = settings,
+            Status = status,
         };
     }
 
@@ -212,6 +236,22 @@ public sealed class CaptureAgentTests
     }
 
     [Fact]
+    public async Task Pausing_during_extraction_discards_the_in_flight_result()
+    {
+        var extractor = new GatedExtractor();
+        using Harness h = Build(extractor: extractor);
+        Task<CaptureOutcome> capture = h.Agent.CaptureOnceAsync(Window, CancellationToken.None);
+        await extractor.Entered.Task;
+
+        h.Settings.Update(new System.Text.Json.Nodes.JsonObject { ["enabled"] = false });
+        extractor.Release.SetResult();
+
+        Assert.Equal(CaptureOutcome.Filtered, await capture);
+        Assert.Equal(0, h.Metrics.Snapshot().Observed);
+        Assert.Null(h.Status.Current.WindowTitle);
+    }
+
+    [Fact]
     public async Task Shutdown_flushes_the_open_episode()
     {
         using Harness h = Build(options: new CaptureOptions { PollInterval = TimeSpan.FromMilliseconds(10) });
@@ -256,8 +296,10 @@ public sealed class CaptureAgentTests
     {
         Assert.Throws<ArgumentNullException>(() => new CaptureAgent(
             null!,
+            new LiveCaptureSettings(new CaptureOptions()),
             new WindowMonitor(new FixedSource(Window), new FakeTimeProvider(), TimeSpan.Zero),
-            new StubExtractor("x"), new SensitivityFilter(Blocklist.Empty, new AllowProbe()),
+            new StubExtractor("x"), new SensitivityFilter(
+                new LiveCaptureSettings(new CaptureOptions()), new AllowProbe()),
             new CaptureStatusTracker(),
             new ActivityStore(":memory:"), new CaptureMetrics(), new ReadySignal(),
             new FakeTimeProvider(), NullLogger<CaptureAgent>.Instance,

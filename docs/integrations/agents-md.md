@@ -16,14 +16,12 @@ It assumes the [`lore` CLI](cli.md) is installed and Lore is running.
 The user runs Lore, a local personal-memory tool, exposed through the `lore` CLI.
 Use it so your help reflects who this user is.
 
-- **Before a personalized recommendation or opinion**, search their memory:
-  `lore search "<topic>" --json --limit 5`. Read `data.results[].memory` and tailor
-  your answer to what they already use and prefer.
+- **On every user message**, run `lore recall "<message>" --json --k 5`. Quietly use
+  relevant `data.results[].statement` values; an empty result is normal.
 - **When the user states a durable fact about themselves** (a preference, decision,
   or stable detail), record it: `lore add "<plain statement>"`.
 - **When asked to forget something**: `lore forget "<topic>"`.
-- **Do not** record secrets or transient details, and don't call `lore` on every
-  message — only at the moments above.
+- **Do not** record secrets or transient details.
 - `lore` exits `3` when Lore isn't running. If so, proceed without memory; never block
   on it.
 ```

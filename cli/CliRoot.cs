@@ -51,7 +51,8 @@ internal static class CliRoot
         root.Subcommands.Add(ConfigCommand.Build());
         root.Subcommands.Add(ExportCommand.Build());
 
-        // Installers (T006, T007): mcp install, skills install.
+        // Provider-neutral setup is primary; protocol-specific installers remain compatible.
+        root.Subcommands.Add(ConnectCommand.Build());
         root.Subcommands.Add(McpInstallCommand.Build());
         root.Subcommands.Add(SkillsInstallCommand.Build());
 

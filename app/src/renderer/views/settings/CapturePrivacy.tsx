@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { api, LoreOfflineError, type LoreConfigShape } from '../../api';
 import { AutostartToggle } from '../../components/AutostartToggle';
 import { ChipListEditor } from '../../components/ChipListEditor';
-import { Button, Card, Switch } from '../../design-system';
+import { Card, Switch } from '../../design-system';
 
 function stringArray(value: unknown): string[] {
   return Array.isArray(value)
@@ -13,7 +13,7 @@ function stringArray(value: unknown): string[] {
 
 /**
  * Capture & Privacy settings: the capture on/off toggle and the blocklist (apps + keywords).
- * Reads current config to prefill; writes the capture block through api.ts.
+ * Reads current config to prefill; every toggle/chip action writes immediately through api.ts.
  */
 export function CapturePrivacy({
   config,
@@ -28,6 +28,8 @@ export function CapturePrivacy({
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const saveQueue = useRef<Promise<void>>(Promise.resolve());
+  const pendingSaves = useRef(0);
 
   useEffect(() => {
     const capture = config?.capture;
@@ -38,25 +40,56 @@ export function CapturePrivacy({
     }
   }, [config]);
 
-  const save = async (): Promise<void> => {
+  const save = (
+    nextEnabled: boolean,
+    nextApps: string[],
+    nextKeywords: string[],
+  ): void => {
+    pendingSaves.current += 1;
     setSaving(true);
     setNote(null);
     setError(null);
-    try {
-      await api.patchConfig({
-        capture: { enabled, blocklistApps: apps, blocklistKeywords: keywords },
-      });
-      setNote('Saved.');
-      onSaved();
-    } catch (e) {
-      setError(
-        e instanceof LoreOfflineError
-          ? "Lore isn't running."
-          : "Couldn't save.",
-      );
-    } finally {
-      setSaving(false);
-    }
+    saveQueue.current = saveQueue.current.then(async () => {
+      try {
+        await api.patchConfig({
+          capture: {
+            enabled: nextEnabled,
+            blocklistApps: nextApps,
+            blocklistKeywords: nextKeywords,
+          },
+        });
+        setError(null);
+        setNote('Saved.');
+      } catch (e) {
+        setNote(null);
+        setError(
+          e instanceof LoreOfflineError
+            ? "Lore isn't running."
+            : "Couldn't save.",
+        );
+      } finally {
+        pendingSaves.current -= 1;
+        if (pendingSaves.current === 0) {
+          setSaving(false);
+          onSaved();
+        }
+      }
+    });
+  };
+
+  const changeEnabled = (next: boolean): void => {
+    setEnabled(next);
+    save(next, apps, keywords);
+  };
+
+  const changeApps = (next: string[]): void => {
+    setApps(next);
+    save(enabled, next, keywords);
+  };
+
+  const changeKeywords = (next: string[]): void => {
+    setKeywords(next);
+    save(enabled, apps, next);
   };
 
   return (
@@ -66,7 +99,8 @@ export function CapturePrivacy({
           <Switch
             label="Lore is listening"
             checked={enabled}
-            onChange={(e) => setEnabled(e.target.checked)}
+            onChange={(e) => changeEnabled(e.target.checked)}
+            disabled={saving}
           />
           <p className="set-subtle">
             {enabled
@@ -90,23 +124,19 @@ export function CapturePrivacy({
           label="Never capture these apps"
           placeholder="e.g. 1Password"
           items={apps}
-          onChange={setApps}
+          onChange={changeApps}
         />
         <ChipListEditor
           label="Drop anything containing"
           placeholder="e.g. password"
           items={keywords}
-          onChange={setKeywords}
+          onChange={changeKeywords}
         />
       </Card>
 
       {note !== null && <p className="set-note set-note--ok">{note}</p>}
       {error !== null && <p className="set-note set-note--err">{error}</p>}
-      <div className="set-actions">
-        <Button variant="primary" onClick={save} disabled={saving}>
-          {saving ? 'Saving…' : 'Save'}
-        </Button>
-      </div>
+      {saving && <p className="set-note">Saving…</p>}
     </div>
   );
 }

@@ -31,6 +31,10 @@ public sealed class Blocklist
             .ToArray();
     }
 
+    public IReadOnlyCollection<string> Apps => _apps;
+
+    public IReadOnlyList<string> Keywords => _keywords;
+
     /// <summary>An empty blocklist — blocks nothing. Useful as a default before config loads.</summary>
     public static Blocklist Empty { get; } = new(Array.Empty<string>(), Array.Empty<string>());
 

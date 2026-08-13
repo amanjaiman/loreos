@@ -1,3 +1,4 @@
+import { execFile } from 'child_process';
 import { app, BrowserWindow, dialog, ipcMain, Menu, screen } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -104,12 +105,13 @@ const windowIcon = (): string | undefined => {
 };
 
 const createWindow = (): void => {
+  const icon = windowIcon();
   const win = new BrowserWindow({
     ...preferredSize(),
     minWidth: 900,
     minHeight: 600,
     title: 'Lore',
-    icon: windowIcon(),
+    icon,
     backgroundColor: '#fbf7ef', // Coastal --bg, avoids a white flash before styles load
     // Fully frameless, with the window controls drawn by the renderer.
     //
@@ -131,6 +133,17 @@ const createWindow = (): void => {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
     },
   });
+
+  // BrowserWindow's icon sets WM_SETICON, while taskbar groups created from a Squirrel
+  // shortcut resolve System.AppUserModel.RelaunchIconResource. Set both explicitly so an
+  // upgrade cannot retain Electron's cached group icon under Lore's AppUserModelID.
+  if (process.platform === 'win32' && icon !== undefined) {
+    win.setAppDetails({
+      appId: WINDOWS_APP_USER_MODEL_ID,
+      appIconPath: icon,
+      appIconIndex: 0,
+    });
+  }
 
   mainWindow = win;
   win.on('closed', () => {
@@ -222,6 +235,56 @@ ipcMain.handle('lore:can-start', (): boolean => lifecycle.canControlAgent());
 
 ipcMain.handle('lore:start-agent', (): void => {
   lifecycle.startAgent();
+});
+
+ipcMain.handle('lore:connect-agents', async (): Promise<unknown> => {
+  const executable = path.join(process.resourcesPath, 'native', 'lore.exe');
+  if (!app.isPackaged || !fs.existsSync(executable)) {
+    return { supported: false, connected: [], error: null };
+  }
+
+  return new Promise((resolve) => {
+    execFile(
+      executable,
+      ['connect', '--json'],
+      { windowsHide: true, timeout: 30_000 },
+      (error, stdout, stderr) => {
+        if (error !== null) {
+          let cliMessage: string | undefined;
+          try {
+            const envelope = JSON.parse(stdout) as {
+              error?: { message?: string };
+            };
+            cliMessage = envelope.error?.message;
+          } catch {
+            // Fall through to process output when the CLI did not return JSON.
+          }
+          resolve({
+            supported: true,
+            connected: [],
+            error: cliMessage ?? (stderr.trim() || error.message),
+          });
+          return;
+        }
+        try {
+          const envelope = JSON.parse(stdout) as {
+            data?: { connected?: unknown[] };
+          };
+          resolve({
+            supported: true,
+            connected: envelope.data?.connected ?? [],
+            error: null,
+          });
+        } catch {
+          resolve({
+            supported: true,
+            connected: [],
+            error: "Lore's setup command returned an unreadable response.",
+          });
+        }
+      },
+    );
+  });
 });
 
 if (isSquirrelLifecycleLaunch) {

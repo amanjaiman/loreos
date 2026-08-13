@@ -1,10 +1,16 @@
 # Claude Desktop
 
-Claude Desktop launches Lore as a local subprocess over **stdio**. This is the
+Run `lore connect` to configure Claude Desktop automatically. Claude Desktop launches
+Lore as a local subprocess over **stdio**. This is the
 original Lore v1 setup — if you used Lore with Claude Desktop before, your existing
 config still works unchanged.
 
-## 1. Open the config file
+## Manual setup
+
+The automatic command writes the correct versioned install path. If you edit the config
+manually, first run `where LoreAgent.exe` and use the full path it reports below.
+
+### 1. Open the config file
 
 Edit (creating it if it doesn't exist):
 
@@ -20,7 +26,7 @@ You can also reach it from Claude Desktop: **Settings → Developer → Edit Con
 {
   "mcpServers": {
     "lore": {
-      "command": "C:\\Program Files\\Lore\\LoreAgent.exe",
+      "command": "C:\\path\\reported\\by\\where\\LoreAgent.exe",
       "args": ["--mcp"]
     }
   }

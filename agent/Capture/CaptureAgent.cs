@@ -19,6 +19,7 @@ namespace Lore.Agent.Capture;
 public sealed class CaptureAgent : BackgroundService
 {
     private readonly CaptureOptions _options;
+    private readonly LiveCaptureSettings _settings;
     private readonly WindowMonitor _monitor;
     private readonly ITextExtractor _extractor;
     private readonly SensitivityFilter _filter;
@@ -36,6 +37,7 @@ public sealed class CaptureAgent : BackgroundService
 
     public CaptureAgent(
         CaptureOptions options,
+        LiveCaptureSettings settings,
         WindowMonitor monitor,
         ITextExtractor extractor,
         SensitivityFilter filter,
@@ -49,6 +51,7 @@ public sealed class CaptureAgent : BackgroundService
         IEpisodeProcessor episodeProcessor)
     {
         ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(monitor);
         ArgumentNullException.ThrowIfNull(extractor);
         ArgumentNullException.ThrowIfNull(filter);
@@ -61,6 +64,7 @@ public sealed class CaptureAgent : BackgroundService
         ArgumentNullException.ThrowIfNull(episodes);
         ArgumentNullException.ThrowIfNull(episodeProcessor);
         _options = options;
+        _settings = settings;
         _monitor = monitor;
         _extractor = extractor;
         _filter = filter;
@@ -76,12 +80,6 @@ public sealed class CaptureAgent : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (!_options.Enabled)
-        {
-            _logger.LogInformation("capture is disabled by configuration; the loop will not run");
-            return;
-        }
-
         try
         {
             await _readiness.WaitUntilReadyAsync(stoppingToken).ConfigureAwait(false);
@@ -94,6 +92,13 @@ public sealed class CaptureAgent : BackgroundService
         _logger.LogInformation("capture loop started");
         while (!stoppingToken.IsCancellationRequested)
         {
+            if (!_settings.Enabled)
+            {
+                _captureStatus.RecordExcluded();
+                await DelaySafe(_options.PollInterval, stoppingToken).ConfigureAwait(false);
+                continue;
+            }
+
             try
             {
                 WindowObservation observation = _monitor.Poll();
@@ -147,6 +152,14 @@ public sealed class CaptureAgent : BackgroundService
     internal async Task<CaptureOutcome> CaptureOnceAsync(WindowSnapshot window, CancellationToken cancellationToken)
     {
         ExtractedText extracted = await _extractor.ExtractAsync(window, cancellationToken).ConfigureAwait(false);
+
+        // Pause can arrive while UIA/OCR is in flight. Discard that result before it can update
+        // status, activity, or an episode so the pause boundary is privacy-safe.
+        if (!_settings.Enabled)
+        {
+            _captureStatus.RecordExcluded();
+            return CaptureOutcome.Filtered;
+        }
 
         // Filter before anything else looks at the text (constitution §4.4).
         FilterResult filtered = _filter.Apply(window, extracted.Text);

@@ -17,14 +17,14 @@ namespace Lore.Agent.Capture;
 /// so a sensitive title can't slip through on benign body text or vice versa.</para></summary>
 public sealed class SensitivityFilter
 {
-    private readonly Blocklist _blocklist;
+    private readonly LiveCaptureSettings _settings;
     private readonly IWindowSecurityProbe _securityProbe;
 
-    public SensitivityFilter(Blocklist blocklist, IWindowSecurityProbe securityProbe)
+    public SensitivityFilter(LiveCaptureSettings settings, IWindowSecurityProbe securityProbe)
     {
-        ArgumentNullException.ThrowIfNull(blocklist);
+        ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(securityProbe);
-        _blocklist = blocklist;
+        _settings = settings;
         _securityProbe = securityProbe;
     }
 
@@ -38,12 +38,13 @@ public sealed class SensitivityFilter
         string title = window.Title;
 
         // Layer 1: blocklist — the user's explicit choices.
-        if (_blocklist.MatchesApp(window.ProcessExecutable))
+        Blocklist blocklist = _settings.Blocklist;
+        if (blocklist.MatchesApp(window.ProcessExecutable))
         {
             return FilterResult.Block(FilterReason.BlockedApp);
         }
 
-        if (_blocklist.MatchesKeyword(title) || _blocklist.MatchesKeyword(body))
+        if (blocklist.MatchesKeyword(title) || blocklist.MatchesKeyword(body))
         {
             return FilterResult.Block(FilterReason.BlockedKeyword);
         }
@@ -75,7 +76,7 @@ public sealed class SensitivityFilter
         string body = text ?? string.Empty;
 
         // Layer 1 (keywords): the user's explicit choices apply to any text source.
-        if (_blocklist.MatchesKeyword(body))
+        if (_settings.Blocklist.MatchesKeyword(body))
         {
             return FilterResult.Block(FilterReason.BlockedKeyword);
         }

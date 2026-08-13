@@ -73,9 +73,9 @@ Navigation is a small set of header tabs (system `Tabs`), single view at a time.
    answers "why does/doesn't Lore know X?" and is where trust is won.
 4. **Settings.** Provider & embedder (existing 004 flows re-skinned, including
    connection test), capture controls (blocklist editor, dwell/episode knobs,
-   daily budget, pause capture), connections (MCP install per client + REST/CLI
-   pointers), appearance (ThemeSelector), and data (open data dir, export,
-   delete-all with confirmation).
+   daily budget, pause capture), connections (one portable agent setup action with
+   advanced MCP/REST pointers), and data (open data dir, export, delete-all with
+   confirmation). Theme control lives in the rail.
 5. **Onboarding (first run).** The v1 flow's contract survives with the new skin
    and one addition: privacy explainer → connect a model (key or URL, with test) →
    **what Lore remembers** (the v2 memory model in three sentences: facts not

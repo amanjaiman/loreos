@@ -76,7 +76,8 @@ public static class SystemEndpoints
             return null;
         }
 
-        bool enabled = await IsCaptureEnabledAsync(services, ct).ConfigureAwait(false);
+        bool enabled = services.GetService<LiveCaptureSettings>()?.Enabled
+            ?? await IsCaptureEnabledAsync(services, ct).ConfigureAwait(false);
         CaptureTarget target = tracker.Current;
 
         // Binding rule 2: a disabled (paused) agent must reveal nothing about the current window,

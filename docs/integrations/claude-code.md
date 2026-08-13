@@ -1,6 +1,7 @@
 # Claude Code
 
-Claude Code (the CLI) supports both transports. **stdio** is the simplest; use
+Run `lore connect` for the recommended Agent Skill setup. Claude Code also supports
+both MCP transports; use
 **Streamable HTTP** if you'd rather connect to the already-running Lore app.
 
 ## Option A — stdio (recommended)
@@ -9,14 +10,14 @@ Add Lore with `claude mcp add`. Everything after `--` is the command Claude Code
 will launch:
 
 ```sh
-claude mcp add lore -- "C:\Program Files\Lore\LoreAgent.exe" --mcp
+claude mcp add lore -- "C:\path\reported\by\where\LoreAgent.exe" --mcp
 ```
 
 By default this adds it for the current project (`local` scope). To make Lore
 available in every project, add `--scope user`:
 
 ```sh
-claude mcp add lore --scope user -- "C:\Program Files\Lore\LoreAgent.exe" --mcp
+claude mcp add lore --scope user -- "C:\path\reported\by\where\LoreAgent.exe" --mcp
 ```
 
 ## Option B — Streamable HTTP
