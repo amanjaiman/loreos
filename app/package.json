@@ -1,7 +1,7 @@
 {
   "name": "lore-app",
   "productName": "Lore",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Lore desktop app: onboarding, library, and settings for your personal memory layer.",
   "main": ".webpack/main",
   "private": true,

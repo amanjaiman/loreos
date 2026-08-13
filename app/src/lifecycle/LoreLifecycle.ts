@@ -28,6 +28,8 @@ export type LoreState = 'running' | 'paused' | 'stopped';
 export interface LifecycleHost {
   getWindow(): BrowserWindow | null;
   createWindow(): void;
+  /** Apply the downloaded update and restart. Wired to the updater (autoUpdate.ts). */
+  installUpdate(): void;
 }
 
 /**
@@ -92,6 +94,8 @@ function trayImage(state: LoreState): NativeImage {
 export class LoreLifecycle {
   private tray: Tray | null = null;
   private state: LoreState = 'stopped';
+  /** Version of a downloaded, ready-to-install update, or null. Drives the tray's update row. */
+  private updateVersion: string | null = null;
   /** Set on the first real quit; until then, closing the window only hides it. */
   private quitting = false;
   private pollTimer: NodeJS.Timeout | null = null;
@@ -243,6 +247,19 @@ export class LoreLifecycle {
     return this.agent.isSupervising();
   }
 
+  /**
+   * Note that an update has downloaded and is ready to install. The tray then offers a
+   * "Restart to update" row and says so in its tooltip — the same pending update the rail
+   * surfaces (autoUpdate.ts), so the two control surfaces never disagree.
+   */
+  setUpdateReady(version: string): void {
+    if (version === this.updateVersion) {
+      return;
+    }
+    this.updateVersion = version;
+    this.render();
+  }
+
   // ---- tray ----------------------------------------------------------------------
 
   private createTray(): void {
@@ -269,7 +286,8 @@ export class LoreLifecycle {
       return;
     }
     this.tray.setImage(trayImage(this.state));
-    this.tray.setToolTip(TOOLTIPS[this.state]);
+    const suffix = this.updateVersion ? ' · update ready' : '';
+    this.tray.setToolTip(TOOLTIPS[this.state] + suffix);
     this.tray.setContextMenu(this.buildMenu());
   }
 
@@ -285,10 +303,25 @@ export class LoreLifecycle {
     // do nothing. Say so by greying them rather than lying.
     const supervising = this.agent.isSupervising();
 
-    return Menu.buildFromTemplate([
+    const items: Electron.MenuItemConstructorOptions[] = [
       { label: MENU_HEADERS[this.state], enabled: false },
       { type: 'separator' },
       { label: 'Open Lore', click: () => this.showWindow() },
+    ];
+
+    // A downloaded update, offered here as a peer to Open — restarting is the user's call,
+    // and this is the quickest way to say yes without opening the window (D: no silent install).
+    if (this.updateVersion) {
+      items.push(
+        { type: 'separator' },
+        {
+          label: `Restart to update — ${this.updateVersion}`,
+          click: () => this.host.installUpdate(),
+        },
+      );
+    }
+
+    items.push(
       { type: 'separator' },
       {
         label: paused ? 'Resume capture' : 'Pause capture',
@@ -302,7 +335,9 @@ export class LoreLifecycle {
       },
       { type: 'separator' },
       { label: 'Quit Lore', click: () => this.quit() },
-    ]);
+    );
+
+    return Menu.buildFromTemplate(items);
   }
 
   /**

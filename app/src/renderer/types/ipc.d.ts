@@ -11,8 +11,12 @@ interface Window {
     isMaximized: () => Promise<boolean>;
     /** Subscribe to maximise/restore; returns an unsubscribe function. */
     onWindowState: (listener: (maximized: boolean) => void) => () => void;
-    /** Subscribe to "an update downloaded and is ready to install"; returns an unsubscribe fn. */
-    onUpdateReady: (listener: () => void) => () => void;
+    /** The pending downloaded update, or null — read on mount to catch a missed push. */
+    getUpdateState: () => Promise<{ version: string; notes: string } | null>;
+    /** Subscribe to "an update downloaded and is ready"; carries version + notes. */
+    onUpdateReady: (
+      listener: (info: { version: string; notes: string }) => void,
+    ) => () => void;
     /** Restart now to apply a downloaded update. */
     installUpdate: () => void;
     /** Start-with-Windows: `supported` is false in dev and off Windows (v2-006 R2). */

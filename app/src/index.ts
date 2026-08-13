@@ -1,6 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, screen } from 'electron';
 import { AgentProcess } from './agentProcess';
-import { initAutoUpdates } from './autoUpdate';
+import { initAutoUpdates, installDownloadedUpdate } from './autoUpdate';
 import * as autostart from './lifecycle/autostart';
 import { LoreLifecycle } from './lifecycle/LoreLifecycle';
 import { consumeFlag } from './lifecycle/prefs';
@@ -41,6 +41,7 @@ let mainWindow: BrowserWindow | null = null;
 const lifecycle = new LoreLifecycle(agent, {
   getWindow: () => mainWindow,
   createWindow: () => createWindow(),
+  installUpdate: () => installDownloadedUpdate(() => mainWindow),
 });
 
 /**
@@ -233,8 +234,12 @@ function bootstrap(): void {
     autostart.applyDefaultOnce();
 
     // In-app updates via Squirrel + the reused Hazel feed (packaged Windows only; a no-op
-    // otherwise). Started after the window exists so it can prompt the user to restart.
-    initAutoUpdates(() => mainWindow);
+    // otherwise). Downloads in the background but installs nothing on its own — a ready update
+    // is surfaced in the rail and the tray, and the user chooses when to restart.
+    initAutoUpdates({
+      getWindow: () => mainWindow,
+      onUpdateReady: (info) => lifecycle.setUpdateReady(info.version),
+    });
   });
 
   // Closing the last window no longer quits: Lore is a background app with a tray, and

@@ -810,68 +810,134 @@
   }
 }
 
-/* ---- update-ready banner ----
-   A quiet card that floats over the bottom-right of the frame once an update has finished
-   downloading. It only mounts when there's something to say (UpdateBanner.tsx), so it never
-   costs layout otherwise. Fixed to the viewport so it clears the inset card and rail. */
-.update-banner {
-  position: fixed;
-  right: var(--space-4);
-  bottom: var(--space-4);
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  max-width: min(420px, calc(100vw - 2 * var(--space-4)));
-  padding: var(--space-3) var(--space-4);
-  background: var(--surface);
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-pop);
-  animation: update-banner-in var(--dur-slow) var(--ease-spring, var(--ease));
-}
-
-.update-banner__glyph {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-full);
-  color: var(--primary);
-  background: var(--primary-soft);
-}
-
-.update-banner__text {
-  min-width: 0;
-}
-
-.update-banner__title {
-  margin: 0;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.update-banner__body {
-  margin: 0;
-  font-size: 0.875em;
-  color: var(--text-muted);
-}
-
-.update-banner__actions {
+/* ---- update-ready, in the rail ----
+   A quiet card just above the ambient "Now" block, shown only once an update has finished
+   downloading (RailUpdate.tsx). It's a button: clicking opens the changelog modal, where the
+   user chooses to restart. Lore never installs an update on its own, so this is never a
+   countdown or a nag — just a standing offer that sits with the rail's other ambient state. */
+.rail-update {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin-inline-start: auto;
+  width: 100%;
+  margin-bottom: var(--space-2);
+  padding: var(--space-2);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--primary-soft);
+  text-align: left;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  animation: rail-update-in var(--dur-slow) var(--ease-spring, var(--ease));
+  transition:
+    background var(--dur) var(--ease),
+    border-color var(--dur) var(--ease);
 }
 
-@keyframes update-banner-in {
+.rail-update:hover {
+  border-color: var(--primary);
+}
+
+.rail-update:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.rail-update__glyph {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-full);
+  color: var(--primary);
+  background: var(--surface);
+}
+
+.rail-update__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rail-update__title {
+  font-size: var(--text-xs);
+  font-weight: var(--fw-semibold);
+  color: var(--text);
+}
+
+.rail-update__meta {
+  font-size: var(--text-2xs);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@keyframes rail-update-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* ---- changelog modal ----
+   The DS Dialog holds the frame; these style the release-notes body inside it, rendered from
+   Hazel's GitHub notes by RailUpdate.tsx's small markdown renderer. */
+.update-modal__footer {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.update-notes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: 46vh;
+  overflow-y: auto;
+}
+
+.update-notes h4 {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--text);
+}
+
+.update-notes h4:first-child {
+  margin-top: 0;
+}
+
+.update-notes p {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.update-notes ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding-left: var(--space-4);
+}
+
+.update-notes li {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.update-notes strong {
+  font-weight: var(--fw-semibold);
+  color: var(--text);
+}
+
+.update-notes__empty {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-subtle);
 }

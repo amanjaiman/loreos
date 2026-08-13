@@ -29,12 +29,24 @@ contextBridge.exposeInMainWorld('lore', {
   },
 
   /**
-   * Subscribe to "an update finished downloading and is ready to install on restart". The
-   * main process only emits this while the window is visible (otherwise it installs
-   * silently), so this fires only when there's a user to prompt. Returns an unsubscribe fn.
+   * The pending update, if one has already downloaded — read on mount, since a window opened
+   * after the download completed would have missed the `onUpdateReady` push. Null otherwise.
    */
-  onUpdateReady: (listener: () => void): (() => void) => {
-    const handler = (): void => listener();
+  getUpdateState: (): Promise<{ version: string; notes: string } | null> =>
+    ipcRenderer.invoke('lore:get-update-state'),
+
+  /**
+   * Subscribe to "an update finished downloading and is ready to install on restart". Lore
+   * never installs on its own now — this is the signal to surface the choice — and carries the
+   * release version + notes so the changelog can be shown. Returns an unsubscribe fn.
+   */
+  onUpdateReady: (
+    listener: (info: { version: string; notes: string }) => void,
+  ): (() => void) => {
+    const handler = (
+      _event: unknown,
+      info: { version: string; notes: string },
+    ): void => listener(info);
     ipcRenderer.on('lore:update-ready', handler);
     return () => ipcRenderer.removeListener('lore:update-ready', handler);
   },

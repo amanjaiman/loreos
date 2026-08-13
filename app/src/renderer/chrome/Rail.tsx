@@ -4,6 +4,7 @@ import { Icon } from '../lib/Icon';
 import { useRouter, type Route } from '../lib/router';
 import { LiveElement, type AmbientStatus } from './LiveElement';
 import { LoreMark } from './LoreMark';
+import { RailUpdate } from './RailUpdate';
 import { ThemeToggle } from './ThemeToggle';
 
 const NAV: Array<{ route: Route; label: string; icon: string }> = [
@@ -100,6 +101,10 @@ export function Rail({
       </nav>
 
       <div className="rail__mid" />
+
+      {/* Above the ambient block: a ready update, shown only when there is one. It sits here,
+          not over the content, so it's legible from every screen without covering anything. */}
+      <RailUpdate />
 
       {/* Now first, then what it just kept below — the trace reads as the live element
           continuing downward in time, which only works in that order. */}

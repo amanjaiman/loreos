@@ -16,7 +16,6 @@ import { Settings } from '../views/settings/Settings';
 import { Today } from '../views/Today';
 import { type AmbientStatus } from './LiveElement';
 import { Rail } from './Rail';
-import { UpdateBanner } from './UpdateBanner';
 import { WindowControls } from './WindowControls';
 
 const VIEWS = {
@@ -134,8 +133,6 @@ export function AppShell(): JSX.Element {
           <View key={route} />
         </div>
       </main>
-      {/* Sits above the ground plane; only renders once an update is downloaded and ready. */}
-      <UpdateBanner />
     </div>
   );
 }
