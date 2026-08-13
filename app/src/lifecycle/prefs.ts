@@ -15,7 +15,7 @@ import * as path from 'path';
 interface Prefs {
   /** The "Lore is still running" tray balloon has been shown once (R1 acceptance 4). */
   hideBalloonShown?: boolean;
-  /** Set before a silent update install so the post-update launch stays hidden (D5). */
+  /** Set when an update restart is requested from the tray so relaunch stays hidden (D5). */
   relaunchHidden?: boolean;
   /** The autostart default (on) has been applied once, so we never re-enable it
    *  behind the back of a user who turned it off (R2). */

@@ -1,6 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, screen } from 'electron';
 import { AgentProcess } from './agentProcess';
-import { initAutoUpdates } from './autoUpdate';
+import { initAutoUpdates, installDownloadedUpdate } from './autoUpdate';
 import * as autostart from './lifecycle/autostart';
 import { LoreLifecycle } from './lifecycle/LoreLifecycle';
 import { consumeFlag } from './lifecycle/prefs';
@@ -31,8 +31,8 @@ const hasInstanceLock =
 // (it in turn supervises memoryd — spec 002). A no-op in dev, where it's run separately.
 const agent = new AgentProcess();
 
-// The single app window, held at module scope so the auto-updater can tell whether the
-// user is looking at the app (prompt to restart) or not (install silently). Null between
+// The single app window, held at module scope so the auto-updater can preserve whether a
+// user-initiated update restart came from a visible or tray-only session. Null between
 // windows (closed, or before first create).
 let mainWindow: BrowserWindow | null = null;
 
@@ -41,6 +41,7 @@ let mainWindow: BrowserWindow | null = null;
 const lifecycle = new LoreLifecycle(agent, {
   getWindow: () => mainWindow,
   createWindow: () => createWindow(),
+  installUpdate: () => installDownloadedUpdate(() => mainWindow),
 });
 
 /**
@@ -219,8 +220,8 @@ function bootstrap(): void {
     // The tray comes up before the window, so a hidden start still has a control surface.
     lifecycle.start();
 
-    // A session start (`--hidden`) or a relaunch after a silent update comes up with no
-    // window: tray only. Anything else is a user launching Lore, who wants to see it.
+    // A session start (`--hidden`) or a relaunch after the user installed an update from a
+    // tray-only session comes up with no window. Any other launch is user-visible.
     if (
       !autostart.startsHidden(process.argv) &&
       !consumeFlag('relaunchHidden')
@@ -233,8 +234,12 @@ function bootstrap(): void {
     autostart.applyDefaultOnce();
 
     // In-app updates via Squirrel + the reused Hazel feed (packaged Windows only; a no-op
-    // otherwise). Started after the window exists so it can prompt the user to restart.
-    initAutoUpdates(() => mainWindow);
+    // otherwise). Downloads in the background but installs nothing on its own — a ready update
+    // is surfaced in the rail and the tray, and the user chooses when to restart.
+    initAutoUpdates({
+      getWindow: () => mainWindow,
+      onUpdateReady: (info) => lifecycle.setUpdateReady(info.version),
+    });
   });
 
   // Closing the last window no longer quits: Lore is a background app with a tray, and
