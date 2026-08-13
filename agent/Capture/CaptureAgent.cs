@@ -153,6 +153,14 @@ public sealed class CaptureAgent : BackgroundService
     {
         ExtractedText extracted = await _extractor.ExtractAsync(window, cancellationToken).ConfigureAwait(false);
 
+        // Pause can arrive while UIA/OCR is in flight. Discard that result before it can update
+        // status, activity, or an episode so the pause boundary is privacy-safe.
+        if (!_settings.Enabled)
+        {
+            _captureStatus.RecordExcluded();
+            return CaptureOutcome.Filtered;
+        }
+
         // Filter before anything else looks at the text (constitution §4.4).
         FilterResult filtered = _filter.Apply(window, extracted.Text);
         if (filtered.Blocked)

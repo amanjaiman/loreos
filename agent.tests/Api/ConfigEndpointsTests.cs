@@ -155,6 +155,23 @@ public sealed class ConfigEndpointsTests : IDisposable
         Assert.True(settings.Blocklist.MatchesKeyword("salary discussion"));
     }
 
+    [Fact]
+    public async Task Patch_capture_immediately_clears_the_visible_capture_target()
+    {
+        var store = new InMemoryCredentialStore();
+        var settings = new LiveCaptureSettings(new CaptureOptions());
+        var status = new CaptureStatusTracker();
+        status.RecordCaptured("Private payroll", DateTimeOffset.UtcNow);
+        await using LoreApiHarness harness = await StartAsync(store, liveCapture: settings, status: status);
+
+        (await harness.Client.PatchAsJsonAsync(
+            new Uri("/config", UriKind.Relative),
+            new { capture = new { blocklistKeywords = new[] { "payroll" } } }))
+            .EnsureSuccessStatusCode();
+
+        Assert.Null(status.Current.WindowTitle);
+    }
+
     public void Dispose()
     {
         if (File.Exists(_path))
@@ -166,7 +183,8 @@ public sealed class ConfigEndpointsTests : IDisposable
     private Task<LoreApiHarness> StartAsync(
         InMemoryCredentialStore store,
         IProviderReloader? reloader = null,
-        LiveCaptureSettings? liveCapture = null) =>
+        LiveCaptureSettings? liveCapture = null,
+        CaptureStatusTracker? status = null) =>
         LoreApiHarness.StartAsync(
             services =>
             {
@@ -175,6 +193,10 @@ public sealed class ConfigEndpointsTests : IDisposable
                 if (liveCapture is not null)
                 {
                     services.AddSingleton(liveCapture);
+                }
+                if (status is not null)
+                {
+                    services.AddSingleton(status);
                 }
             },
             app => app.MapConfigEndpoints());

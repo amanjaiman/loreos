@@ -51,6 +51,11 @@ public sealed class ConnectCommandTests : IDisposable
         Assert.Equal(ExitCodes.Success, Run(home, appData, agent));
         Assert.Equal(ExitCodes.Success, Run(home, appData, agent));
 
+        Assert.True(File.Exists(Path.Combine(home, ".cursor", "skills", "lore", "SKILL.md")));
+        Assert.True(File.Exists(Path.Combine(home, ".gemini", "skills", "lore", "SKILL.md")));
+        Assert.True(File.Exists(Path.Combine(home, ".hermes", "skills", "lore", "SKILL.md")));
+        Assert.True(File.Exists(Path.Combine(home, ".pi", "agent", "skills", "lore", "SKILL.md")));
+
         string config = Path.Combine(appData, "Claude", "claude_desktop_config.json");
         Assert.Equal(agent, JsonNode.Parse(File.ReadAllText(config))!["mcpServers"]!["lore"]!["command"]!.GetValue<string>());
     }

@@ -250,10 +250,19 @@ ipcMain.handle('lore:connect-agents', async (): Promise<unknown> => {
       { windowsHide: true, timeout: 30_000 },
       (error, stdout, stderr) => {
         if (error !== null) {
+          let cliMessage: string | undefined;
+          try {
+            const envelope = JSON.parse(stdout) as {
+              error?: { message?: string };
+            };
+            cliMessage = envelope.error?.message;
+          } catch {
+            // Fall through to process output when the CLI did not return JSON.
+          }
           resolve({
             supported: true,
             connected: [],
-            error: stderr.trim() || error.message,
+            error: cliMessage ?? (stderr.trim() || error.message),
           });
           return;
         }

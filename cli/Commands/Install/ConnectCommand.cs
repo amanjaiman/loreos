@@ -51,6 +51,14 @@ internal static class ConnectCommand
             // shared convention. A copy is deliberate on Windows: it works without symlink rights.
             InstallSkill("Claude Code", Path.Combine(userProfile, ".claude", "skills", "lore"));
 
+            foreach ((string client, string home) in NativeSkillTargets(userProfile))
+            {
+                if (connectAll || Directory.Exists(home))
+                {
+                    InstallSkill(client, Path.Combine(home, "skills", "lore"));
+                }
+            }
+
             string claudeDir = Path.Combine(appData, "Claude");
             if (connectAll || Directory.Exists(claudeDir))
             {
@@ -111,4 +119,12 @@ internal static class ConnectCommand
     private static string ResolveAgentPath() => Path.Combine(AppContext.BaseDirectory, "LoreAgent.exe");
 
     private static string ResolveSkillSource() => Path.Combine(AppContext.BaseDirectory, "skills", "lore");
+
+    private static IEnumerable<(string Client, string Home)> NativeSkillTargets(string userProfile)
+    {
+        yield return ("Cursor", Path.Combine(userProfile, ".cursor"));
+        yield return ("Gemini CLI", Path.Combine(userProfile, ".gemini"));
+        yield return ("Hermes", Path.Combine(userProfile, ".hermes"));
+        yield return ("Pi", Path.Combine(userProfile, ".pi", "agent"));
+    }
 }

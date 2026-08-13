@@ -1,6 +1,6 @@
 ---
 name: lore
-description: Use the user's personal Lore memory so answers reflect what they've done, prefer, and decided. Use when about to give a personalized recommendation or opinion, when the user states a durable preference/decision/fact about themselves, when they ask what you know about them, or when they ask you to forget something. Backed by the local `lore` CLI.
+description: On every user message, use the user's personal Lore memory to recall relevant context before answering. Also save durable preferences, decisions, and facts, and forget memories on explicit request. Backed by the local `lore` CLI.
 user-invocable: true
 ---
 
@@ -16,8 +16,10 @@ Everything is local (`127.0.0.1`); nothing leaves the machine.
 
 ## When to use Lore
 
+- **On every user message** - recall first so relevant personal context can shape the response.
+
 - **Before giving a personalized recommendation or opinion** — what editor, library,
-  framework, or approach to use; how to set something up. Search first so you build
+  framework, or approach to use; how to set something up. Recall first so you build
   on what they already use and prefer.
 - **When the user states a durable fact about themselves** — a preference ("I prefer
   X"), a decision ("we went with Y"), a stable detail ("my main project is Z"),
@@ -34,8 +36,8 @@ Everything is local (`127.0.0.1`); nothing leaves the machine.
   secrets, but don't send them in the first place.)
 - **Things the user wouldn't want persisted.** If unsure whether a fact is durable
   and wanted, ask before recording.
-- Recall on every user message. The endpoint is deliberately selective: an empty result is
-  the normal answer when no durable memory is relevant.
+
+An empty recall result is normal when no durable memory is relevant.
 
 ## How to use Lore
 

@@ -45,7 +45,8 @@ public sealed class LiveCaptureSettings
             .Select(name => value[name])
             .OfType<JsonArray>()
             .FirstOrDefault();
-        return array?.Select(node => node?.GetValue<string>())
+        return array?.Select(node =>
+                node is JsonValue value && value.TryGetValue(out string? text) ? text : null)
             .Where(item => !string.IsNullOrWhiteSpace(item))
             .Cast<string>()
             .ToArray();

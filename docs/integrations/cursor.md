@@ -1,6 +1,7 @@
 # Cursor
 
-Cursor reads MCP servers from a JSON config. Use **stdio** to have Cursor launch
+Run `lore connect` for the recommended Agent Skill setup. Cursor can also read MCP
+servers from a JSON config. Use **stdio** to have Cursor launch
 Lore, or **Streamable HTTP** to point it at the running Lore app.
 
 ## 1. Open the config file
@@ -18,7 +19,7 @@ Or use **Settings → MCP → Add new global MCP server**, which opens the same 
 {
   "mcpServers": {
     "lore": {
-      "command": "C:\\Program Files\\Lore\\LoreAgent.exe",
+      "command": "C:\\path\\reported\\by\\where\\LoreAgent.exe",
       "args": ["--mcp"]
     }
   }
@@ -37,7 +38,7 @@ Or use **Settings → MCP → Add new global MCP server**, which opens the same 
 }
 ```
 
-Use the full, double-escaped path to `LoreAgent.exe` for the stdio form.
+Run `where LoreAgent.exe` and use that full, double-escaped path for the stdio form.
 
 ## 3. Verify
 

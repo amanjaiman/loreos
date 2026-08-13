@@ -22,17 +22,24 @@ export function Connections(): JSX.Element {
   const connect = async (): Promise<void> => {
     setConnecting(true);
     setMessage(null);
-    const result = await window.lore.connectAgents();
-    setConnecting(false);
-    setResults(result.connected);
-    if (!result.supported) {
-      setMessage(
-        'Run lore connect in a terminal when using a development build.',
-      );
-    } else if (result.error !== null) {
-      setMessage(result.error);
-    } else {
-      setMessage('Connected. Restart open agent tools so they discover Lore.');
+    try {
+      const result = await window.lore.connectAgents();
+      setResults(result.connected);
+      if (!result.supported) {
+        setMessage(
+          'Run lore connect in a terminal when using a development build.',
+        );
+      } else if (result.error !== null) {
+        setMessage(result.error);
+      } else {
+        setMessage(
+          'Connected. Restart open agent tools so they discover Lore.',
+        );
+      }
+    } catch {
+      setMessage("Couldn't connect agent tools.");
+    } finally {
+      setConnecting(false);
     }
   };
 
