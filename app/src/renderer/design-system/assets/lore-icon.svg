@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">Lore icon</title>
+  <desc id="desc">Three cascading context layers moving from activity to synthesized memory to portable context.</desc>
+  <rect x="408" y="408" width="520" height="520" rx="130" fill="#E9C07A"/>
+  <rect x="252" y="252" width="520" height="520" rx="130" fill="#9A704E"/>
+  <rect x="96" y="96" width="520" height="520" rx="130" fill="#007FA8"/>
+</svg>

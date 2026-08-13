@@ -39,13 +39,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--primary-fg) 14%, transparent);
 }
 
 .onb__mark svg {
-  width: 19px;
-  color: var(--primary-fg);
+  width: 34px;
+  height: 34px;
 }
 
 .onb__wordmark {

@@ -98,7 +98,7 @@ The voice is **calm, certain, and quietly clever**. Lore is an assistant that ha
 - **Usage:** Icons render via `<i data-lucide="name"></i>` followed by `lucide.createIcons()`. React components (`Button`, `IconButton`, `Toast`) take a Lucide **name string** and refresh icons after render.
 - **Color & size:** Always `currentColor` so icons inherit text/role color and theme automatically. UI icons sit at 16–18px; button icons scale to ~1.2em of the label.
 - **Intrinsic affordances** (checkbox tick, select chevron, close ×) are tiny inline SVGs baked into the component CSS/JSX — not Lucide — so controls never depend on the icon CDN being present.
-- **Emoji / unicode as icons:** never. **The brand glyph** (ambient broadcast arcs, `assets/lore-glyph.svg`) is the one bespoke mark; it uses `currentColor` and pairs with the `Lore.` wordmark.
+- **Emoji / unicode as icons:** never. **The brand mark** is the transparent three-layer context icon (`assets/lore-icon.svg`) paired with the `Lore` wordmark.
 
 ---
 
@@ -108,7 +108,7 @@ The voice is **calm, certain, and quietly clever**. Lore is an assistant that ha
 - `styles.css` — the single entry point consumers link (import-only).
 - `showcase.html` — **interactive theme switcher** (Coastal ⇄ Nocturne) + full component preview.
 - `readme.md` — this guide. · `SKILL.md` — Agent-Skills wrapper.
-- `assets/lore-glyph.svg` — the brand mark.
+- `assets/lore-icon.svg` — the transparent brand mark for every theme.
 
 **`tokens/`** (all reachable from `styles.css`)
 - `fonts.css` (webfont imports) · `colors.css` (2 themes + light/dark) · `typography.css` · `spacing.css` · `effects.css` · `components.css` (component class styles).
@@ -129,5 +129,5 @@ Each component is `<Name>.jsx` + `<Name>.d.ts` (props) + `<Name>.prompt.md` (usa
 
 1. **Fonts are substitutes.** Manrope / JetBrains Mono are Google-hosted stand-ins chosen for the brief. If Lore has real brand fonts, drop them in and update `tokens/fonts.css`.
 2. **Icons are substitutes.** Lucide via CDN. Swap for a bespoke set if one exists.
-3. **The logo is original** and intentionally minimal — happy to iterate on the glyph concept (currently ambient broadcast arcs + accent period).
+3. **The logo is original**: three cascading layers represent activity becoming synthesized memory and portable context.
 4. **No UI kits** were built, per your direction (components, type, color, and standard foundations only).

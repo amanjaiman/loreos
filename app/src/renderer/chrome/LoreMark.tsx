@@ -1,19 +1,9 @@
 export function LoreMark(): JSX.Element {
   return (
-    <svg viewBox="0 0 32 32" fill="none" role="img" aria-label="Lore mark">
-      <circle cx="10.5" cy="16" r="3.1" fill="currentColor" />
-      <path
-        d="M16.5 9.4a8.6 8.6 0 0 1 0 13.2"
-        stroke="currentColor"
-        strokeWidth="2.4"
-        strokeLinecap="round"
-      />
-      <path
-        d="M21 5.2a15 15 0 0 1 0 21.6"
-        stroke="currentColor"
-        strokeWidth="2.4"
-        strokeLinecap="round"
-      />
+    <svg viewBox="0 0 1024 1024" fill="none" role="img" aria-label="Lore mark">
+      <rect x="408" y="408" width="520" height="520" rx="130" fill="#E9C07A" />
+      <rect x="252" y="252" width="520" height="520" rx="130" fill="#9A704E" />
+      <rect x="96" y="96" width="520" height="520" rx="130" fill="#007FA8" />
     </svg>
   );
 }
