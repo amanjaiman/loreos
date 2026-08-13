@@ -1,4 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, screen } from 'electron';
+import * as path from 'path';
 import { AgentProcess } from './agentProcess';
 import { initAutoUpdates, installDownloadedUpdate } from './autoUpdate';
 import * as autostart from './lifecycle/autostart';
@@ -10,6 +11,14 @@ import { applySquirrelPathHook } from './windowsIntegration';
 // point at the bundled renderer entry and preload script for dev vs. packaged.
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
+
+// Squirrel assigns this exact identity to Lore's installed shortcut. Windows groups and
+// pins taskbar windows by AppUserModelID, so the running process must identify itself with
+// the same value instead of Electron's default identity.
+const WINDOWS_APP_USER_MODEL_ID = 'com.squirrel.Lore.Lore';
+if (process.platform === 'win32') {
+  app.setAppUserModelId(WINDOWS_APP_USER_MODEL_ID);
+}
 
 // On a Squirrel install/update/uninstall the app is launched with a lifecycle flag.
 // Keep the bundled CLI on the user PATH (spec 011 T002), then let electron-squirrel-
@@ -75,11 +84,18 @@ const preferredSize = (): { width: number; height: number } => {
 };
 
 const createWindow = (): void => {
+  // Packager/Squirrel use this same generated ICO for the executable and installer. Keep a
+  // runtime copy too: explicitly assigning it to BrowserWindow prevents Windows from falling
+  // back to Electron's icon while the window is running.
+  const icon = app.isPackaged
+    ? path.join(process.resourcesPath, 'lore.ico')
+    : path.join(app.getAppPath(), 'assets', 'lore.ico');
   const win = new BrowserWindow({
     ...preferredSize(),
     minWidth: 900,
     minHeight: 600,
     title: 'Lore',
+    icon,
     backgroundColor: '#fbf7ef', // Coastal --bg, avoids a white flash before styles load
     // Fully frameless, with the window controls drawn by the renderer.
     //

@@ -106,7 +106,9 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: Lore ${{ github.ref_name }}
-          generate_release_notes: true
+          # Curated with .agents/skills/write-changelog so the in-app changelog is
+          # concise, user-facing, and free of commit/PR implementation noise.
+          body_path: release-notes.md
           fail_on_unmatched_files: true
           files: |
             release/LoreSetup.exe

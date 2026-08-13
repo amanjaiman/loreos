@@ -105,6 +105,11 @@ The generated PNGs are embedded as base64 in `trayIcons.ts` rather than shipped 
 files, because a tray icon read from `resources/` at runtime is one more path that can be
 wrong in a packaged build for no benefit — they total under 4 KB.
 
+The generated multi-resolution `lore.ico` is also copied into the packaged resources and
+assigned directly to every `BrowserWindow`. The main process sets
+`com.squirrel.Lore.Lore`, matching the AppUserModelID on Squirrel's installed shortcut;
+together these prevent Windows from grouping the window under Electron's default taskbar icon.
+
 The pause badge uses `#D9973A`, a deepened amber that remains visible against a light
 taskbar. The stopped badge uses `--n-5` `#7D7565` and is hollow. The transparent mark
 uses the same artwork on both light and dark taskbars.

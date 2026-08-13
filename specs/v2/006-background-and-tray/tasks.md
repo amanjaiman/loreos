@@ -105,3 +105,18 @@
 **Verify:** docs match shipped behaviour; no stale "the agent lives for the app's
 lifetime" claims remain (there is one in `agentProcess.ts`'s header comment — fix it in
 T001 where the behaviour changes).
+
+---
+
+## T007 — v0.1.4 update and Windows identity polish
+
+- Give the ready-update rail card a solid Coastal-blue treatment and remove its decorative
+  icon so the message carries the emphasis.
+- Set the running process AppUserModelID to Squirrel's `com.squirrel.Lore.Lore` identity,
+  package the generated multi-resolution ICO as a runtime resource, and assign it directly
+  to every `BrowserWindow`.
+- Publish curated `release-notes.md` content from the release workflow and add the repository
+  `write-changelog` skill that defines its user-facing standard.
+
+**Verify:** app lint/typecheck/package; packaged resources contain `lore.ico`; a running
+packaged window uses Lore's taskbar icon; skill validation passes; release notes stay concise.

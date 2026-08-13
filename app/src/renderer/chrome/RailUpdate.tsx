@@ -1,7 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 
 import { Button, Dialog } from '../design-system';
-import { Icon } from '../lib/Icon';
 
 interface Pending {
   version: string;
@@ -9,7 +8,8 @@ interface Pending {
 }
 
 /**
- * The rail's update affordance: a quiet card, shown only once an update has finished
+ * The rail's update affordance: a compact Coastal-blue card, shown only once an update has
+ * finished
  * downloading, sitting just above the ambient "Now" block. Lore never installs on its own —
  * clicking the card opens the changelog, and the restart is the user's explicit choice from
  * there (or from the tray). This is the transparency posture for an open-source app: an update
@@ -54,9 +54,6 @@ export function RailUpdate(): JSX.Element | null {
             : `A new Lore version is ready — see what's new`
         }
       >
-        <span className="rail-update__glyph" aria-hidden="true">
-          <Icon name="sparkles" size={15} />
-        </span>
         <span className="rail-update__text">
           <span className="rail-update__title">Update ready</span>
           <span className="rail-update__meta">

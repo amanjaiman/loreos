@@ -131,6 +131,10 @@ The app's tray icons and Windows `.ico` are **generated**, not hand-edited:
 committed outputs of `node app/tools/build-tray-icons.mjs` (spec v2-006 D6). Edit the
 generator or its source SVG, re-run it, and commit the outputs.
 
+Release notes are curated in `release-notes.md` and published verbatim to GitHub and the
+in-app changelog. Use `.agents/skills/write-changelog/SKILL.md` when preparing a release;
+write for users and omit implementation-only noise.
+
 Run the agent: `LoreAgent.exe` (agent mode, local API on :7842) or
 `LoreAgent.exe --mcp` (MCP stdio mode).
 
