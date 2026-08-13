@@ -6,9 +6,10 @@ name: release
 #      (single source of truth — spec 012 T001),
 #   2. asserts release-notes.md was curated for this release (it is published verbatim
 #      and becomes the in-app changelog — fails the release if it's stale),
-#   3. asserts the tag, package.json, and agent assembly version all agree
-#      (acceptance criterion 1 — fails the release if they drift),
-#   4. builds the signed installer from pinned inputs (reuses 011's installer/build.ps1),
+#   3. builds the signed installer from pinned inputs (reuses 011's installer/build.ps1),
+#   4. asserts the tag, package.json, and the *built* agent assembly version all agree
+#      (acceptance criterion 1 — fails the release if they drift; it reads the assembly,
+#      so it necessarily runs after the build),
 #   5. publishes a GitHub Release with LoreSetup.exe, Lore-X.Y.Z-full.nupkg, and
 #      RELEASES attached (acceptance criterion 2).
 #

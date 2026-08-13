@@ -17,7 +17,9 @@
   The first release (no earlier tag) and the tag that first introduces the file both
   pass. Anything else throws, failing the release before the build runs.
 
-  Requires full history and tags (actions/checkout with fetch-depth: 0).
+  Requires full history and tags (actions/checkout with fetch-depth: 0). The guard fails
+  closed: a shallow checkout, or any git command that exits non-zero, throws rather than
+  reading as "first release" / "notes are new" and waving a stale release through.
 
 .PARAMETER Version
   The X.Y.Z being released (the tag with its leading 'v' stripped). Its own tag is
@@ -34,6 +36,22 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $notesRelative = "release-notes.md"
 $notesPath = Join-Path $repoRoot $notesRelative
 
+# $ErrorActionPreference does not apply to a native command's exit code, and every git
+# call here is one whose empty output would otherwise be read as "nothing to compare
+# against" - i.e. a failure would pass the release. Route them all through this so a
+# broken git is a failed release, not a silent one.
+function Invoke-Git {
+    param(
+        [Parameter(Mandatory = $true)][string[]]$Arguments,
+        [Parameter(Mandatory = $true)][string]$What
+    )
+    $output = & git -C $repoRoot @Arguments
+    if ($LASTEXITCODE -ne 0) {
+        throw "$What failed (git exited $LASTEXITCODE). This check needs the release history: check out with fetch-depth: 0."
+    }
+    return $output
+}
+
 Write-Host "==> Release notes check"
 Write-Host "    version            : $Version"
 
@@ -46,10 +64,18 @@ if ([string]::IsNullOrWhiteSpace($notes)) {
     throw "$notesRelative is empty - curate it with .agents/skills/write-changelog before tagging."
 }
 
+# A shallow clone carries the pushed tag but not the ones before it, so "no previous tag"
+# would be indistinguishable from a first release. Refuse to certify anything from one.
+$shallow = Invoke-Git -Arguments @("rev-parse", "--is-shallow-repository") -What "Checking repository depth"
+if ("$shallow".Trim() -eq "true") {
+    throw "Shallow checkout - the release history needed to detect stale notes is missing. Check out with fetch-depth: 0."
+}
+
 # Newest release tag that isn't the one being released. `-v:refname` sorts by version,
 # so this is the release these notes must have moved on from.
 $currentTag = "v$Version"
-$previousTag = git -C $repoRoot tag --list "v*" --sort=-v:refname |
+$tags = Invoke-Git -Arguments @("tag", "--list", "v*", "--sort=-v:refname") -What "Listing release tags"
+$previousTag = $tags |
     Where-Object { $_ -ne $currentTag } |
     Select-Object -First 1
 
@@ -61,15 +87,17 @@ if (-not $previousTag) {
 
 Write-Host "    previous tag       : $previousTag"
 
-# A tag that predates the file itself has nothing to be stale against.
-$tracked = git -C $repoRoot ls-tree --name-only "$previousTag" -- "$notesRelative"
+# A tag that predates the file itself has nothing to be stale against. `ls-tree` exits 0
+# with no output for an untracked path, and non-zero for a tag it can't resolve — which
+# Invoke-Git turns into a failure rather than a free pass.
+$tracked = Invoke-Git -Arguments @("ls-tree", "--name-only", "$previousTag", "--", "$notesRelative") -What "Reading $notesRelative at $previousTag"
 if (-not $tracked) {
     Write-Host "==> $notesRelative did not exist at $previousTag - notes are new"
     exit 0
 }
 
 # Compare on normalized line endings so a checkout's autocrlf can't read as a change.
-$previousNotes = (git -C $repoRoot show "${previousTag}:${notesRelative}") -join "`n"
+$previousNotes = (Invoke-Git -Arguments @("show", "${previousTag}:${notesRelative}") -What "Reading $notesRelative at $previousTag") -join "`n"
 $current = ($notes -replace "`r`n", "`n").Trim()
 $previous = ($previousNotes -replace "`r`n", "`n").Trim()
 if ($current -eq $previous) {

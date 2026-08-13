@@ -113,10 +113,13 @@ T001 where the behaviour changes).
 - Give the ready-update rail card a solid Coastal-blue treatment and remove its decorative
   icon so the message carries the emphasis.
 - Set the running process AppUserModelID to Squirrel's `com.squirrel.Lore.Lore` identity,
-  package the generated multi-resolution ICO as a runtime resource, and assign it directly
-  to every `BrowserWindow`.
-- Publish curated `release-notes.md` content from the release workflow and add the repository
-  `write-changelog` skill that defines its user-facing standard.
+  package the generated multi-resolution ICO as a runtime resource of the Windows build, and
+  assign it directly to every `BrowserWindow` (PNG elsewhere, since Electron only decodes
+  ICO on Windows).
+- Publish curated `release-notes.md` content from the release workflow, guard its freshness
+  against the previous release tag, and add the repository `write-changelog` skill that
+  defines its user-facing standard.
 
-**Verify:** app lint/typecheck/package; packaged resources contain `lore.ico`; a running
-packaged window uses Lore's taskbar icon; skill validation passes; release notes stay concise.
+**Verify:** app lint/typecheck/package; the Windows packaged resources contain `lore.ico`; a
+running packaged window uses Lore's taskbar icon; skill validation passes; release notes stay
+concise and a stale `release-notes.md` fails the release.
