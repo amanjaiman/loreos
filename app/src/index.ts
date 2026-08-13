@@ -1,4 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, screen } from 'electron';
+import * as fs from 'fs';
+import * as path from 'path';
 import { AgentProcess } from './agentProcess';
 import { initAutoUpdates, installDownloadedUpdate } from './autoUpdate';
 import * as autostart from './lifecycle/autostart';
@@ -10,6 +12,14 @@ import { applySquirrelPathHook } from './windowsIntegration';
 // point at the bundled renderer entry and preload script for dev vs. packaged.
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
+
+// Squirrel assigns this exact identity to Lore's installed shortcut. Windows groups and
+// pins taskbar windows by AppUserModelID, so the running process must identify itself with
+// the same value instead of Electron's default identity.
+const WINDOWS_APP_USER_MODEL_ID = 'com.squirrel.Lore.Lore';
+if (process.platform === 'win32') {
+  app.setAppUserModelId(WINDOWS_APP_USER_MODEL_ID);
+}
 
 // On a Squirrel install/update/uninstall the app is launched with a lifecycle flag.
 // Keep the bundled CLI on the user PATH (spec 011 T002), then let electron-squirrel-
@@ -74,12 +84,32 @@ const preferredSize = (): { width: number; height: number } => {
   };
 };
 
+/**
+ * The window icon, or undefined to leave it to the platform.
+ *
+ * On Windows, Packager/Squirrel embed the same generated ICO in the executable and the
+ * installer; assigning it here too stops Windows falling back to Electron's icon while the
+ * window is running. Electron's `nativeImage` only decodes ICO on Windows, though, so the
+ * other platforms use the PNG — and if neither is packaged (forge only ships the icon its
+ * host platform needs) we return undefined, which leaves the window manager / desktop entry
+ * to supply the icon exactly as it did before. Handing BrowserWindow a path it can't decode
+ * would give us a blank icon instead.
+ */
+const windowIcon = (): string | undefined => {
+  const file = process.platform === 'win32' ? 'lore.ico' : 'lore.png';
+  const packaged = path.join(process.resourcesPath, file);
+  const source = path.join(app.getAppPath(), 'assets', file);
+  const candidate = app.isPackaged ? packaged : source;
+  return fs.existsSync(candidate) ? candidate : undefined;
+};
+
 const createWindow = (): void => {
   const win = new BrowserWindow({
     ...preferredSize(),
     minWidth: 900,
     minHeight: 600,
     title: 'Lore',
+    icon: windowIcon(),
     backgroundColor: '#fbf7ef', // Coastal --bg, avoids a white flash before styles load
     // Fully frameless, with the window controls drawn by the renderer.
     //

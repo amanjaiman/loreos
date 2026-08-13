@@ -19,8 +19,20 @@ import { rendererConfig } from './webpack.renderer.config';
 // without it, so include it only when present (a missing extraResource path would
 // otherwise fail packaging).
 const nativePayload = path.join(__dirname, 'native');
-const extraResource = fs.existsSync(nativePayload) ? [nativePayload] : [];
 const windowsIcon = path.join(__dirname, 'assets', 'lore.ico');
+// BrowserWindow assigns the icon at runtime (src/index.ts) as well as Packager/Squirrel
+// embedding it, which makes the Windows taskbar icon explicit instead of relying on Windows
+// to infer it from the EXE. Electron only decodes ICO on Windows, so ship the ICO for the
+// Windows build and the PNG elsewhere; the Squirrel/Deb/Rpm makers each run on their own
+// host, so the host platform is the target platform.
+const runtimeIcon =
+  process.platform === 'win32'
+    ? windowsIcon
+    : path.join(__dirname, 'assets', 'lore.png');
+const extraResource = [
+  runtimeIcon,
+  ...(fs.existsSync(nativePayload) ? [nativePayload] : []),
+];
 
 // Code-signing is build-ready but opt-in (spec 011 T002): forge signs the Electron
 // app binaries + the Squirrel setup exe when a certificate is configured via env, and

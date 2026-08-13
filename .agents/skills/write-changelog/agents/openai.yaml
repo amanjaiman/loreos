@@ -1,0 +1,4 @@
+interface:
+  display_name: "Write Changelog"
+  short_description: "Write concise, human-readable release notes"
+  default_prompt: "Use $write-changelog to turn these changes into concise, human-readable release notes."

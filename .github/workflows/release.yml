@@ -4,10 +4,13 @@ name: release
 # annotated vX.Y.Z tag:
 #   1. injects the tag version into the .NET version source and app/package.json
 #      (single source of truth — spec 012 T001),
-#   2. asserts the tag, package.json, and agent assembly version all agree
-#      (acceptance criterion 1 — fails the release if they drift),
+#   2. asserts release-notes.md was curated for this release (it is published verbatim
+#      and becomes the in-app changelog — fails the release if it's stale),
 #   3. builds the signed installer from pinned inputs (reuses 011's installer/build.ps1),
-#   4. publishes a GitHub Release with LoreSetup.exe, Lore-X.Y.Z-full.nupkg, and
+#   4. asserts the tag, package.json, and the *built* agent assembly version all agree
+#      (acceptance criterion 1 — fails the release if they drift; it reads the assembly,
+#      so it necessarily runs after the build),
+#   5. publishes a GitHub Release with LoreSetup.exe, Lore-X.Y.Z-full.nupkg, and
 #      RELEASES attached (acceptance criterion 2).
 #
 # Unsigned still publishes if the LORE_SIGN_* secrets are absent (documented
@@ -35,7 +38,11 @@ jobs:
     env:
       LORE_SIGN_CERT_BASE64: ${{ secrets.LORE_SIGN_CERT_BASE64 }}
     steps:
+      # Full history + tags: verify-release-notes.ps1 compares release-notes.md against
+      # its content at the previous release tag, which a shallow checkout can't see.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # Pinned toolchains, identical to installer.yml: dotnet from global.json,
       # Python 3.11, Node 20. PyInstaller + electron-forge versions are pinned
@@ -60,6 +67,14 @@ jobs:
         id: version
         shell: pwsh
         run: ./installer/set-version.ps1 -Ref "${{ github.ref }}"
+
+      # release-notes.md is published verbatim and served to every installed app as the
+      # in-app changelog, so a tag pushed without curating it would silently ship the
+      # previous release's notes. Assert it moved on from the previous tag, before the
+      # (long) build runs. Runs on dry runs too, so a maintainer can check pre-tag.
+      - name: Verify release notes are current
+        shell: pwsh
+        run: ./installer/verify-release-notes.ps1 -Version "${{ steps.version.outputs.version }}"
 
       # Optional code-signing: decode the PFX secret to a temp file and point the
       # build at it. With the secret unset these are empty and the build produces an
@@ -106,7 +121,9 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: Lore ${{ github.ref_name }}
-          generate_release_notes: true
+          # Curated with .agents/skills/write-changelog so the in-app changelog is
+          # concise, user-facing, and free of commit/PR implementation noise.
+          body_path: release-notes.md
           fail_on_unmatched_files: true
           files: |
             release/LoreSetup.exe

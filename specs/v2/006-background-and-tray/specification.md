@@ -148,6 +148,8 @@ user has no reason to suspect otherwise.
 2. Killing `LoreAgent.exe` from Task Manager moves the tray to Stopped within ~5s;
    letting it restart moves it back to Running.
 3. The three icons are distinguishable at 16×16 on both taskbar themes.
+4. Lore's main window uses the Lore mark in the Windows taskbar, never Electron's default
+   icon, and shares the AppUserModelID assigned to the installed Squirrel shortcut.
 
 ---
 

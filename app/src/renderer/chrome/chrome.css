@@ -808,20 +808,19 @@
 }
 
 /* ---- update-ready, in the rail ----
-   A quiet card just above the ambient "Now" block, shown only once an update has finished
+   A compact Coastal-blue card just above the ambient "Now" block, shown only once an update has finished
    downloading (RailUpdate.tsx). It's a button: clicking opens the changelog modal, where the
    user chooses to restart. Lore never installs an update on its own, so this is never a
    countdown or a nag — just a standing offer that sits with the rail's other ambient state. */
 .rail-update {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
   width: 100%;
   margin-bottom: var(--space-2);
-  padding: var(--space-2);
-  border: var(--border-width) solid var(--border);
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--primary);
   border-radius: var(--radius-lg);
-  background: var(--primary-soft);
+  background: var(--primary);
   text-align: left;
   cursor: pointer;
   -webkit-app-region: no-drag;
@@ -832,23 +831,13 @@
 }
 
 .rail-update:hover {
-  border-color: var(--primary);
+  border-color: var(--primary-hover);
+  background: var(--primary-hover);
 }
 
 .rail-update:focus-visible {
   outline: none;
   box-shadow: var(--ring);
-}
-
-.rail-update__glyph {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 26px;
-  height: 26px;
-  border-radius: var(--radius-full);
-  color: var(--primary);
-  background: var(--surface);
 }
 
 .rail-update__text {
@@ -860,12 +849,12 @@
 .rail-update__title {
   font-size: var(--text-xs);
   font-weight: var(--fw-semibold);
-  color: var(--text);
+  color: var(--primary-fg);
 }
 
 .rail-update__meta {
   font-size: var(--text-2xs);
-  color: var(--text-muted);
+  color: var(--primary-fg);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
