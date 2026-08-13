@@ -9,8 +9,8 @@ interface Pending {
 
 /**
  * The rail's update affordance: a compact Coastal-blue card, shown only once an update has
- * finished
- * downloading, sitting just above the ambient "Now" block. Lore never installs on its own —
+ * finished downloading, sitting just above the ambient "Now" block. Lore never installs on
+ * its own —
  * clicking the card opens the changelog, and the restart is the user's explicit choice from
  * there (or from the tray). This is the transparency posture for an open-source app: an update
  * is something you're shown and decide, not something that swaps itself in behind you.
@@ -88,11 +88,10 @@ export function RailUpdate(): JSX.Element | null {
 }
 
 /**
- * A deliberately small markdown renderer for GitHub's auto-generated release notes — headings,
- * bullet lists, and bold, which is all those notes ever use. Everything is built from text
- * nodes and React elements (never `dangerouslySetInnerHTML`), so the feed can't inject markup.
- * Bare GitHub URLs are shortened to readable tokens rather than shown as links: the repo is
- * private, so the raw links would 404 for the very users this modal exists to inform.
+ * A deliberately small markdown renderer for Lore's curated release notes (`release-notes.md`,
+ * published verbatim by release.yml) — headings, bullet lists, and bold, which is the whole
+ * shape the write-changelog skill produces. Everything is built from text nodes and React
+ * elements (never `dangerouslySetInnerHTML`), so the feed can't inject markup.
  */
 function renderNotes(markdown: string): ReactNode {
   const trimmed = markdown.trim();
@@ -147,7 +146,11 @@ function renderNotes(markdown: string): ReactNode {
   return blocks;
 }
 
-/** Inline formatting: shorten GitHub links to tokens, then render `**bold**` runs. */
+/**
+ * Inline formatting: shorten GitHub links to tokens, then render `**bold**` runs. Curated
+ * notes shouldn't carry links at all, but the repo is private — so if one slips through, a
+ * raw URL would 404 for the very users this modal exists to inform. Kept as a safety net.
+ */
 function inline(text: string): ReactNode[] {
   const shortened = text
     .replace(

@@ -36,7 +36,8 @@ const RELEASE_INFO_TIMEOUT_MS = 5_000;
 export interface PendingUpdate {
   /** Release name straight off the feed, e.g. "v0.1.2". */
   version: string;
-  /** GitHub's auto-generated release body (markdown). Empty if the feed had none. */
+  /** The release body (markdown) — Lore's curated release-notes.md, published verbatim
+   * by release.yml. Empty if the feed had none. */
   notes: string;
 }
 

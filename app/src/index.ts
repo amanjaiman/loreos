@@ -1,4 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, screen } from 'electron';
+import * as fs from 'fs';
 import * as path from 'path';
 import { AgentProcess } from './agentProcess';
 import { initAutoUpdates, installDownloadedUpdate } from './autoUpdate';
@@ -83,19 +84,32 @@ const preferredSize = (): { width: number; height: number } => {
   };
 };
 
+/**
+ * The window icon, or undefined to leave it to the platform.
+ *
+ * On Windows, Packager/Squirrel embed the same generated ICO in the executable and the
+ * installer; assigning it here too stops Windows falling back to Electron's icon while the
+ * window is running. Electron's `nativeImage` only decodes ICO on Windows, though, so the
+ * other platforms use the PNG — and if neither is packaged (forge only ships the icon its
+ * host platform needs) we return undefined, which leaves the window manager / desktop entry
+ * to supply the icon exactly as it did before. Handing BrowserWindow a path it can't decode
+ * would give us a blank icon instead.
+ */
+const windowIcon = (): string | undefined => {
+  const file = process.platform === 'win32' ? 'lore.ico' : 'lore.png';
+  const packaged = path.join(process.resourcesPath, file);
+  const source = path.join(app.getAppPath(), 'assets', file);
+  const candidate = app.isPackaged ? packaged : source;
+  return fs.existsSync(candidate) ? candidate : undefined;
+};
+
 const createWindow = (): void => {
-  // Packager/Squirrel use this same generated ICO for the executable and installer. Keep a
-  // runtime copy too: explicitly assigning it to BrowserWindow prevents Windows from falling
-  // back to Electron's icon while the window is running.
-  const icon = app.isPackaged
-    ? path.join(process.resourcesPath, 'lore.ico')
-    : path.join(app.getAppPath(), 'assets', 'lore.ico');
   const win = new BrowserWindow({
     ...preferredSize(),
     minWidth: 900,
     minHeight: 600,
     title: 'Lore',
-    icon,
+    icon: windowIcon(),
     backgroundColor: '#fbf7ef', // Coastal --bg, avoids a white flash before styles load
     // Fully frameless, with the window controls drawn by the renderer.
     //

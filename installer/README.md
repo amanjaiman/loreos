@@ -109,26 +109,42 @@ uploads it as the `lore-installer` artifact. It's separate from the per-PR gates
 [`.github/workflows/release.yml`](../.github/workflows/release.yml) makes a release
 **a single tag push**. Pushing an annotated `vX.Y.Z` tag:
 
+**Before tagging**, curate the repository-root `release-notes.md` for the release
+you're about to cut, following
+[`.agents/skills/write-changelog`](../.agents/skills/write-changelog/SKILL.md). The
+workflow publishes that file **verbatim** as the Release body, and Hazel serves the
+same body to every installed app as the in-app changelog — so it is user-facing copy,
+not a commit log. `verify-release-notes.ps1` (step 2 below) fails the release if it
+still matches the previous tag's notes.
+
 1. **Injects the tag version** into both version sources
    ([`set-version.ps1`](set-version.ps1)): the root `Directory.Build.props`
    `<Version>` (drives the agent assembly / `GET /system/status`) and
    `app/package.json` `"version"` (names the Squirrel `.nupkg`). This is the
    single source of truth — the committed `0.1.0` is the in-development value; the
    tag is authoritative at release time.
-2. Builds the signed installer with [`build.ps1`](build.ps1) (unsigned if the
+2. **Asserts `release-notes.md` was curated for this release**
+   ([`verify-release-notes.ps1`](verify-release-notes.ps1)): it must exist, carry
+   content, and differ from its content at the previous release tag. This runs before
+   the build so a stale-notes release fails fast. The first release, and the tag that
+   first adds the file, both pass. (This needs full history, which is why the job
+   checks out with `fetch-depth: 0`.)
+3. Builds the signed installer with [`build.ps1`](build.ps1) (unsigned if the
    `LORE_SIGN_*` secrets are absent — documented interim).
-3. **Asserts the tag, `package.json`, and the built agent assembly version all
+4. **Asserts the tag, `package.json`, and the built agent assembly version all
    match** ([`verify-version.ps1`](verify-version.ps1)) — acceptance criterion 1;
    the release fails on any drift. On every PR the same `package.json ↔ agent`
    invariant is also enforced by `LoreAgent.Tests.VersionSyncTests`.
-4. Stages the three artifacts ([`stage-release.ps1`](stage-release.ps1)) and
+5. Stages the three artifacts ([`stage-release.ps1`](stage-release.ps1)) and
    **publishes a GitHub Release** with `LoreSetup.exe`, `Lore-X.Y.Z-full.nupkg`,
-   and `RELEASES` attached — acceptance criterion 2.
+   and `RELEASES` attached, using `release-notes.md` as the Release body —
+   acceptance criterion 2.
 
 `workflow_dispatch` runs a **dry run**: it builds and verifies against the committed
-version but does not modify the version files or publish a Release. Pushes to `main`
-never cut releases (only `ci.yml` runs there). Cutting a real public tag is
-human-gated.
+version but does not modify the version files or publish a Release. The release-notes
+and version checks both still run, so a dry run is the way to confirm a release is
+ready before pushing the tag. Pushes to `main` never cut releases (only `ci.yml` runs
+there). Cutting a real public tag is human-gated.
 
 ### Bumping the in-development version
 
@@ -147,9 +163,10 @@ background via Squirrel + a [Hazel](https://github.com/vercel/hazel) update serv
   in the background — but never installs it on its own. A downloaded update is surfaced as a card in the rail
   (above the "Now" block) and as a "Restart to update" row in the tray menu; the
   restart happens only when the user chooses it. Clicking the rail card opens a
-  changelog modal whose notes come from Hazel's `notes` field (GitHub's auto-generated
-  release body for the same version), so there's no external link to the private repo.
-  No-op in dev and on non-Windows.
+  changelog modal whose notes come from Hazel's `notes` field — the Release body for
+  the same version, i.e. the curated `release-notes.md` published verbatim by
+  `release.yml` — so there's no external link to the private repo. No-op in dev and on
+  non-Windows.
 - **Server**: the `lore-hazel` deployment on Vercel proxies this repo's **private**
   GitHub Releases. It's configured entirely through Vercel env vars — there is no
   config in this repo:

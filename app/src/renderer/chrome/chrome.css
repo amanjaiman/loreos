@@ -855,7 +855,6 @@
 .rail-update__meta {
   font-size: var(--text-2xs);
   color: var(--primary-fg);
-  opacity: 0.78;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
