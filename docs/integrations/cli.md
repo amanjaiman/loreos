@@ -24,6 +24,7 @@ other tools.
 | Command | Does | API call |
 |---|---|---|
 | `lore status` | Component health (agent · memoryd · provider) + version | `GET /system/status` |
+| `lore recall "<message>" [--k N]` | Ambient, selective recall for an agent turn | `POST /recall` |
 | `lore search "<query>" [--limit N]` | Semantic search over your memory | `POST /memories/search` |
 | `lore recent [--limit N]` | Your most recent memories | `GET /memories?limit=N` |
 | `lore list [--limit N] [--offset M]` | Browse all memories, page by page | `GET /memories?limit=&offset=` |
@@ -33,8 +34,7 @@ other tools.
 | `lore config get [key]` | Read a config value (dot-path) or the whole config | `GET /config` |
 | `lore config set <key> <value>` | Change a config value; secrets go to the OS keystore | `PATCH /config` |
 | `lore export [--format json\|markdown]` | Export everything Lore knows about you | `GET /export/{json,markdown}` |
-| `lore mcp install <client>` | Wire Lore into an MCP client's config | *(writes a config file)* |
-| `lore skills install <client>` | Install the Lore Agent Skill into a client | *(copies a package)* |
+| `lore connect [--all]` | Connect agent tools with the portable skill and required MCP shims | *(writes user config)* |
 
 `recent` and `list` both read `GET /memories`; `recent` is the convenient "last N"
 view (small default), `list` adds paging. The store returns memories in its own
@@ -123,22 +123,17 @@ lore export --format json     > me.json
 lore export --format markdown > me.md
 ```
 
-## Installers
+## Connect agent tools
 
-The installers safely wire Lore into your other tools — they **merge, never
-overwrite**, and back up before changing anything.
+One command installs Lore's portable Agent Skill in the shared user location and the
+Claude Code compatibility location. If Claude Desktop is detected, it also safely merges
+the MCP shim that desktop client needs.
 
 ```sh
-# Add a `lore` MCP server to a client's config (idempotent; backs up first):
-lore mcp install claude-desktop     # %APPDATA%\Claude\claude_desktop_config.json
-lore mcp install cursor             # %USERPROFILE%\.cursor\mcp.json
-lore mcp install claude-code        # .mcp.json in the current project
-
-# Install the Lore Agent Skill (spec 008) into Claude Code (~/.claude/skills):
-lore skills install claude-code
+lore connect        # detected clients + portable user skill
+lore connect --all  # include supported clients that were not detected
 ```
 
-`mcp install` writes a `lore` entry pointing at the bundled `LoreAgent.exe --mcp` and
-leaves any other servers untouched; re-running is a no-op. See the per-client
-[integration guides](README.md) for what the resulting config looks like and how to
-verify it.
+The older `lore mcp install …` and `lore skills install …` commands remain available
+for scripts and manual, protocol-specific setup, but new users should start with
+`lore connect`.

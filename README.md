@@ -47,7 +47,7 @@ No Python, .NET, or build tools required — the installer bundles them.
 3. **Connect Claude.** In any terminal:
 
    ```sh
-   lore mcp install claude-desktop      # also: claude-code, cursor
+   lore connect
    ```
 
    Restart Claude Desktop, then ask: *"Using my Lore memory, what have I been working

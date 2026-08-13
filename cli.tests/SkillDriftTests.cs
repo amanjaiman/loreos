@@ -34,10 +34,10 @@ public sealed class SkillDriftTests
     [Fact]
     public void Skill_actually_references_the_core_commands()
     {
-        // The skill is useless if it forgot to teach search/add/forget.
+        // The skill is useless if it forgot to teach ambient recall/add/forget.
         HashSet<string> referenced = ReferencedCommands(File.ReadAllText(LocateSkill()));
 
-        Assert.Contains("search", referenced);
+        Assert.Contains("recall", referenced);
         Assert.Contains("add", referenced);
         Assert.Contains("forget", referenced);
     }

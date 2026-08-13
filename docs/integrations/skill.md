@@ -2,7 +2,7 @@
 
 The Lore **Agent Skill** teaches a skill-capable agent (Claude Code, and other
 adopters of the [Agent Skills](https://docs.claude.com/en/docs/claude-code/skills)
-standard) *when and why* to use your Lore memory — search before personalizing,
+standard) *when and why* to use your Lore memory — recall on every turn,
 record durable facts you mention, forget on request — without you prompting it each
 time. It's instruction, not code: it drives the [`lore` CLI](cli.md), which already
 handles `--json`, exit codes, and the "Lore isn't running" case.
@@ -14,12 +14,12 @@ The package lives in-repo at [`skills/lore/`](../../skills/lore/SKILL.md).
 The easy way (spec 007's installer):
 
 ```sh
-lore skills install claude-code
+lore connect
 ```
 
-This copies the package into Claude Code's user skills directory
-(`~/.claude/skills/lore`). Restart Claude Code (or reload its skills) and it will pick
-up the `lore` skill. Re-running the command is safe — it just refreshes the files.
+This copies the package into the shared user skills directory and Claude Code's
+compatibility directory. Restart open agent tools so they discover it. Re-running the
+command is safe — it refreshes the files.
 
 ### Manual install
 
@@ -36,9 +36,8 @@ Any tool that reads the Agent Skills format can load the same package.
 
 Once loaded, the skill nudges the agent to:
 
-- **Search before personalizing** — run `lore search "<topic>" --json` before
-  recommending tools, libraries, or approaches, and tailor the answer to what you
-  already use.
+- **Recall on every turn** — run `lore recall "<message>" --json` and quietly use any
+  relevant durable memory in the answer.
 - **Record durable facts** — when you state a lasting preference, decision, or detail
   about yourself, save it with `lore add "<fact>"`.
 - **Forget on request** — `lore forget "<topic>"` when you ask it to.

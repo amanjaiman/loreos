@@ -92,6 +92,10 @@ contextBridge.exposeInMainWorld('lore', {
     void ipcRenderer.invoke('lore:start-agent');
   },
 
+  /** Install Lore's portable skill and any detected desktop connection. */
+  connectAgents: (): Promise<unknown> =>
+    ipcRenderer.invoke('lore:connect-agents'),
+
   /**
    * Subscribe to running/paused/stopped as the tray sees it. Lets the rail react to a
    * pause issued from the tray menu without waiting out its own poll. Returns an

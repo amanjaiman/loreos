@@ -1,10 +1,12 @@
 using System.Text.Json.Nodes;
+using Lore.Agent.Capture;
 using Lore.Agent.Config;
 using Lore.Agent.Providers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Lore.Agent.Api.Endpoints;
 
@@ -29,6 +31,7 @@ public static class ConfigEndpoints
             JsonObject? patch,
             [FromServices] LoreConfig config,
             [FromServices] IProviderReloader reloader,
+            [FromServices] IServiceProvider services,
             CancellationToken ct) =>
         {
             if (patch is null)
@@ -38,10 +41,17 @@ public static class ConfigEndpoints
 
             // Capture whether this patch touches the provider or embedder before the write, so
             // onboarding (and any later model/embedder change) is applied to the live agent rather
-            // than waiting for a restart. Other config (capture toggles, blocklists) needs no reload.
+            // than waiting for a restart. Capture has its own lightweight snapshot update below.
             bool providerChanged = patch.ContainsKey("provider") || patch.ContainsKey("embedder");
 
             JsonObject updated = await config.PatchAsync(patch, ct).ConfigureAwait(false);
+
+            if (patch.ContainsKey("capture")
+                && updated["capture"] is JsonObject capture
+                && services.GetService<LiveCaptureSettings>() is { } liveCapture)
+            {
+                liveCapture.Update(capture);
+            }
 
             if (providerChanged)
             {

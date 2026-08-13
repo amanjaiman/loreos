@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Lore.Agent.Capture;
 
 namespace Lore.Agent.Tests.Capture;
@@ -21,7 +22,11 @@ public sealed class SensitivityFilterTests
         IEnumerable<string>? keywords = null,
         bool isProtected = false) =>
         new(
-            new Blocklist(apps ?? Array.Empty<string>(), keywords ?? Array.Empty<string>()),
+            new LiveCaptureSettings(new CaptureOptions
+            {
+                BlocklistApps = (apps ?? []).ToArray(),
+                BlocklistKeywords = (keywords ?? []).ToArray(),
+            }),
             new FakeProbe(isProtected));
 
     // ── The acceptance-criterion-2 case table ────────────────────────────────
@@ -189,7 +194,8 @@ public sealed class SensitivityFilterTests
     public void Constructor_rejects_null_dependencies()
     {
         Assert.Throws<ArgumentNullException>(() => new SensitivityFilter(null!, new FakeProbe(false)));
-        Assert.Throws<ArgumentNullException>(() => new SensitivityFilter(Blocklist.Empty, null!));
+        Assert.Throws<ArgumentNullException>(() => new SensitivityFilter(
+            new LiveCaptureSettings(new CaptureOptions()), null!));
     }
 
     [Fact]
@@ -197,6 +203,23 @@ public sealed class SensitivityFilterTests
     {
         SensitivityFilter filter = Filter();
         Assert.Throws<ArgumentNullException>(() => filter.Apply(null!, "text"));
+    }
+
+    [Fact]
+    public void A_running_filter_uses_an_updated_blocklist_immediately()
+    {
+        var settings = new LiveCaptureSettings(new CaptureOptions { BlocklistApps = ["editor"] });
+        var filter = new SensitivityFilter(settings, new FakeProbe(false));
+        Assert.True(filter.Apply(Win(), "ordinary text").Blocked);
+
+        settings.Update(new JsonObject
+        {
+            ["blocklistApps"] = new JsonArray(),
+            ["blocklistKeywords"] = new JsonArray("salary"),
+        });
+
+        Assert.False(filter.Apply(Win(), "ordinary text").Blocked);
+        Assert.Equal(FilterReason.BlockedKeyword, filter.Apply(Win(), "salary note").Reason);
     }
 
     // ── ApplyToText: the document variant (spec 009) ──────────────────────────

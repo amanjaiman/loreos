@@ -23,6 +23,7 @@ public static class CaptureServiceCollectionExtensions
 
         CaptureOptions options = configuration.GetSection("capture").Get<CaptureOptions>() ?? new CaptureOptions();
         services.AddSingleton(options);
+        services.AddSingleton<LiveCaptureSettings>();
         services.AddSingleton(TimeProvider.System);
 
         // Win32 / UI Automation seams — the only places that touch the platform.
@@ -38,7 +39,6 @@ public static class CaptureServiceCollectionExtensions
             sp.GetRequiredService<UiaTextExtractor>(), sp.GetRequiredService<OcrTextExtractor>()));
 
         // Trust-critical sensitivity filter.
-        services.AddSingleton(new Blocklist(options.BlocklistApps, options.BlocklistKeywords));
         services.AddSingleton<SensitivityFilter>();
 
         // Window monitor (dwell threshold from config).

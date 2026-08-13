@@ -1,4 +1,14 @@
-# Connecting Lore to your AI tools (MCP)
+# Connecting Lore to your AI tools
+
+Start with one command:
+
+```sh
+lore connect
+```
+
+It installs Lore's portable Agent Skill for agent tools and configures a detected
+Claude Desktop installation. The protocol-specific MCP setup below remains available
+for advanced and manual integrations.
 
 Lore speaks the [Model Context Protocol](https://modelcontextprotocol.io). Any
 MCP-capable client — Claude Desktop, Claude Code, Cursor, and others — can read and
@@ -38,7 +48,7 @@ These names are stable: they match Lore v1, so an existing config keeps working.
 - [Generic Streamable HTTP clients](http-clients.md) — and a note for users coming
   from OpenMemory MCP.
 - [The `lore` CLI](cli.md) — terminal/script access, the `--json` contract, exit
-  codes, and the `mcp install` / `skills install` installers.
+  codes, and the provider-neutral `connect` command.
 - [The Lore Agent Skill](skill.md) — teach a skill-capable agent (Claude Code) to use
   your memory automatically. For instruction-file tools, drop in the
   [`AGENTS.md`](agents-md.md) or [`CLAUDE.md`](claude-md.md) snippet.
@@ -53,6 +63,5 @@ These names are stable: they match Lore v1, so an existing config keeps working.
 - For **Streamable HTTP**, the Lore app (or agent) must be **running**, so the local
   API on `127.0.0.1:7842` is up.
 
-> Prefer not to hand-edit JSON? `lore mcp install <claude-desktop|claude-code|cursor>`
-> writes these client configs for you — it merges, never overwrites, and backs up
-> first. See [the CLI guide](cli.md#installers).
+> Prefer not to hand-edit JSON? Start with `lore connect`. Legacy
+> `lore mcp install <client>` commands remain available for explicit manual setup.

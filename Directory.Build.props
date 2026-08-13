@@ -12,7 +12,7 @@
        The committed value is the in-development version; the tag is authoritative
        at release time. Bump this and package.json together when not tagging. -->
   <PropertyGroup>
-    <Version>0.1.4</Version>
+    <Version>0.1.5</Version>
   </PropertyGroup>
 
   <!-- Shared build properties for every C# project in the solution.

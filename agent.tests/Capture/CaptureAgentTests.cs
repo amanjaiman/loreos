@@ -82,15 +82,20 @@ public sealed class CaptureAgentTests
         var time = new FakeTimeProvider();
         var activity = new ActivityStore(":memory:");
         var metrics = new CaptureMetrics();
-        var filter = new SensitivityFilter(
-            new Blocklist(blockedApps ?? [], []), new AllowProbe());
         var monitor = new WindowMonitor(
             windowSource?.Invoke(time) ?? new FixedSource(Window), time, TimeSpan.Zero);
         CaptureOptions captureOptions = options ?? new CaptureOptions();
+        var settings = new LiveCaptureSettings(new CaptureOptions
+        {
+            Enabled = captureOptions.Enabled,
+            BlocklistApps = (blockedApps ?? []).ToArray(),
+        });
+        var filter = new SensitivityFilter(settings, new AllowProbe());
         var processor = new RecordingEpisodeProcessor();
 
         var agent = new CaptureAgent(
             captureOptions,
+            settings,
             monitor,
             extractor ?? new StubExtractor(extractedText),
             filter,
@@ -256,8 +261,10 @@ public sealed class CaptureAgentTests
     {
         Assert.Throws<ArgumentNullException>(() => new CaptureAgent(
             null!,
+            new LiveCaptureSettings(new CaptureOptions()),
             new WindowMonitor(new FixedSource(Window), new FakeTimeProvider(), TimeSpan.Zero),
-            new StubExtractor("x"), new SensitivityFilter(Blocklist.Empty, new AllowProbe()),
+            new StubExtractor("x"), new SensitivityFilter(
+                new LiveCaptureSettings(new CaptureOptions()), new AllowProbe()),
             new CaptureStatusTracker(),
             new ActivityStore(":memory:"), new CaptureMetrics(), new ReadySignal(),
             new FakeTimeProvider(), NullLogger<CaptureAgent>.Instance,

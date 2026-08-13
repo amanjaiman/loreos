@@ -34,22 +34,23 @@ Everything is local (`127.0.0.1`); nothing leaves the machine.
   secrets, but don't send them in the first place.)
 - **Things the user wouldn't want persisted.** If unsure whether a fact is durable
   and wanted, ask before recording.
-- Don't call Lore on *every* message — reach for it at the moments above, not as a
-  reflex.
+- Recall on every user message. The endpoint is deliberately selective: an empty result is
+  the normal answer when no durable memory is relevant.
 
 ## How to use Lore
 
 Drive the `lore` CLI and read its `--json` output. The commands you'll use most:
 
-### Search memory before personalizing
+### Recall relevant memory on every turn
 
 ```sh
-lore search "<topic>" --json --limit 5
+lore recall "<the user's message or its substance>" --json --k 5
 ```
 
-Run this before recommending or personalizing. Example: the user asks "what test
-framework should I use?" → `lore search "testing framework preferences" --json` →
-read the results and tailor your answer to what they already use.
+Run this before answering each user message and quietly incorporate relevant results.
+Example: the user asks "what test framework should I use?" →
+`lore recall "what test framework should I use?" --json` → read the results and tailor
+the answer to what they already use. Do not mention the lookup unless it matters.
 
 ### Record a durable fact
 
@@ -86,8 +87,8 @@ Every command supports `--json` and prints one envelope:
 
 - Check `ok`. On success, read `data`; on failure, `data` is absent and `error`
   holds `{ "code", "message" }`.
-- `search` → `data.results` (array of memories, most relevant first). Each memory has
-  `id`, `memory` (the text), and often `score` and `metadata.category`.
+- `recall` → `data.results` (array of relevant memories, most relevant first). Each result
+  has `statement`, `kind`, and `score`.
 - `recent` / `list` → `data.items` (array of memories) plus `total`, `limit`, `offset`.
 - `add` → `data.results` (the memories Lore distilled, each with an `event`).
 - `forget` → `data.forgotten` (bool), and `remaining_matches`.
