@@ -291,6 +291,46 @@ public sealed class CaptureAgentTests
         Assert.Empty(h.Episodes.Processed);
     }
 
+    // ── Opt-in raw-capture diagnostic (v2-008 R4.2) ────────────────────────────────
+
+    [Fact]
+    public async Task Diagnostics_off_writes_no_raw_captures()
+    {
+        using Harness h = Build(); // the default: capture.diagnostics is off
+
+        await h.Agent.CaptureOnceAsync(Window, CancellationToken.None);
+
+        Assert.Equal(1, h.Metrics.Snapshot().Observed); // the observation happened…
+        Assert.Empty(await h.Activity.GetRecentRawCapturesAsync()); // …and left no raw row
+    }
+
+    [Fact]
+    public async Task Diagnostics_on_records_the_post_filter_text_it_read()
+    {
+        using Harness h = Build(options: new CaptureOptions { Diagnostics = true });
+
+        await h.Agent.CaptureOnceAsync(Window, CancellationToken.None);
+
+        RawCaptureEntry row = Assert.Single(await h.Activity.GetRecentRawCapturesAsync());
+        Assert.Equal("chapter five on replication", row.Text);
+        Assert.Equal("editor", row.Executable);
+        Assert.Equal("UiAutomation", row.ExtractionSource);
+    }
+
+    [Fact]
+    public async Task Diagnostics_never_records_text_the_filter_blocked()
+    {
+        // The privacy rule that makes this switch safe to offer at all: the write sits below the
+        // filter chain, so turning diagnostics on cannot record one character the chain dropped.
+        using Harness h = Build(
+            blockedApps: ["editor"], options: new CaptureOptions { Diagnostics = true });
+
+        CaptureOutcome outcome = await h.Agent.CaptureOnceAsync(Window, CancellationToken.None);
+
+        Assert.Equal(CaptureOutcome.Filtered, outcome);
+        Assert.Empty(await h.Activity.GetRecentRawCapturesAsync());
+    }
+
     [Fact]
     public void Constructor_validates_dependencies()
     {

@@ -15,7 +15,12 @@ namespace Lore.Agent.Storage;
 ///
 /// <para>One connection is held open for the store's lifetime (so <c>:memory:</c> works in
 /// tests), and writes are serialized — the capture loop is single-threaded but a lock keeps
-/// it safe regardless.</para></summary>
+/// it safe regardless.</para>
+///
+/// <para>Every table here is <b>bounded</b> (v2-008 R4): the evidence tables age out after
+/// <c>capture.retentionDays</c> and <c>raw_captures</c> is capped at a day / 500 rows, both
+/// swept by <see cref="RetentionService"/>. "Forever" is the wrong default for data the user
+/// cannot see growing and never agreed to.</para></summary>
 public sealed class ActivityStore : IDisposable
 {
     private readonly SqliteConnection _connection;
@@ -271,6 +276,98 @@ public sealed class ActivityStore : IDisposable
         return results;
     }
 
+    /// <summary>Delete the evidence rows — <c>episodes</c>, <c>decisions</c>,
+    /// <c>activity_log</c> — that ended or were written before <paramref name="cutoff"/>, and
+    /// return how many rows went (v2-008 R4.1).
+    ///
+    /// <para><b>Memories are never touched here.</b> That is the whole point of putting
+    /// retention on this class and nowhere else: <see cref="ActivityStore"/> has no path to
+    /// <c>IMemoryService</c> (the structural test in <c>ActivityStoreTests</c> enforces it), so
+    /// pruning evidence physically cannot delete what the evidence supported. Memory ids left
+    /// pointing at pruned episodes are expected; the evidence read paths return what
+    /// survives.</para>
+    ///
+    /// <para>Timestamps are compared as text because they are stored as text. That is only
+    /// sound because every writer stamps rows from <c>TimeProvider.GetUtcNow()</c>, so every
+    /// value carries the same <c>+00:00</c> offset and round-trip ISO-8601 sorts
+    /// lexicographically — hence the <c>ToUniversalTime()</c> on the cutoff below. Existing
+    /// range queries (<see cref="CountDecisionsSinceAsync"/>) already rely on this.</para></summary>
+    public async Task<int> PruneOlderThanAsync(
+        DateTimeOffset cutoff, CancellationToken cancellationToken = default)
+    {
+        string at = Iso(cutoff.ToUniversalTime());
+
+        // Episodes age from when they ENDED, not when they started: a long episode that ran up
+        // to the boundary is still recent evidence and must survive its own start time.
+        int removed = await ExecuteAsync(
+            command =>
+            {
+                command.CommandText = "DELETE FROM episodes WHERE ended_at < $cutoff;";
+                command.Parameters.AddWithValue("$cutoff", at);
+            },
+            cancellationToken).ConfigureAwait(false);
+        removed += await ExecuteAsync(
+            command =>
+            {
+                command.CommandText = "DELETE FROM decisions WHERE at < $cutoff;";
+                command.Parameters.AddWithValue("$cutoff", at);
+            },
+            cancellationToken).ConfigureAwait(false);
+        removed += await ExecuteAsync(
+            command =>
+            {
+                command.CommandText = "DELETE FROM activity_log WHERE at < $cutoff;";
+                command.Parameters.AddWithValue("$cutoff", at);
+            },
+            cancellationToken).ConfigureAwait(false);
+        return removed;
+    }
+
+    /// <summary>Hard-bound the opt-in <c>raw_captures</c> diagnostic to rows written at or after
+    /// <paramref name="cutoff"/> <b>and</b> to the newest <paramref name="maxRows"/> of those,
+    /// whichever is smaller (v2-008 R4.2). Returns how many rows went.
+    ///
+    /// <para>Two bounds rather than one because either alone fails: an age bound is unbounded in
+    /// size on a busy day (the reason this table stayed off — unbounded it is 2–5 GB/year), and a
+    /// row bound alone would keep month-old screen text around on a quiet machine. Passing
+    /// <paramref name="maxRows"/> <c>0</c> empties the table, which is what the retention sweep
+    /// does when diagnostics is off so rows recorded during a troubleshooting session do not
+    /// linger on disk after the user turns it back off.</para></summary>
+    public async Task<int> PruneRawCapturesAsync(
+        DateTimeOffset cutoff, int maxRows, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(maxRows);
+        int removed = await ExecuteAsync(
+            command =>
+            {
+                command.CommandText = "DELETE FROM raw_captures WHERE at < $cutoff;";
+                command.Parameters.AddWithValue("$cutoff", Iso(cutoff.ToUniversalTime()));
+            },
+            cancellationToken).ConfigureAwait(false);
+
+        // id is the autoincrement insert order, so "newest N" is the N highest ids — no date
+        // parsing, and stable even if two rows share a timestamp.
+        removed += await ExecuteAsync(
+            command =>
+            {
+                command.CommandText =
+                    """
+                    DELETE FROM raw_captures WHERE id NOT IN (
+                        SELECT id FROM raw_captures ORDER BY id DESC LIMIT $max);
+                    """;
+                command.Parameters.AddWithValue("$max", maxRows);
+            },
+            cancellationToken).ConfigureAwait(false);
+        return removed;
+    }
+
+    /// <summary>Return the space the pruned rows were using to the filesystem. SQLite keeps
+    /// deleted pages in the file as free space otherwise, so without this a prune bounds the row
+    /// count but not the thing the user can actually see — the size of activity.db. Called only
+    /// after a sweep that deleted something, because it rewrites the whole file.</summary>
+    public Task VacuumAsync(CancellationToken cancellationToken = default) =>
+        ExecuteAsync(command => command.CommandText = "VACUUM;", cancellationToken);
+
     /// <summary>The most recent raw-capture rows, newest first.</summary>
     public async Task<IReadOnlyList<RawCaptureEntry>> GetRecentRawCapturesAsync(
         int limit = 50, CancellationToken cancellationToken = default)
@@ -350,8 +447,10 @@ public sealed class ActivityStore : IDisposable
 
     // Helpers take a configure callback that sets CommandText (always a constant literal at
     // the call site, so CA2100 is satisfied) and binds parameters; user data only ever
-    // arrives through SqliteParameters, never string-concatenated into SQL.
-    private async Task ExecuteAsync(
+    // arrives through SqliteParameters, never string-concatenated into SQL. ExecuteAsync
+    // returns the affected row count so the prune paths can report what they removed;
+    // the append paths ignore it.
+    private async Task<int> ExecuteAsync(
         Action<SqliteCommand> configure, CancellationToken cancellationToken)
     {
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -359,7 +458,7 @@ public sealed class ActivityStore : IDisposable
         {
             using SqliteCommand command = _connection.CreateCommand();
             configure(command);
-            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
         {

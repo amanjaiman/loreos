@@ -25,6 +25,28 @@ public sealed class CaptureOptions
     /// <summary>Lifecycle routing thresholds and the daily promotion budget (v2 pipeline).</summary>
     public Lifecycle.LifecycleOptions Lifecycle { get; init; } = new();
 
+    /// <summary>How many days of <b>evidence</b> — episodes, decisions, activity log — are kept
+    /// before <see cref="Storage.RetentionService"/> prunes them (v2-008 R4.1). <c>0</c> (or any
+    /// negative value) means keep forever, for users who want it.
+    ///
+    /// <para>Memories are never subject to this. Retention deletes the evidence, not what the
+    /// evidence supported — a memory whose supporting episodes have aged out stays recallable,
+    /// and its evidence view simply shows what survives.</para></summary>
+    public int RetentionDays { get; init; } = 90;
+
+    /// <summary>Opt-in troubleshooting switch: record the text each capture actually read into
+    /// <c>raw_captures</c> (v2-008 R4.2). <b>Off by default</b>, because always-on it is
+    /// 5–15 MB/day for a debugging table, and because <c>episodes</c> + <c>decisions</c> already
+    /// answer most tuning questions — this one exists for "why isn't Lore seeing this app?".
+    ///
+    /// <para>Only post-filter text is ever written, and the table is hard-bounded to 24 hours or
+    /// 500 rows. With this off nothing is written and <c>GET /recent</c> reports empty.</para>
+    ///
+    /// <para>Bound at startup, so a change takes effect on the next agent start — unlike the
+    /// pause and blocklist choices, which are live. That is the right trade for a diagnostic the
+    /// user turns on deliberately when they sit down to debug something.</para></summary>
+    public bool Diagnostics { get; init; }
+
     /// <summary>Executables the user never wants captured.</summary>
     public IReadOnlyList<string> BlocklistApps { get; init; } = [];
 

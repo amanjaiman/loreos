@@ -75,6 +75,12 @@ public static class ActivityEndpoints
         // already filter-cleared — episode intake only ever sees observations that passed the whole
         // sensitivity chain (a blocked window never becomes an observation), so the same redaction
         // guarantee as R2 holds without re-screening here.
+        //
+        // Missing episodes are NORMAL, not an error (v2-008 R4.3). Retention prunes episodes and
+        // never memories, so a memory outlives its evidence by design and its metadata keeps ids
+        // that no longer resolve. Every id is looked up individually and the misses are skipped:
+        // the answer is what survives — possibly nothing — never a 404 or a 500 for a memory that
+        // is still perfectly recallable.
         app.MapGet("/memories/{id}/evidence", async (
             string id, [FromServices] IMemoryService memory, [FromServices] ActivityStore activity,
             CancellationToken ct) =>
