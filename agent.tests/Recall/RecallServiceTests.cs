@@ -95,6 +95,97 @@ public sealed class RecallServiceTests
     {
         await Assert.ThrowsAsync<ArgumentException>(() => Build().RecallAsync("   "));
     }
+
+    // ── v2-008 T001: the recall-floor verification gate (spec R5.2) ──────────────────
+    //
+    // R1.3's design is: Lore stores eight flight bookings as `experience` rows and the
+    // *consuming agent* infers the pattern ("mostly window seats, though the last was
+    // aisle") from the whole set at recall time. That only works if `recall(k: 30,
+    // kinds: [experience])` actually returns all eight. This test answers that question
+    // against REAL nomic-embed-text similarities (see GoldenCorpus's "book a flight to
+    // Denver" entry — measured live, not guessed) run through the real blend/floor math
+    // in RecallScorer/RecallService.
+    //
+    // ANSWER: NO. Only the 3 most recent bookings clear the floor; the other 5 do not.
+    //
+    // Why: nomic-embed-text scores every flight statement against the query in a tight
+    // 0.81-0.83 band regardless of which flight it is — it separates "a flight I booked"
+    // from unrelated topics, not one flight from another. So the semantic term is nearly
+    // constant (~0.82) across all eight, and what actually decides pass/fail is
+    // ExperienceWeight (0.9) x the temporal factor. Once an experience is old enough that
+    // temporal decay has saturated at ExperienceDecayFloor (0.6) — which happens at
+    // ~187 days (~6.1 months), per exp(-x/365) = 0.6 — every older row gets the SAME
+    // ceiling: 0.9 x 0.6 = 0.54. At the measured ~0.82 semantic score that ceiling lands
+    // around 0.44-0.45, which sits BELOW Floor (0.47) by ~0.03. So every flight past the
+    // ~6-month mark is dropped, not just the oldest ones, and raising k cannot recover
+    // them — they never clear the floor to begin with.
+    //
+    // Binding constraint: the Floor (0.47) vs. the ExperienceWeight x ExperienceDecayFloor
+    // ceiling (0.9 x 0.6 = 0.54) leaves only ~0.06 of headroom in the temporal-weight
+    // product, and real-world same-topic semantic scores (~0.82, not the ~0.95+ it would
+    // take to clear) eat that headroom. This is a design tension between R5.2's floor
+    // calibration (T010, tuned to keep unrelated pairs out) and R1.3's premise (surface an
+    // aging set), not a bug in either piece alone — see the failing/dropped assertions
+    // below for the exact scores. Per T001's brief, this is NOT fixed here by lowering the
+    // floor or raising ExperienceWeight/decay — that tradeoff is calibrated against the
+    // live embedding distribution and out of this task's scope. This test is the
+    // regression guard: it pins today's (incomplete) behavior so any future change to
+    // Floor, ExperienceWeight, ExperienceDecayDays, or ExperienceDecayFloor is forced to
+    // consciously re-examine this gate rather than silently drift.
+    [Fact]
+    public async Task T001_flight_booking_history_only_recent_bookings_clear_the_floor()
+    {
+        IReadOnlyList<RecallHit> hits = await Build().RecallAsync(
+            "book a flight to Denver", k: 30, kinds: [MemoryKinds.Experience]);
+
+        // What DOES come back: the 3 most recent bookings, recency-weighted (as the spec
+        // requires for whatever does clear the floor).
+        Assert.Equal(
+            ["flight-1mo", "flight-3mo", "flight-5mo"],
+            hits.Select(hit => hit.Id).ToArray());
+        Assert.True(hits[0].Score > hits[1].Score);
+        Assert.True(hits[1].Score > hits[2].Score);
+
+        // What does NOT come back: the 5 bookings 8 months and older. Spec R5.2's
+        // acceptance criterion — "a store seeded with eight flight bookings ... returns
+        // all eight ... none dropped by the floor" — is NOT met. This assertion documents
+        // that gap; it is expected to keep passing until Floor/ExperienceWeight/decay are
+        // deliberately revisited.
+        Assert.DoesNotContain(
+            hits,
+            hit => hit.Id is "flight-8mo" or "flight-12mo" or "flight-16mo"
+                or "flight-20mo" or "flight-24mo");
+
+        // Pin the actual blended scores (rounded to 4dp by RecallService) for the ones
+        // that DO return, so a silent change to the weights/decay/floor is caught here
+        // rather than discovered later against a live corpus.
+        Dictionary<string, double> scoresById = hits.ToDictionary(hit => hit.Id, hit => hit.Score);
+        Assert.Equal(0.6788, scoresById["flight-1mo"], precision: 3);
+        Assert.Equal(0.5786, scoresById["flight-3mo"], precision: 3);
+        Assert.Equal(0.4858, scoresById["flight-5mo"], precision: 3);
+    }
+
+    [Fact]
+    public void T001_dropped_flights_score_just_under_the_floor_not_far_under_it()
+    {
+        // Recompute the blend directly (bypassing the floor filter) for the oldest
+        // booking to show HOW CLOSE it comes: this is not a case of stale bookings being
+        // wildly irrelevant, it's ~0.03 short of the 0.47 floor, entirely because
+        // ExperienceWeight x ExperienceDecayFloor caps out at 0.54 once decay saturates.
+        MemoryMetadata oldest = new(
+            MemoryKinds.Experience, MemoryStatuses.Active, 1.0,
+            MemoryMetadata.FarFutureUnixSeconds,
+            GoldenCorpus.Now.ToUnixTimeSeconds() - 730 * 86_400L,
+            MemoryUpdateReasons.Promoted);
+
+        double blended = RecallScorer.Blend(
+            0.8140, oldest, GoldenCorpus.Now.ToUnixTimeSeconds(), _options);
+
+        Assert.True(blended < _options.Floor, $"expected below floor, got {blended}");
+        Assert.True(
+            blended > _options.Floor - 0.05,
+            $"expected a near miss (within 0.05 of the floor), got {blended}");
+    }
 }
 
 public sealed class RecallScorerTests
