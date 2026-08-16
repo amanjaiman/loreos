@@ -1,0 +1,356 @@
+# v2-008 — Capture Tuning, Retention & Recall Aggregation · Specification
+
+> SDD artifact: **what & why.** Bound by [`constitution.md`](../../../constitution.md).
+> **Audience:** an agent implementing the C# agent, the local API, and the Settings renderer.
+> **Shape:** three user-facing presets, the plumbing to apply them live, bounded storage,
+> one recall fix, and three defects that are **not** settings.
+
+## Why this exists
+
+Capture behaviour today is a single fixed point: poll every 2s, dwell 4s, re-read the same
+window every 30s, close an episode at 40 observations, promote a fact at 0.85 confidence,
+cap a statement at 200 characters. Those numbers are reasonable defaults and wrong for
+somebody. A user on battery wants Lore to look less often. A user with a cloud provider is
+paying per episode. A user who books a lot of travel wants seat and fare detail in the
+record; a privacy-minded user wants the opposite.
+
+Lore is open source and local-first, so the answer is not for us to pick better numbers —
+it is to let the user pick, in language they can act on, without turning Settings into a
+control panel of Jaccard thresholds.
+
+**The dividing line this spec enforces:** a slider is for a genuine preference with an
+honest tradeoff on both sides. Anything where one setting is simply *worse* is a defect and
+gets fixed for everyone (R6). We do not ship settings that let users opt out of bugs.
+
+---
+
+## R1 — Three presets in Settings → Capture & Privacy
+
+Three discrete 3-stop controls, not continuous sliders — a 0–100 value has no meaning to
+the user here. Each control shows a **live plain-English consequence line** beneath it;
+that sentence is what makes the control understandable, more than the label is.
+
+### R1.1 — "How closely Lore watches" (`attentiveness`)
+
+The tradeoff: **how much Lore notices vs. battery, CPU, and how many AI calls you pay for.**
+
+| | `light` | `balanced` (default) | `close` |
+|---|---|---|---|
+| `PollInterval` | 5s | 2s | 2s |
+| `DwellThreshold` | 10s | 4s | 3s |
+| `RecaptureInterval` | 40s | 25s | 15s |
+| `Episodes.MaxObservations` | 30 | 48 | 80 |
+| `Episodes.MaxSamples` | 6 | 8 | 12 |
+
+`MaxObservations` **must** scale with `RecaptureInterval`. It — not the clock — is what
+ends most episodes today, so changing the interval alone changes episode *length* instead
+of capture density: at 15s re-reads with a 40-observation cap, the day fragments into
+~10-minute episodes, each giving the distiller less context and roughly doubling AI spend.
+The pairings above hold every preset at a **~20-minute episode**, so the control changes
+evidence granularity, not episode shape, and AI call volume stays roughly flat across all
+three stops.
+
+`ContinuityGap` (3 min), `IdleTimeout` (10 min) and `MaxAge` (45 min) are unchanged by this
+control.
+
+**Note for the release notes:** `balanced` is not byte-identical to today — re-read moves
+30s → 25s and the cap 40 → 48. Episode length and AI call volume are unchanged; readings
+rise ~20%, so existing users see slightly more CPU/OCR after upgrade. This is deliberate
+(it keeps the three stops in a usable band) and must be stated, not slipped in.
+
+### R1.2 — "How sure Lore has to be" (`certainty`)
+
+The tradeoff: **fewer, surer memories vs. broader coverage with more noise.** Reversible in
+both directions — nothing promoted is deleted, and nothing withheld is lost; it waits in
+staging where the user can see it.
+
+| | `strict` | `balanced` (default) | `eager` |
+|---|---|---|---|
+| `HighSignalConfidence` | 0.90 | 0.85 | 0.70 |
+| `StagedTtlDays` | 7 | 14 | 30 |
+
+`SameFactThreshold` (0.90) and `SameTopicThreshold` (0.75) are **not** touched by this
+control and must not be exposed. They govern whether two statements are *the same fact* —
+a correctness property of dedup and arbitration, not a matter of taste. Moving them to make
+Lore "more eager" corrupts the store rather than filling it.
+
+### R1.3 — "How much detail" (`detail`)
+
+The tradeoff: **richer records vs. less specific data on disk.** The low stop is a privacy
+choice, not just a cheaper one.
+
+| | `minimal` | `balanced` (default) | `rich` |
+|---|---|---|---|
+| Statement character cap | 120 | 200 | 500 |
+| `Episodes.SampleMaxChars` | 400 | 600 | 900 |
+| Prompt detail directive | terse | today's wording | specifics-first |
+
+Both caps move together: the model cannot write "seat 14C" if the sample it read was
+truncated before that text. Raising the output cap without the input cap produces longer
+statements with no more information in them.
+
+Illustrative output for one flight booking:
+
+| Stop | Statement |
+|---|---|
+| `minimal` | I booked a flight to San Diego. |
+| `balanced` | I booked a United flight to San Diego for Sep 9–13. |
+| `rich` | I booked United UA 2411 to San Diego Sep 9–13, seat 14C aisle, one checked bag, $312. |
+
+**Binding rule — detail changes depth, never fact count.** A higher detail setting must not
+cause the distiller to split one event into several facts, and in particular must never
+mint a `preference` from a single observed choice. One aisle seat is not a preference for
+aisle seats; storing it as one is the over-generalization the distill prompt already
+forbids ("never infer identity traits from a single page view"), and it actively destroys
+data: two such memories fall in the same-topic band, go to arbitration, and one supersedes
+the other — so eight bookings collapse into a single flip-flopping preference instead of
+eight records.
+
+**Lore records what happened; the consuming agent infers what it means.** An agent booking
+a flight should see eight `experience` rows and conclude "mostly window seats, though the
+last was an aisle." That inference belongs at recall time with the whole set in view, not
+at capture time with one episode in view. R5 exists to make that possible.
+
+Detail also *helps* dedup rather than threatening it: "I booked a flight" against "I booked
+a flight" scores near-identical and risks being merged as one repeatedly-reinforced blur,
+while "UA 2411 to San Diego Sep 9–13" against "DL 88 to Boston Mar 2" stays distinctly two
+records. This is a positive reason for a frequent traveller to turn the control up.
+
+### R1.4 — UI placement and shape
+
+- All three live in `app/src/renderer/views/settings/CapturePrivacy.tsx`, in a new card
+  below the existing capture toggle and above the blocklist.
+- The design system has no 3-stop control today (`Card`, `Switch`, `ChipListEditor` only);
+  add a `SegmentedControl` to the vendored DS rather than improvising in the view.
+- Each control renders its consequence line from the **resolved** values (R3), e.g.
+  *"Lore reads your screen about every 25 seconds — roughly 40 AI calls a day."* Do not
+  hardcode these strings against preset names; derive them so a `config.json` override
+  shows the truth.
+- Saves immediately on change, through the existing `api.patchConfig` queue in that file.
+
+**Acceptance:** changing any control writes config, takes effect without an agent restart
+(R2), and survives an app reload; the consequence line reflects a raw override typed into
+`config.json`, not the preset name.
+
+---
+
+## R2 — Presets apply live, without a restart
+
+Today `CaptureOptions` is bound once at startup and injected as a singleton, and
+`LiveCaptureSettings` deliberately carries only `enabled` + blocklist — its own summary
+says timing and lifecycle thresholds are "fixed for a process lifetime". A settings control
+that requires a restart is not acceptable UX for a toggle in a preferences pane, and a
+restart drops the open episode.
+
+**Wanted:** `LiveCaptureSettings` carries a full resolved snapshot, replaced atomically on
+`PATCH /config` exactly as the blocklist is today.
+
+Sites that must read live instead of from the startup singleton:
+
+| Site | Today | Change |
+|---|---|---|
+| `CaptureAgent` poll delay + `ShouldProcess` | reads `_options` per tick | point at the live snapshot |
+| `WindowMonitor` | dwell threshold is a constructor field | read per `Poll()` |
+| `EpisodeBuilder` | `EpisodeOptions` singleton | read per `Add` / `CloseIfIdle` |
+| `LifecycleEngine` | reads `_options.X` per call | point at the live snapshot |
+| `DistillPrompt.Build` | static, takes `Episode` only | takes the detail level too |
+
+Most of these already re-read their options per use, so this is largely a pointer swap;
+`WindowMonitor` and `EpisodeBuilder` are the two that need real changes.
+
+A threshold change mid-episode is harmless and must not be special-cased: the new value
+simply applies from the next observation. An in-flight episode is never discarded or
+force-closed by a settings change.
+
+**Acceptance:** with the agent running, moving `attentiveness` to `light` measurably slows
+the observation rate within one poll cycle, with no restart and no lost episode; a
+`PATCH /config` that touches only `provider` leaves capture timing untouched.
+
+---
+
+## R3 — Config schema: presets stored, raw overrides win
+
+Store the **preset name**, not the resolved numbers. The agent resolves preset → values at
+read time.
+
+```json
+"capture": {
+  "enabled": true,
+  "attentiveness": "balanced",
+  "certainty": "balanced",
+  "detail": "balanced",
+  "blocklistApps": [],
+  "blocklistKeywords": [],
+  "episodes": { "maxObservations": 64 }
+}
+```
+
+**Binding rule:** any raw value explicitly present in `config.json` **wins over the preset**
+for that field only. Two controls for everyone; every knob for anyone who opens the file.
+That split is the point — it is what makes "full control" true without a wall of options.
+
+`GET /config` additionally returns a **read-only** `capture.resolved` block containing the
+effective values, so the UI can render honest consequence lines and a power user can see
+what a preset actually means:
+
+```json
+"capture": { ..., "resolved": { "pollIntervalSeconds": 2, "recaptureIntervalSeconds": 25,
+  "maxObservations": 48, "statementMaxChars": 200, "highSignalConfidence": 0.85 } }
+```
+
+`PATCH /config` must ignore or reject `capture.resolved` rather than persisting it.
+
+Unknown or misspelled preset names fall back to `balanced` and log a warning — never crash
+the agent on a hand-edited config.
+
+**Acceptance:** a config with `"attentiveness": "light"` plus an explicit
+`episodes.maxObservations` uses light's timings and the explicit cap; deleting the explicit
+key restores light's cap without an app restart; a garbage preset name yields balanced.
+
+---
+
+## R4 — Bounded storage: retention and opt-in raw captures
+
+`ActivityStore` has **no pruning of any kind** — no `DELETE`, no retention window, no
+vacuum. `episodes`, `decisions`, and `activity_log` grow for the life of the install. For a
+local-first app whose promise is that your data stays on your machine, "forever" is the
+wrong default: the user cannot see the growth and never agreed to it.
+
+**R4.1 — Retention.** A `capture.retentionDays` setting, default **90**, pruning
+`episodes`, `decisions`, and `activity_log` older than the window. Pruned on agent start and
+once daily thereafter. `0` means keep forever, for users who want it.
+
+At balanced settings an episode costs roughly 6 KB (8 samples × 600 chars plus titles), so
+a working day is a few hundred KB and an unbounded year is ~100 MB. Not alarming, but not
+the user's choice today.
+
+Memories themselves are **not** touched by retention. Pruning evidence must not delete what
+the evidence supported.
+
+**R4.2 — `raw_captures` stays off.** The table, its schema, and `GET /recent` exist, but
+nothing in the v2 loop ever calls `LogRawCaptureAsync`. Do not simply switch it on: at
+balanced settings that is ~1,000–2,000 readings a day at a few KB each — **5–15 MB/day,
+2–5 GB/year** — for a debugging table.
+
+Instead: a `capture.diagnostics` toggle, **off by default**, exposed in Settings as a small
+"Record what Lore reads (for troubleshooting)" switch, and **hard-bounded** to the last 24
+hours or 500 rows, whichever is smaller, pruned on the same schedule. Tens of MB, not
+gigabytes. Its purpose is answering "why isn't Lore seeing this app" — an occasional
+question, not an always-on need.
+
+Most tuning questions are already answered without it: `episodes` stores exactly what the
+distiller saw and `decisions` records why each episode did or did not produce a fact.
+
+**R4.3 — Dangling evidence.** Pruning episodes leaves ids in `metadata.episodes` pointing
+at rows that no longer exist. `GET /memories/{id}/evidence` and the queue card's evidence
+line must tolerate missing episodes and render what survives, never error.
+
+**Acceptance:** with `retentionDays: 1`, episodes older than a day are gone after a restart
+and the memories they supported are intact and still recallable; `GET /recent` returns
+empty with diagnostics off; with diagnostics on, row count never exceeds the bound.
+
+---
+
+## R5 — Recall must be able to return a set, not just the top match
+
+R1.3's design — Lore records, the agent infers — only works if recall hands the agent
+enough records to see a pattern. Today it does not:
+
+- `RecallOptions.DefaultK` is **5**, and the MCP `recall` tool defaults `k = 5`.
+- The tool description frames recall as memories "relevant to their CURRENT message …
+  strongest first". Nothing tells a calling agent it may raise `k` to look across history.
+
+So an agent asked to book a flight calls `recall("book a flight to Denver")`, gets five
+items — perhaps two past flights and three unrelated facts — and never sees the pattern.
+The eight bookings are correctly stored and effectively invisible.
+
+**R5.1 — Invite aggregation in the tool description.** Add to `LoreTools.Recall`'s
+`[Description]`: when the user's request resembles something they have done before, raise
+`k` (20–30) and consider filtering to `experience` to see the pattern rather than the
+single closest match. This string is model-facing and drives tool selection — change it
+deliberately, and keep the existing every-message framing intact.
+
+Confirm `NormalizeLimit` permits `k` up to at least 30.
+
+**R5.2 — Verify the floor before shipping the detail control.** `Floor` is 0.47 and an
+`experience` is weighted 0.9 with 365-day decay (floored at 0.6), so an older booking is
+weighted down twice. Check against the golden corpus that the eighth-most-recent
+flight-shaped memory still clears the floor on a flight-shaped query. If it does not, a
+higher `k` returns nothing extra and R1.3 does not deliver its use case.
+
+**This verification gates R1.3** — do it first; it is the item that decides whether the
+whole pattern works.
+
+**Acceptance:** a store seeded with eight flight bookings across two years returns all
+eight for a flight-shaped query at `k = 30`, in recency-weighted order, none dropped by the
+floor.
+
+---
+
+## R6 — Defects fixed for everyone (not settings)
+
+Nobody would choose the worse side of these. They are not presets.
+
+**R6.1 — `ContentType` is computed and discarded.** `ContentClassifier.Classify` runs on
+every observation and is stored on `CapturedObservation`, but `Episode` does not carry it,
+so the distiller never learns an episode was shopping rather than reading. Put the
+episode's content-type mix on `Episode` and into the prompt. We already pay for this
+signal.
+
+**R6.2 — Title churn can block capture entirely.** Any title change resets the dwell timer
+in `WindowMonitor.Poll()`. An app that rewrites its title faster than the dwell threshold —
+media players, terminals with progress output, chat apps with unread counters — never
+dwells and is never captured, with no log row saying so. Reset dwell on **window** change;
+treat a title change within the same window as continuing dwell.
+
+**R6.3 — Sample selection ignores time spent.** `EpisodeBuilder.SelectSamples()` greedily
+picks the observation *least* similar to those already chosen. Near-duplicates are counted
+and dropped, so fifteen minutes on one document contributes one snippet and a thirty-second
+glance contributes another of equal weight. Dwell time never reaches the prompt at all.
+Weight selection by time-spent alongside diversity, so the evidence reflects where the day
+actually went.
+
+**Acceptance:** an episode whose observations are 90% one document yields samples
+predominantly from that document; a window whose title changes every 2s is captured.
+
+---
+
+## Constraints (non-negotiable)
+
+- **Local only.** No new egress. Presets, retention, and diagnostics are all local state
+  (constitution §1, §4.3).
+- **The filter chain is untouched.** Nothing here bypasses, reorders, or weakens
+  `SensitivityFilter`. No preset may make Lore capture something the blocklist or the
+  sensitive-pattern layer would have dropped — including the `rich` detail stop.
+- **No restart for a settings change.** R2 is a hard requirement, not an optimisation.
+- **Balanced is the upgrade path.** A config written before this spec, with no preset keys,
+  must resolve to `balanced` on every control with no user action.
+- **Temperature 0 stays.** The distill prompt varies by detail level but remains
+  deterministic; the E2E acceptance harness pins `balanced` (or runs per-preset), and the
+  golden corpus is re-run for any preset whose prompt text differs.
+
+## Out of scope
+
+- Exposing similarity thresholds, `MatchNeighbors`, `DailyBudget`, `MaxAge`, or
+  `ContinuityGap` in the UI. They stay in `config.json` for tinkerers.
+- The episode-grain problem — same-app observations merging unrelated browser activity into
+  one episode — is real and is **not** a slider. It needs a topic-shift split, which is its
+  own spec.
+- Multi-user config. Presets are per-install, like everything else.
+- Any change to memory storage, the memoryd seam, or the MCP transport.
+
+## Handoff notes
+
+- **Order: R5.2 → R2 → R1 → R3 → R4 → R6.** R5.2 is a verification that can invalidate
+  R1.3's design, so it goes first and is cheap. R2 is the plumbing everything user-facing
+  depends on. R6 is independent of the rest and can ship in parallel or as its own PR — it
+  is grouped here for the framing, not because it is coupled.
+- R6.1 and R1.3 both touch `DistillPrompt`; sequence them to avoid a collision, or land
+  R6.1 first since it is smaller.
+- The consequence lines in R1.4 are the highest-leverage part of the UI and the easiest to
+  get wrong. Write them against resolved values from the start; retrofitting them onto
+  preset names will produce a control that lies to anyone with an override.
+- Verify against the real app, not just tests: move `attentiveness` to `close` with a
+  browser focused and watch the observation rate in `GET /episodes`, then confirm the AI
+  call count per hour has not doubled — that is the failure mode R1.1's cap scaling exists
+  to prevent.

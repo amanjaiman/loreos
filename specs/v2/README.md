@@ -15,6 +15,7 @@ retired v1 shape and are archived per v2-002.
 | [v2-005 — App Read API](005-app-read-api/specification.md) | Additive read endpoints the v2-004 shell needs: memory counts, the live capture target, memory evidence. | implemented (agent + renderer, same branch) |
 | [v2-006 — Background Running & System Tray](006-background-and-tray/specification.md) | Lore survives its window: close-to-tray, start with Windows, and a tray icon whose artwork carries running/paused/stopped plus a full lifecycle menu. | implemented (T001–T005 on `feat/v2-006-background-and-tray`) |
 | [v2-007 — Release 0.1.5 polish](007-release-0.1.5/specification.md) | Taskbar identity, live blocklist persistence, Settings cleanup, and one provider-neutral agent connection flow. | implementation in progress |
+| [v2-008 — Capture Tuning, Retention & Recall Aggregation](008-capture-tuning/specification.md) | Three user-facing capture presets (attentiveness · certainty · detail) applied live, preset-with-raw-override config, bounded storage retention, recall that can return a set, and three capture defects fixed for everyone. | specification ✓ · [plan](008-capture-tuning/plan.md) ✓ · [tasks](008-capture-tuning/tasks.md) T001–T009 open |
 
 **Implementation order:** 001's tasks in order (T002 memoryd raw mode first), 002
 interleaved as the deletions become safe (old capture path deletes only after
