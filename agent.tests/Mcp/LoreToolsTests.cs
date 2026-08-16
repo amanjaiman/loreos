@@ -45,6 +45,23 @@ public sealed class LoreToolsTests
     }
 
     [Fact]
+    public async Task Recall_passes_kinds_and_a_raised_k_through_to_the_service()
+    {
+        // Mirrors R5.1: a caller aggregating across history raises k and restricts kinds
+        // (e.g. to "experience") rather than taking only the single closest match.
+        var recall = new Lore.Agent.Recall.RecallService(
+            new Recall.GoldenMemoryService(),
+            new Lore.Agent.Recall.RecallOptions(),
+            new Recall.GoldenTimeProvider());
+
+        RecallToolResult result = await LoreTools.Recall(
+            recall, "tell me about myself", k: 30, kinds: ["preference"]);
+
+        RecalledFact fact = Assert.Single(result.Facts);
+        Assert.Equal("preference", fact.Kind);
+    }
+
+    [Fact]
     public async Task GetContext_searches_and_returns_scored_hits()
     {
         var memory = new FakeMemoryService();
