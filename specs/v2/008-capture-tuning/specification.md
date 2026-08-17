@@ -285,6 +285,57 @@ whole pattern works.
 eight for a flight-shaped query at `k = 30`, in recency-weighted order, none dropped by the
 floor.
 
+### R5.3 — The floor applies to semantic relevance, not to the blend
+
+**T001 ran this check and it failed: only 3 of 8 bookings returned.** The cause is not
+specific to flights, and not caused by anything else in this spec.
+
+`RecallScorer.Blend` is `semantic × kind × temporal × confidence`, and `RecallService`
+compares that **blended** value against `Floor`. For an `experience`, `TemporalFactor`
+saturates at `ExperienceDecayFloor` (0.6) once the memory is ~187 days old. So past six
+months the best any experience can score is:
+
+```
+semantic × 0.9 (ExperienceWeight) × 0.6 (decay floor) × confidence
+```
+
+against a floor of 0.47. That needs `semantic ≥ 0.870` at confidence 1.0, `≥ 0.967` at the
+0.9 a real booking earns — and at confidence ≤ 0.87 it is **arithmetically impossible**,
+since `0.54 × 0.87 = 0.4698` is already under the floor. Measured similarity between a
+flight query and a stored booking is ~0.82 with `nomic-embed-text`, because the embedder
+separates topics, not instances within a topic.
+
+Two consequences worth stating plainly:
+
+- **This is a latent v2-001 defect, not a v2-008 one.** `RecallScorer.cs` documents the
+  intended invariant — "experiences fade gently with age but never vanish — 'visited
+  France' still matters on a travel query years later (spec AC 2)." The decay floor exists
+  to guarantee exactly that, and the recall floor sits above where the guarantee lands. The
+  invariant is not delivered today. Every experience older than roughly six months is
+  unrecallable; below ~0.87 confidence, unrecallable at any similarity.
+- **It is not fixable by lowering `Floor`.** That value is calibrated to keep unrelated
+  pairs out and lowering it degrades every other recall.
+
+**Decision: separate the two jobs the floor is doing.** "Is this relevant?" is a semantic
+question; "how should this rank?" is what the blend is for. Conflating them lets *age* make
+a *relevant* memory invisible.
+
+```
+now:    if (blended  >= Floor) keep;  order by blended
+wanted: if (semantic >= Floor) keep;  order by blended
+```
+
+An aged booking then returns on its 0.82 semantic score and ranks last on its 0.40 blend —
+the intended behaviour. Unrelated pairs sit at ~0.44 semantic and are still excluded by the
+same 0.47 threshold, so the floor keeps doing the job it was calibrated for.
+
+**This changes what passes the floor for every kind, so the golden corpus must be re-run
+and re-calibrated, not merely re-asserted.** Treat any newly-passing unrelated pair as a
+calibration failure to investigate, not a number to update.
+
+**Acceptance:** all eight bookings return at `k = 30`, ordered recent-first; the existing
+golden-corpus relevance cases are unchanged; no unrelated pair newly clears the floor.
+
 ---
 
 ## R6 — Defects fixed for everyone (not settings)

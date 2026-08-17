@@ -2,10 +2,20 @@
 
 Each task is PR-sized and lands through the `no-mistakes` gate.
 
-- [ ] **T001 — Recall floor check (gates T005).** Seed a store with eight flight-shaped
-  `experience` memories spanning two years; assert all eight clear `RecallOptions.Floor` and
-  return at `k = 30` in recency-weighted order. If they do not, report before building the
-  detail control — R1.3's premise depends on this. Confirm `NormalizeLimit` permits `k ≥ 30`.
+- [x] **T001 — Recall floor check (gates T005).** ✅ Ran. **Result: FAILED — 3 of 8
+  returned.** Cause is `Floor` being compared against the blended score while
+  `TemporalFactor` saturates at 0.6 past ~187 days; below ~0.87 confidence an aged
+  `experience` cannot clear the floor at any similarity. Latent v2-001 defect, not caused by
+  this spec. `NormalizeLimit` caps at 1000, so `k` was never the constraint. Tests landed as
+  a regression guard pinning today's (broken) behaviour — **T010 must invert them.**
+
+- [ ] **T010 — Recall floor on semantic, blend for rank (R5.3, gates T005).** Compare
+  `Floor` against the raw semantic score; keep the blend for ordering only. Then invert
+  T001's two tests in `agent.tests/Recall/RecallServiceTests.cs` so they assert all eight
+  bookings return, recent-first. **Re-run and re-calibrate the golden corpus** — this changes
+  what passes the floor for every kind. A newly-passing unrelated pair is a calibration
+  failure to investigate, not a number to update. Do not touch `Floor`, `ExperienceWeight`,
+  `ExperienceDecayDays`, or `ExperienceDecayFloor`.
 
 - [ ] **T002 — Capture defects (R6).** Independent of the preset work; land early.
   - Carry the episode's content-type mix on `Episode` and into `DistillPrompt`.
@@ -17,6 +27,10 @@ Each task is PR-sized and lands through the `no-mistakes` gate.
   `WindowMonitor` (dwell is a ctor field today), `EpisodeBuilder`, and `LifecycleEngine`.
   Resolves to today's defaults — no user-visible change yet. A mid-episode threshold change
   applies from the next observation and never force-closes an episode.
+  - **From T007:** also fold `capture.diagnostics` and `capture.retentionDays` into the
+    snapshot. T007 had to leave them startup-bound (it was scoped out of `LiveCaptureSettings`),
+    so toggling diagnostics currently needs an agent restart. Once in the snapshot, the
+    `_options` reads in `CaptureAgent` and `RecentEndpoints` become snapshot reads.
 
 - [ ] **T004 — Preset resolution and config schema (R3).** Resolve
   `attentiveness` / `certainty` / `detail` → values; explicit raw keys win per-field;
@@ -32,13 +46,16 @@ Each task is PR-sized and lands through the `no-mistakes` gate.
   system, then three controls in `CapturePrivacy.tsx` below the capture toggle and above the
   blocklist. Consequence lines derive from `capture.resolved`, never from preset names.
   Saves through the existing `api.patchConfig` queue.
+  - **From T007:** also add the "Record what Lore reads (for troubleshooting)" switch for
+    `capture.diagnostics` (R4.2). T007 built the backend but left the renderer alone to
+    avoid colliding with this task's rewrite of `CapturePrivacy.tsx`.
 
-- [ ] **T007 — Retention and bounded diagnostics (R4).** `capture.retentionDays` (default
+- [x] **T007 — Retention and bounded diagnostics (R4).** `capture.retentionDays` (default
   90, `0` = forever) pruning `episodes` / `decisions` / `activity_log` on start and daily.
   Memories untouched. `capture.diagnostics` off by default, bounded to 24h / 500 rows, with
   its Settings switch. Evidence endpoints tolerate pruned episodes.
 
-- [ ] **T008 — Recall aggregation (R5.1).** Extend `LoreTools.Recall`'s `[Description]` to
+- [x] **T008 — Recall aggregation (R5.1).** Extend `LoreTools.Recall`'s `[Description]` to
   invite a higher `k` and an `experience` filter when the request resembles something the
   user has done before. Model-facing string — change deliberately, keep the every-message
   framing.
@@ -46,3 +63,10 @@ Each task is PR-sized and lands through the `no-mistakes` gate.
 - [ ] **T009 — Delivery.** Docs (`docs/privacy.md`, `docs/architecture.md`), release notes
   covering the `balanced` re-read change (30s → 25s, ~20% more readings), local checks,
   and the live app check from the plan.
+  - **Live MCP schema check (from T008).** T008 added `kinds` as an `IReadOnlyList<string>?`
+    tool parameter — the first collection-typed *parameter* on any tool in `LoreTools.cs`
+    (all other `IReadOnlyList` uses there are locals or return types). Unit tests invoke the
+    C# method directly and never exercise the SDK's JSON-schema generation, so a green suite
+    proves nothing here. Connect a real MCP client and confirm the `recall` tool advertises
+    `kinds` as an array and that passing `["experience"]` filters. If the SDK chokes, switch
+    the parameter to `string[]?`.
