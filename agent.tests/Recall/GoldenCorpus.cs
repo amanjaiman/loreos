@@ -48,6 +48,28 @@ internal static class GoldenCorpus
             MemoryKinds.State, MemoryStatuses.Staged, 0.6, 2, 14),
         new("archived-city", "I live in Seattle.",
             MemoryKinds.Identity, MemoryStatuses.Archived, 0.9, 400, null),
+
+        // v2-008 T001 — the recall-floor verification gate (spec R5.2). Eight flight
+        // bookings spread across ~2 years, confidence pinned to 1.0 so the test isolates
+        // the effect under study (kind weight × temporal decay vs. Floor) from R1.2's
+        // confidence dial, a separate control. Ages are the spec's example months
+        // (1/3/5/8/12/16/20/24) expressed as days.
+        new("flight-1mo", "I booked a United flight to San Diego for Sep 9-13.",
+            MemoryKinds.Experience, MemoryStatuses.Active, 1.0, 30, null),
+        new("flight-3mo", "I booked a Delta flight to Boston for Jun 2-6.",
+            MemoryKinds.Experience, MemoryStatuses.Active, 1.0, 90, null),
+        new("flight-5mo", "I booked a JetBlue flight to Austin for Apr 14-18.",
+            MemoryKinds.Experience, MemoryStatuses.Active, 1.0, 150, null),
+        new("flight-8mo", "I booked an American Airlines flight to Chicago for Jan 20-24.",
+            MemoryKinds.Experience, MemoryStatuses.Active, 1.0, 240, null),
+        new("flight-12mo", "I booked a Southwest flight to Phoenix for Aug 3-7.",
+            MemoryKinds.Experience, MemoryStatuses.Active, 1.0, 365, null),
+        new("flight-16mo", "I booked a United flight to Seattle for Apr 11-15.",
+            MemoryKinds.Experience, MemoryStatuses.Active, 1.0, 480, null),
+        new("flight-20mo", "I booked a Delta flight to Miami for Dec 5-9.",
+            MemoryKinds.Experience, MemoryStatuses.Active, 1.0, 600, null),
+        new("flight-24mo", "I booked an Alaska Airlines flight to Portland for Aug 20-24.",
+            MemoryKinds.Experience, MemoryStatuses.Active, 1.0, 730, null),
     ];
 
     /// <summary>query → (memoryId → semantic similarity). Absent pairs are 0.</summary>
@@ -86,6 +108,28 @@ internal static class GoldenCorpus
                 ["france"] = 0.85,
                 ["loreos"] = 0.82,
                 ["wisdom"] = 0.79,
+            },
+            // v2-008 T001 (R5.2 verification gate): REAL nomic-embed-text similarities,
+            // not hand-authored — measured 2026-08-16 against a locally running
+            // `nomic-embed-text` via Ollama's /api/embed, cosine similarity between the
+            // query embedding and each flight statement's embedding. Unlike the
+            // hand-authored pairs above, these numbers are load-bearing for T001's
+            // conclusion, so they come from the real embedder the floor was calibrated
+            // against (see RecallOptions.Floor) rather than a guess. All eight flights
+            // land in a tight 0.81-0.83 band — nomic-embed-text does not distinguish "a
+            // flight I booked" from "a flight to Denver" by destination/airline/date, only
+            // by topic — so age (via ExperienceDecayFloor) is what separates them, not
+            // semantic score.
+            ["book a flight to Denver"] = new Dictionary<string, double>
+            {
+                ["flight-1mo"] = 0.8188,
+                ["flight-3mo"] = 0.8226,
+                ["flight-5mo"] = 0.8141,
+                ["flight-8mo"] = 0.8140,
+                ["flight-12mo"] = 0.8170,
+                ["flight-16mo"] = 0.8309,
+                ["flight-20mo"] = 0.8250,
+                ["flight-24mo"] = 0.8140,
             },
         };
 
