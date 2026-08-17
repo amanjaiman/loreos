@@ -23,11 +23,18 @@ public sealed class LoreToolsTests
         RecallToolResult result = await LoreTools.Recall(
             recall, "should I order takeout tonight");
 
-        RecalledFact fact = Assert.Single(result.Facts);
+        // This asserted Single() until v2-008 R5.3 moved the recall floor onto the
+        // semantic score: two weaker-but-on-topic rows now come back below the dental
+        // state (see RecallServiceTests' wisdom-teeth test for the reasoning). The
+        // mapping is what this test is actually about, so it checks the shape of the
+        // strongest fact and that ordering still puts it first.
+        Assert.Equal(3, result.Facts.Count);
+        RecalledFact fact = result.Facts[0];
         Assert.Equal("I'm recovering from a wisdom tooth extraction.", fact.Statement);
         Assert.Equal("state", fact.Kind);
         Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", fact.Established);
         Assert.True(fact.Score > 0.5);
+        Assert.All(result.Facts, f => Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", f.Established));
     }
 
     [Fact]
