@@ -7,9 +7,9 @@ namespace Lore.Agent.Tests.Recall;
 /// memoryd's filtered search: scripted semantic scores, honest application of the
 /// status/expiry/kind filters (equality, <c>in</c>, <c>gt</c>) BEFORE the limit — so a
 /// filter regression fails these tests the way it would fail in production.</summary>
-internal sealed class GoldenMemoryService : IMemoryService
+internal class GoldenMemoryService : IMemoryService
 {
-    public Task<IReadOnlyList<MemoryRecord>> SearchAsync(
+    public virtual Task<IReadOnlyList<MemoryRecord>> SearchAsync(
         string query, string userId = "default", int limit = 10,
         IReadOnlyDictionary<string, object?>? filters = null,
         CancellationToken cancellationToken = default)

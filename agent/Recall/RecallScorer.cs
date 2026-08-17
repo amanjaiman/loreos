@@ -4,11 +4,17 @@ namespace Lore.Agent.Recall;
 
 /// <summary>The recall blend (v2-001): <c>semantic × kind × temporal × confidence</c>.
 /// Pure math — no model calls ever run on the recall path; expired and non-active rows
-/// are already excluded by the query-time filter before scoring.</summary>
+/// are already excluded by the query-time filter before scoring.
+///
+/// <para>Since v2-008 R5.3 this decides <i>rank</i> only. Inclusion is decided separately,
+/// by the semantic score against <see cref="RecallOptions.Floor"/>, so that the decay
+/// below can do what it says it does — see <see cref="RecallService"/> for why.</para></summary>
 public static class RecallScorer
 {
     /// <summary>Blend one hit's semantic score with its metadata. Rows without v2
-    /// metadata (not yet migrated) score 0 and fall below any floor.</summary>
+    /// metadata (not yet migrated) score 0, which sorts them last; since v2-008 R5.3 it is
+    /// <see cref="RecallService"/>'s explicit null-metadata check, not this 0, that keeps
+    /// them out of results.</summary>
     public static double Blend(
         double semanticScore, MemoryMetadata? metadata, long nowUnixSeconds, RecallOptions options)
     {

@@ -12,10 +12,18 @@ public sealed class RecallOptions
     /// (over-fetch so kind/temporal weighting can reorder).</summary>
     public int OverFetchMultiplier { get; init; } = 3;
 
-    /// <summary>Blended score below which a hit is dropped. An empty result is the
+    /// <summary>Semantic score below which a hit is dropped. An empty result is the
     /// common, correct case — the floor errs toward empty (spec AC 6). The default is
-    /// calibrated against live nomic-embed-text distributions (T010): relevant
-    /// cross-domain hits blend ≥ ~0.50, unrelated pairs ≤ ~0.44.</summary>
+    /// calibrated against live nomic-embed-text distributions (v2-001 T010): relevant
+    /// cross-domain hits score ≥ ~0.50, unrelated pairs ≤ ~0.44.
+    ///
+    /// <para>This is compared against the raw semantic score, not the blend (v2-008 R5.3)
+    /// — the calibration above was always a statement about embedding distances, and
+    /// applying it to <c>semantic × kind × temporal × confidence</c> meant an old or
+    /// uncertain memory could fail a <i>relevance</i> test it was never being asked. The
+    /// blend still decides rank. Re-tune this against semantic distances only, and re-run
+    /// the golden corpus: raising it drops genuine cross-domain hits, lowering it lets
+    /// unrelated pairs in, and the two bands are only ~0.06 apart.</para></summary>
     public double Floor { get; init; } = 0.47;
 
     /// <summary>Recall weight of a current <c>state</c> — the "wisdom teeth" boost.</summary>

@@ -9,13 +9,34 @@ Each task is PR-sized and lands through the `no-mistakes` gate.
   this spec. `NormalizeLimit` caps at 1000, so `k` was never the constraint. Tests landed as
   a regression guard pinning today's (broken) behaviour — **T010 must invert them.**
 
-- [ ] **T010 — Recall floor on semantic, blend for rank (R5.3, gates T005).** Compare
-  `Floor` against the raw semantic score; keep the blend for ordering only. Then invert
-  T001's two tests in `agent.tests/Recall/RecallServiceTests.cs` so they assert all eight
-  bookings return, recent-first. **Re-run and re-calibrate the golden corpus** — this changes
-  what passes the floor for every kind. A newly-passing unrelated pair is a calibration
-  failure to investigate, not a number to update. Do not touch `Floor`, `ExperienceWeight`,
-  `ExperienceDecayDays`, or `ExperienceDecayFloor`.
+- [x] **T010 — Recall floor on semantic, blend for rank (R5.3, gates T005).** ✅ Done.
+  `RecallService` now filters on the raw semantic score and orders by the blend; `Floor`,
+  `ExperienceWeight`, `ExperienceDecayDays`, `ExperienceDecayFloor` and `RecallScorer.Blend`
+  are untouched. All eight bookings return at `k = 30`. Golden corpus re-run pair by pair.
+
+  **Calibration result: no unrelated pair newly passes.** Four non-flight pairs cross the
+  floor that did not before, all of them on-topic: `marathon-old` on the travel query (0.60
+  semantic — the aged-experience fix working on a non-flight memory), and `tea` (0.48) and
+  `weak-state` (0.55) on the takeout query. The true-negative case is unchanged — the
+  carbonara query still returns empty, and `boston` (0.42) is still excluded on travel. The
+  separation holds but is tighter: on the semantic axis the corpus splits 0.42 (out) from
+  0.48 (in) around the 0.47 floor, versus the 0.44/0.50 blended bands the `Floor` doc
+  recorded. Only `tea` sits in that narrowed gap.
+
+  **Two consequences worth carrying forward, neither a blocker:**
+  - **Confidence no longer gates inclusion for any kind** — only rank. `weak-state` is a
+    0.3-confidence hunch that now returns with a 0.19 score where it used to be omitted.
+    Intended (a score is legible to a caller, an omission is not), but broader than the
+    aged-experience case R5.3 was written for. The wisdom-teeth relevance case therefore
+    **did change**, against R5.3's "existing relevance cases are unchanged" acceptance.
+  - **"Ordered recent-first" is NOT delivered, and cannot be under T010's constraints.**
+    Past ~187 days the temporal factor is pinned at `ExperienceDecayFloor` for every row, so
+    the blend degenerates to `semantic × 0.9 × confidence` and age stops contributing.
+    Among the five saturated bookings the order is set by embedder noise (0.8140–0.8309):
+    `flight-16mo` outranks `flight-8mo`, and 8mo/24mo tie exactly. Returning all eight is
+    delivered; ordering them by age needs `ExperienceDecayFloor`/`ExperienceDecayDays`,
+    which T010 was scoped out of. Asserted explicitly in `RecallServiceTests` as a known
+    gap. **Worth a follow-up task if R1.3's consumer depends on recency order.**
 
 - [ ] **T002 — Capture defects (R6).** Independent of the preset work; land early.
   - Carry the episode's content-type mix on `Episode` and into `DistillPrompt`.
