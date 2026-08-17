@@ -182,6 +182,21 @@ public sealed class CaptureAgent : BackgroundService
         _captureStatus.RecordCaptured(window.Title, now);
 
         ContentType type = ContentClassifier.Classify(window, filtered.Text);
+
+        // Opt-in troubleshooting record (v2-008 R4.2), off by default. This sits deliberately
+        // BELOW the filter chain: every blocked window returned above, so the only text that can
+        // reach this line is `filtered.Text` — post-filter, exactly what episode intake receives.
+        // Text the SensitivityFilter dropped is never written here, and turning this on does not
+        // widen what Lore records by one character. The table is bounded by RetentionService.
+        if (_options.Diagnostics)
+        {
+            await _activity.LogRawCaptureAsync(
+                new RawCaptureEntry(
+                    now, window.ProcessExecutable, window.Title,
+                    extracted.Source.ToString(), type.ToString(), filtered.Text),
+                cancellationToken).ConfigureAwait(false);
+        }
+
         var observation = new CapturedObservation(
             now, window.ProcessExecutable, window.Title, filtered.Text, type);
         Episode? closed = _episodes.Add(observation);

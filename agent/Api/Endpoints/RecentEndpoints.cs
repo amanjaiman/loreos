@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Lore.Agent.Capture;
 using Lore.Agent.Storage;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -23,12 +24,18 @@ public static class RecentEndpoints
     {
         ArgumentNullException.ThrowIfNull(app);
 
-        // Recent raw captures: the filtered text Lore read, newest first.
+        // Recent raw captures: the filtered text Lore read, newest first — and only while the
+        // opt-in capture.diagnostics switch is on (v2-008 R4.2). With it off the answer is empty
+        // rather than stale: nothing is being written, and any rows a previous troubleshooting
+        // session left behind are on their way out at the next retention sweep. Reporting them
+        // would tell the user Lore is recording what it reads when it is not.
         app.MapGet("/recent", async (
-            [FromServices] ActivityStore store, int? limit, CancellationToken ct) =>
+            [FromServices] ActivityStore store, [FromServices] CaptureOptions capture,
+            int? limit, CancellationToken ct) =>
         {
-            IReadOnlyList<RawCaptureEntry> captures = await store
-                .GetRecentRawCapturesAsync(Normalize(limit), ct).ConfigureAwait(false);
+            IReadOnlyList<RawCaptureEntry> captures = capture.Diagnostics
+                ? await store.GetRecentRawCapturesAsync(Normalize(limit), ct).ConfigureAwait(false)
+                : [];
             return Results.Ok(new RecentCaptures(captures.Select(RawCaptureDto.From).ToArray()));
         });
 

@@ -58,6 +58,11 @@ public static class CaptureServiceCollectionExtensions
             return new ActivityStore(Path.Combine(memory.DataDir, "activity.db"));
         });
 
+        // Keeps that store bounded (v2-008 R4): prunes evidence past capture.retentionDays and
+        // holds the opt-in raw_captures diagnostic to its 24h/500-row ceiling, on start and daily.
+        // Registered here, next to the store it sweeps, so the two can never be wired apart.
+        services.AddHostedService<RetentionService>();
+
         // Episode segmentation feeding the skeptical distiller and the lifecycle engine.
         services.AddSingleton(options.Episodes);
         services.AddSingleton(options.Lifecycle);

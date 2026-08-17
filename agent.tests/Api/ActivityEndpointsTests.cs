@@ -148,6 +148,29 @@ public sealed class ActivityEndpointsTests : IDisposable
     }
 
     [Fact]
+    public async Task Evidence_returns_the_episodes_that_survived_retention()
+    {
+        // v2-008 R4.3: retention prunes episodes and never memories, so a memory routinely
+        // outlives some of its evidence. The answer is the survivors — not an error, and not a
+        // hole in the list for the id that no longer resolves.
+        await _activity.SaveEpisodeAsync(new Episode(
+            "ep-2", _time.Now.AddMinutes(-30), _time.Now.AddMinutes(-10),
+            ["Figma.exe"], ["Figma — Lore rebrand"], ["sample text"], 12));
+        string id = SeedMemory(
+            "I'm redesigning the Lore shell.",
+            new MemoryMetadata(
+                MemoryKinds.State, MemoryStatuses.Active, 0.8,
+                _time.Now.ToUnixTimeSeconds() + 14 * 86_400, 0,
+                MemoryUpdateReasons.Staged, Episodes: ["ep-1", "ep-2"])); // ep-1 was pruned
+
+        await using LoreApiHarness harness = await StartAsync();
+        JsonElement body = await harness.Client.GetFromJsonAsync<JsonElement>($"/memories/{id}/evidence");
+
+        JsonElement ep = Assert.Single(body.GetProperty("episodes").EnumerateArray().ToArray());
+        Assert.Equal("ep-2", ep.GetProperty("id").GetString());
+    }
+
+    [Fact]
     public async Task Economy_counts_todays_decisions_against_the_budget()
     {
         await _activity.LogDecisionAsync(new DecisionEntry(
