@@ -10,8 +10,20 @@ namespace Lore.Agent.Capture;
 /// that dwells is offered repeatedly rather than firing once and being lost if a gate
 /// skips it.</para>
 ///
-/// <para>Switching window or changing title resets the dwell timer — a new thing to
-/// look at has to earn its own dwell.</para></summary>
+/// <para>Switching <em>window</em> resets the dwell timer — a new thing to look at has to
+/// earn its own dwell. A title change within the same window does NOT: it continues the
+/// dwell already accumulated. That is deliberate (v2-008 R6.2). Plenty of apps rewrite
+/// their own title faster than the dwell threshold — media players counting elapsed time,
+/// terminals printing progress, chat apps with an unread badge in the title — and resetting
+/// on every title change meant those windows could never accumulate dwell and were
+/// therefore NEVER captured, silently, no matter how long the user sat in front of them.
+/// The user did not switch away; the app just relabelled itself, so the dwell it has
+/// already earned still stands.</para>
+///
+/// <para>New content is still read promptly: <c>CaptureAgent.ShouldProcess</c> keys on
+/// handle + title, so a retitled window is a new key and is re-captured on the next tick.
+/// Dwell answers "has the user settled here?", which the title does not speak to; the key
+/// answers "is this the same content?", which it does.</para></summary>
 public sealed class WindowMonitor
 {
     private readonly IForegroundWindowSource _source;
@@ -37,16 +49,27 @@ public sealed class WindowMonitor
     }
 
     /// <summary>Read the foreground window once and classify it against the previous
-    /// poll. Resets the dwell timer on any window or title change.</summary>
+    /// poll. Resets the dwell timer on a window change only; a title change within the same
+    /// window carries the accumulated dwell forward (v2-008 R6.2).</summary>
     public WindowObservation Poll()
     {
         WindowSnapshot next = _source.Current();
         DateTimeOffset now = _time.GetUtcNow();
         WindowChange change = Classify(_current, next);
 
+        // The snapshot advances on ANY change, including a title-only one — otherwise every
+        // later poll would keep comparing against the stale title and re-report TitleChanged
+        // forever. Only the dwell clock treats the two kinds of change differently.
         if (change != WindowChange.Unchanged)
         {
             _current = next;
+        }
+
+        // Returning from an empty desktop classifies as WindowChanged (previous.IsEmpty), so
+        // a stretch with no foreground window still costs the window its dwell — it is
+        // genuinely a fresh arrival — without needing a reset on the None transition itself.
+        if (change == WindowChange.WindowChanged)
+        {
             _focusedSince = now;
         }
 

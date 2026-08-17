@@ -122,7 +122,7 @@ public sealed class MemoryLayerE2ETests : IAsyncLifetime, IDisposable
     }
 
     private static Episode MakeEpisode(string id, DateTimeOffset at, string[] titles, string[] samples) =>
-        new(id, at.AddMinutes(-20), at, ["browser"], titles, samples, samples.Length * 2);
+        new(id, at.AddMinutes(-20), at, ["browser"], titles, samples, samples.Length * 2, []);
 
     [Fact]
     public async Task Wisdom_teeth_and_France_journeys_end_to_end()

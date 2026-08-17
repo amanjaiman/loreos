@@ -143,6 +143,8 @@ public sealed class ActivityStore : IDisposable
                 FROM episodes ORDER BY ended_at DESC LIMIT $limit;
                 """,
             limit,
+            // Empty ContentTypeMix: the mix is a live distiller input (v2-008 R6.1), not a
+            // stored column — see the remarks on Episode.ContentTypeMix.
             reader => results.Add(new Episode(
                 reader.GetString(0),
                 ParseAt(reader.GetString(1)),
@@ -150,7 +152,8 @@ public sealed class ActivityStore : IDisposable
                 JsonSerializer.Deserialize<List<string>>(reader.GetString(3)) ?? [],
                 JsonSerializer.Deserialize<List<string>>(reader.GetString(4)) ?? [],
                 JsonSerializer.Deserialize<List<string>>(reader.GetString(5)) ?? [],
-                reader.GetInt32(6))),
+                reader.GetInt32(6),
+                [])),
             cancellationToken).ConfigureAwait(false);
         return results;
     }
@@ -171,6 +174,7 @@ public sealed class ActivityStore : IDisposable
                 command.Parameters.AddWithValue("$id", id);
             },
             1,
+            // Empty ContentTypeMix — see GetRecentEpisodesAsync.
             reader => found = new Episode(
                 reader.GetString(0),
                 ParseAt(reader.GetString(1)),
@@ -178,7 +182,8 @@ public sealed class ActivityStore : IDisposable
                 JsonSerializer.Deserialize<List<string>>(reader.GetString(3)) ?? [],
                 JsonSerializer.Deserialize<List<string>>(reader.GetString(4)) ?? [],
                 JsonSerializer.Deserialize<List<string>>(reader.GetString(5)) ?? [],
-                reader.GetInt32(6)),
+                reader.GetInt32(6),
+                []),
             cancellationToken).ConfigureAwait(false);
         return found;
     }

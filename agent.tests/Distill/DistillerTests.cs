@@ -1,3 +1,4 @@
+using Lore.Agent.Capture;
 using Lore.Agent.Capture.Episodes;
 using Lore.Agent.Distill;
 using Lore.Agent.Inference;
@@ -37,7 +38,8 @@ public sealed class DistillerTests
         ["browser"],
         ["Wisdom tooth extraction aftercare", "What to eat after oral surgery"],
         ["aftercare instructions...", "soft food suggestions..."],
-        6);
+        6,
+        [new ContentTypeTally(ContentType.Reading, 6)]);
 
     private static Distiller Build(StubBackend backend) =>
         new(backend, NullLogger<Distiller>.Instance);
