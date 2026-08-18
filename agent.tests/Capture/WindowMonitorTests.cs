@@ -106,8 +106,9 @@ public sealed class WindowMonitorTests
         Assert.Equal(TimeSpan.Zero, switched.Dwell);
     }
 
+    // v2-008 R6.2. This test asserted the opposite until then — a title change reset dwell.
     [Fact]
-    public void Changing_title_on_the_same_window_resets_the_dwell_timer()
+    public void Changing_title_on_the_same_window_continues_the_existing_dwell()
     {
         (WindowMonitor monitor, FakeWindowSource source, FakeTimeProvider time) = Build();
         source.Next = Window(1, "first");
@@ -118,8 +119,40 @@ public sealed class WindowMonitorTests
         source.Next = Window(1, "second");
         WindowObservation retitled = monitor.Poll();
 
+        // The user did not look away; the app relabelled itself. Dwell already earned stands,
+        // and the reported change is still TitleChanged so the loop's handle+title key sees a
+        // new key and re-captures the new content.
         Assert.Equal(WindowChange.TitleChanged, retitled.Change);
-        Assert.False(retitled.HasDwelled);
+        Assert.True(retitled.HasDwelled);
+        Assert.Equal(Dwell, retitled.Dwell);
+    }
+
+    [Fact]
+    public void A_window_that_retitles_every_poll_still_dwells_and_is_capturable()
+    {
+        // The defect this replaces: a media player counting elapsed time, a terminal printing
+        // progress, or a chat app with an unread badge rewrites its title faster than the
+        // dwell threshold. Resetting on every title change meant dwell never accumulated and
+        // the window could NEVER be captured, no matter how long it was held.
+        (WindowMonitor monitor, FakeWindowSource source, FakeTimeProvider time) = Build();
+        TimeSpan poll = TimeSpan.FromSeconds(1); // faster than the 3s dwell threshold
+
+        var seen = new List<WindowObservation>();
+        for (int tick = 0; tick < 10; tick++)
+        {
+            source.Next = Window(1, $"Now playing — 0:{tick:00}");
+            seen.Add(monitor.Poll());
+            time.Advance(poll);
+        }
+
+        // Only the very first sighting is a window change; every later poll is title-only.
+        Assert.Equal(WindowChange.WindowChanged, seen[0].Change);
+        Assert.All(seen.Skip(1), o => Assert.Equal(WindowChange.TitleChanged, o.Change));
+        Assert.True(seen[^1].HasDwelled);
+        Assert.Equal(TimeSpan.FromSeconds(9), seen[^1].Dwell);
+
+        // Precisely: dwelled from the first poll that crossed the threshold onward.
+        Assert.Equal(3, seen.Count(o => !o.HasDwelled));
     }
 
     [Fact]

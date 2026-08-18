@@ -38,10 +38,18 @@ Each task is PR-sized and lands through the `no-mistakes` gate.
     which T010 was scoped out of. Asserted explicitly in `RecallServiceTests` as a known
     gap. **Worth a follow-up task if R1.3's consumer depends on recency order.**
 
-- [ ] **T002 — Capture defects (R6).** Independent of the preset work; land early.
+- [x] **T002 — Capture defects (R6).** Independent of the preset work; land early.
   - Carry the episode's content-type mix on `Episode` and into `DistillPrompt`.
   - Reset dwell on window change only; a title change within the same window continues dwell.
   - Weight `EpisodeBuilder.SelectSamples()` by time-spent alongside diversity.
+  - **Two follow-ups this task deliberately did not take.** (1) `Episode.ContentTypeMix` is a
+    live distiller input only — the `episodes` table has no column for it and the repo has no
+    schema-migration path, so adding one would break existing installs' inserts; episodes read
+    back from storage carry an empty mix. (2) R6.2 removes the only thing that was throttling
+    title churn: `ShouldProcess` keys on handle + title, so a window that retitles every poll
+    is now extracted every poll, ignoring `RecaptureInterval` (~1,800 readings/hour at 2s
+    polling against ~144 at 25s). Wanted, per R6.2's acceptance, but it deserves a floor —
+    likely a minimum gap for a title-only re-read — sized alongside T003's live snapshot.
 
 - [ ] **T003 — Live capture snapshot (R2).** Extend `LiveCaptureSettings` to carry a full
   resolved snapshot, replaced atomically on `PATCH /config`. Repoint `CaptureAgent`,

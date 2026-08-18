@@ -34,7 +34,7 @@ public sealed class RetentionServiceTests : IDisposable
 
     private Task SeedEpisodeAsync(string id, DateTimeOffset endedAt) =>
         _store.SaveEpisodeAsync(new Episode(
-            id, endedAt.AddMinutes(-20), endedAt, ["browser"], ["a window"], ["a sample"], 4));
+            id, endedAt.AddMinutes(-20), endedAt, ["browser"], ["a window"], ["a sample"], 4, []));
 
     private Task SeedDecisionAsync(string episodeId, DateTimeOffset at) =>
         _store.LogDecisionAsync(new DecisionEntry(
@@ -76,7 +76,7 @@ public sealed class RetentionServiceTests : IDisposable
         // 90-day window even though its start is not.
         await _store.SaveEpisodeAsync(new Episode(
             "straddler", Now.AddDays(-91), Now.AddDays(-89),
-            ["browser"], ["a long session"], ["a sample"], 40));
+            ["browser"], ["a long session"], ["a sample"], 40, []));
 
         using RetentionService service = Build(retentionDays: 90);
         await service.SweepAsync(CancellationToken.None);

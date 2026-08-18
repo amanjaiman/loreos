@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using Lore.Agent.Capture;
 using Lore.Agent.Capture.Episodes;
 using Lore.Agent.Inference;
 
@@ -69,6 +70,18 @@ public static class DistillPrompt
         TimeSpan duration = episode.EndedAt - episode.StartedAt;
         user.AppendLine(CultureInfo.InvariantCulture, $"Duration: {Math.Max(1, (int)duration.TotalMinutes)} min");
         user.AppendLine(CultureInfo.InvariantCulture, $"Apps: {string.Join(", ", episode.Executables)}");
+
+        // What kind of activity this was, with counts so proportion is visible (v2-008 R6.1).
+        // The classifier already runs on every observation; before this the answer was thrown
+        // away at episode close and the model had to re-infer "shopping" from the samples.
+        // Omitted entirely when nothing was classified — a line reading "Unknown (9)" is
+        // prompt weight that carries no signal.
+        string mix = FormatContentMix(episode.ContentTypeMix);
+        if (mix.Length > 0)
+        {
+            user.AppendLine(CultureInfo.InvariantCulture, $"Content: {mix}");
+        }
+
         user.AppendLine(CultureInfo.InvariantCulture, $"Observations: {episode.ObservationCount}");
         user.AppendLine("Window titles:");
         foreach (string title in episode.Titles.Take(MaxTitles))
@@ -86,5 +99,21 @@ public static class DistillPrompt
         // Temperature 0: skepticism should not be sampled — identical episodes must
         // distill identically (and the E2E acceptance harness relies on it).
         return new InferenceRequest(System, user.ToString(), Temperature: 0.0);
+    }
+
+    // "Shopping (7), Reading (2)" — busiest first, as the builder ordered it. Unknown is
+    // kept when it sits alongside a real kind, because it is what makes the proportion
+    // honest, but a mix that is ONLY Unknown renders as nothing at all.
+    private static string FormatContentMix(IReadOnlyList<ContentTypeTally> mix)
+    {
+        if (mix.Count == 0 || mix.All(tally => tally.Type == ContentType.Unknown))
+        {
+            return string.Empty;
+        }
+
+        return string.Join(
+            ", ",
+            mix.Select(tally => string.Create(
+                CultureInfo.InvariantCulture, $"{tally.Type} ({tally.Count})")));
     }
 }

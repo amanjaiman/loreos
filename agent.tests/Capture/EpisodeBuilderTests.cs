@@ -11,8 +11,9 @@ public sealed class EpisodeBuilderTests
         int minutes,
         string exe = "browser",
         string title = "Wisdom tooth aftercare — Clinic",
-        string text = "aftercare instructions for wisdom tooth extraction recovery")
-        => new(T0 + TimeSpan.FromMinutes(minutes), exe, title, text, ContentType.Reading);
+        string text = "aftercare instructions for wisdom tooth extraction recovery",
+        ContentType type = ContentType.Reading)
+        => new(T0 + TimeSpan.FromMinutes(minutes), exe, title, text, type);
 
     private static EpisodeBuilder Builder(EpisodeOptions? options = null) =>
         new(options ?? new EpisodeOptions());
@@ -169,6 +170,106 @@ public sealed class EpisodeBuilderTests
         Episode episode = builder.Flush()!;
 
         Assert.Equal("0123456789", Assert.Single(episode.Samples));
+    }
+
+    // ── v2-008 R6.3: selection weighted by time spent ─────────────────────────────
+
+    // The document below is read for 16 minutes but produces ONE sample, because the
+    // re-readings are near-duplicates that Append counts and drops. The chess glance lasts a
+    // minute and produces its own sample. Before R6.3 the two were interchangeable and the
+    // glance won on novelty alone; the episode's evidence then described the minute, not the
+    // quarter of an hour.
+    private static EpisodeBuilder SeedTimeDominantEpisode(EpisodeBuilder builder)
+    {
+        builder.Add(Obs(0, text: "quarterly revenue report opening the document"));
+        for (int minute = 1; minute <= 16; minute++)
+        {
+            // Every reading after the first is byte-identical: counted, never sampled.
+            builder.Add(Obs(minute, text: "quarterly revenue report alpha beta gamma delta epsilon zeta"));
+        }
+
+        builder.Add(Obs(17, text: "chess queen knight endgame puzzle tactics"));
+        builder.Add(Obs(18, text: "weather forecast rain thursday umbrella"));
+        return builder;
+    }
+
+    [Fact]
+    public void A_time_dominant_observation_beats_a_more_novel_glance_for_a_sample_slot()
+    {
+        // MaxSamples 3: first and last are always kept, so exactly one slot is contested —
+        // between the document (16 of the episode's 18 minutes, but 0.75 novelty because its
+        // opening line shares wording with the first sample) and the chess glance (one
+        // minute, novelty 1.0). Pure diversity picks chess; time-weighted selection does not.
+        EpisodeBuilder builder = SeedTimeDominantEpisode(
+            Builder(new EpisodeOptions { MaxSamples = 3, MaxObservations = 100 }));
+
+        Episode episode = builder.Flush()!;
+
+        Assert.Equal(3, episode.Samples.Count);
+        Assert.Contains(
+            episode.Samples, s => s.StartsWith("quarterly revenue report alpha", StringComparison.Ordinal));
+        Assert.DoesNotContain(episode.Samples, s => s.StartsWith("chess", StringComparison.Ordinal));
+
+        // Samples stay in chronological order regardless of the order they were scored in.
+        Assert.StartsWith("quarterly revenue report opening", episode.Samples[0], StringComparison.Ordinal);
+        Assert.StartsWith("weather forecast", episode.Samples[^1], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void With_no_measurable_duration_selection_falls_back_to_pure_diversity()
+    {
+        // Same episode with every observation at the same instant — the degenerate case that
+        // only tests and clock skew produce. With no time to weigh by, the most novel
+        // candidate wins exactly as it did before R6.3.
+        EpisodeBuilder builder = Builder(new EpisodeOptions { MaxSamples = 3, MaxObservations = 100 });
+        builder.Add(Obs(0, text: "quarterly revenue report opening the document"));
+        builder.Add(Obs(0, text: "quarterly revenue report alpha beta gamma delta epsilon zeta"));
+        builder.Add(Obs(0, text: "chess queen knight endgame puzzle tactics"));
+        builder.Add(Obs(0, text: "weather forecast rain thursday umbrella"));
+
+        Episode episode = builder.Flush()!;
+
+        Assert.Contains(episode.Samples, s => s.StartsWith("chess", StringComparison.Ordinal));
+        Assert.DoesNotContain(
+            episode.Samples, s => s.StartsWith("quarterly revenue report alpha", StringComparison.Ordinal));
+    }
+
+    // ── v2-008 R6.1: the content-type mix reaches the episode ─────────────────────
+
+    [Fact]
+    public void Content_type_mix_counts_every_observation_busiest_kind_first()
+    {
+        EpisodeBuilder builder = Builder(new EpisodeOptions { MaxObservations = 100 });
+
+        builder.Add(Obs(0, text: "review of the espresso machine grinder burr", type: ContentType.Reading));
+        builder.Add(Obs(1, text: "add to cart espresso machine 64mm burr grinder", type: ContentType.Shopping));
+        for (int minute = 2; minute <= 7; minute++)
+        {
+            // Near-duplicates: dropped from the samples, but they are where the time went and
+            // so they must still count toward the mix.
+            builder.Add(Obs(minute, text: "add to cart espresso machine 64mm burr grinder", type: ContentType.Shopping));
+        }
+
+        builder.Add(Obs(8, text: "long form article about coffee extraction", type: ContentType.Reading));
+        Episode episode = builder.Flush()!;
+
+        Assert.Equal(9, episode.ObservationCount);
+        Assert.Equal(
+            [new ContentTypeTally(ContentType.Shopping, 7), new ContentTypeTally(ContentType.Reading, 2)],
+            episode.ContentTypeMix);
+    }
+
+    [Fact]
+    public void Content_type_mix_does_not_leak_across_episodes()
+    {
+        EpisodeBuilder builder = Builder();
+        builder.Add(Obs(0, type: ContentType.Reading));
+        Episode first = builder.Add(
+            Obs(1, exe: "code", title: "recall.rs", text: "fn blend(scores)", type: ContentType.Coding))!;
+        Episode second = builder.Flush()!;
+
+        Assert.Equal([new ContentTypeTally(ContentType.Reading, 1)], first.ContentTypeMix);
+        Assert.Equal([new ContentTypeTally(ContentType.Coding, 1)], second.ContentTypeMix);
     }
 
     [Fact]

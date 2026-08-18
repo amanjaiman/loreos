@@ -73,7 +73,7 @@ public sealed class ActivityEndpointsTests : IDisposable
     {
         var episode = new Episode(
             "ep-1", _time.Now.AddMinutes(-30), _time.Now.AddMinutes(-10),
-            ["browser"], ["Wisdom tooth aftercare"], ["sample text"], 5);
+            ["browser"], ["Wisdom tooth aftercare"], ["sample text"], 5, []);
         await _activity.SaveEpisodeAsync(episode);
         await _activity.LogDecisionAsync(new DecisionEntry(
             _time.Now, "ep-1", "staged", "awaiting a second episode",
@@ -102,7 +102,7 @@ public sealed class ActivityEndpointsTests : IDisposable
     {
         var episode = new Episode(
             "ep-1", _time.Now.AddMinutes(-30), _time.Now.AddMinutes(-10),
-            ["Figma.exe"], ["Figma — Lore rebrand"], ["sample text"], 12);
+            ["Figma.exe"], ["Figma — Lore rebrand"], ["sample text"], 12, []);
         await _activity.SaveEpisodeAsync(episode);
         string id = SeedMemory("I'm redesigning the Lore shell.", Meta(MemoryStatuses.Staged));
 
@@ -155,7 +155,7 @@ public sealed class ActivityEndpointsTests : IDisposable
         // hole in the list for the id that no longer resolves.
         await _activity.SaveEpisodeAsync(new Episode(
             "ep-2", _time.Now.AddMinutes(-30), _time.Now.AddMinutes(-10),
-            ["Figma.exe"], ["Figma — Lore rebrand"], ["sample text"], 12));
+            ["Figma.exe"], ["Figma — Lore rebrand"], ["sample text"], 12, []));
         string id = SeedMemory(
             "I'm redesigning the Lore shell.",
             new MemoryMetadata(

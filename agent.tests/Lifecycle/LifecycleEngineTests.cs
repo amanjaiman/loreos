@@ -129,7 +129,8 @@ public sealed class LifecycleEngineTests : IDisposable
         ["browser"],
         ["Wisdom tooth aftercare"],
         ["aftercare text"],
-        4);
+        4,
+        []);
 
     private readonly ScriptedBackend _backend = new();
     private readonly FakeMemory _memory = new();

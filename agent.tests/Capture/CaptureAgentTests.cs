@@ -93,13 +93,14 @@ public sealed class CaptureAgentTests
         IEnumerable<string>? blockedApps = null,
         CaptureOptions? options = null,
         Func<FakeTimeProvider, IForegroundWindowSource>? windowSource = null,
-        ITextExtractor? extractor = null)
+        ITextExtractor? extractor = null,
+        TimeSpan? dwell = null)
     {
         var time = new FakeTimeProvider();
         var activity = new ActivityStore(":memory:");
         var metrics = new CaptureMetrics();
         var monitor = new WindowMonitor(
-            windowSource?.Invoke(time) ?? new FixedSource(Window), time, TimeSpan.Zero);
+            windowSource?.Invoke(time) ?? new FixedSource(Window), time, dwell ?? TimeSpan.Zero);
         CaptureOptions captureOptions = options ?? new CaptureOptions();
         var settings = new LiveCaptureSettings(new CaptureOptions
         {
@@ -329,6 +330,42 @@ public sealed class CaptureAgentTests
 
         Assert.Equal(CaptureOutcome.Filtered, outcome);
         Assert.Empty(await h.Activity.GetRecentRawCapturesAsync());
+    }
+
+    // ── v2-008 R6.2: title churn no longer blocks capture ──────────────────────────
+
+    [Fact]
+    public async Task A_window_that_rewrites_its_title_every_poll_is_still_captured()
+    {
+        // One window (handle 9) relabelling itself once a second under a four-second dwell
+        // threshold: a media player counting elapsed time, a terminal printing progress, a
+        // chat app with an unread badge. Before R6.2 each title change reset the dwell timer,
+        // so this window could never reach the threshold and was NEVER captured — silently,
+        // with no activity row saying so. This test is the whole defect end to end.
+        (TimeSpan, WindowSnapshot)[] script =
+        [
+            .. Enumerable.Range(0, 20).Select(second =>
+                (TimeSpan.FromSeconds(second),
+                 new WindowSnapshot(9, "player", $"Ambient set — {second / 60}:{second % 60:00}"))),
+        ];
+        using Harness h = Build(
+            options: new CaptureOptions { PollInterval = TimeSpan.FromMilliseconds(20) },
+            windowSource: time => new ScriptedSource(time, script),
+            dwell: TimeSpan.FromSeconds(4));
+
+        await h.Agent.StartAsync(CancellationToken.None);
+        await WaitUntilAsync(() => h.Metrics.Snapshot().Observed >= 5, TimeSpan.FromSeconds(10));
+        await h.Agent.StopAsync(CancellationToken.None);
+
+        // Captured from the fifth poll on — the point where four seconds of dwell had
+        // accumulated across the retitles rather than being reset by each one.
+        Lore.Agent.Capture.Episodes.Episode episode = Assert.Single(h.Episodes.Processed);
+        Assert.True(episode.ObservationCount >= 5);
+        Assert.Equal("player", Assert.Single(episode.Executables));
+
+        // Each retitle is a fresh handle+title key, so ShouldProcess keeps re-reading the new
+        // content promptly instead of waiting out the re-capture interval.
+        Assert.True(episode.Titles.Count >= 5);
     }
 
     [Fact]
