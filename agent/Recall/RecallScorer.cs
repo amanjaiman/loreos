@@ -7,8 +7,9 @@ namespace Lore.Agent.Recall;
 /// are already excluded by the query-time filter before scoring.
 ///
 /// <para>Since v2-008 R5.3 this decides <i>rank</i> only. Inclusion is decided separately,
-/// by the semantic score against <see cref="RecallOptions.Floor"/>, so that the decay
-/// below can do what it says it does — see <see cref="RecallService"/> for why.</para></summary>
+/// by the semantic score against <see cref="RecallOptions.Floor"/> and by confidence
+/// against <see cref="RecallOptions.MinConfidence"/>, so that the decay below can do what
+/// it says it does — see <see cref="RecallService"/> for why.</para></summary>
 public static class RecallScorer
 {
     /// <summary>Blend one hit's semantic score with its metadata. Rows without v2
@@ -39,6 +40,13 @@ public static class RecallScorer
 
     // Current facts don't fade; experiences fade gently with age but never vanish —
     // "visited France" still matters on a travel query years later (spec AC 2).
+    //
+    // Since v2-008 R5.3 the "never vanish" half of that is guaranteed by RecallService's
+    // semantic floor, not by ExperienceDecayFloor: this factor cannot exclude anything any
+    // more, only scale rank. That is why R5.4 could drop the floor from 0.6 to 0.2, moving
+    // saturation from ~187 days to ~587 and letting age keep separating experiences for
+    // three times as long. Raising it back would not protect any memory — it would only
+    // flatten the aged tail into an embedder-noise ordering again. See RecallOptions.
     private static double TemporalFactor(
         MemoryMetadata metadata, long nowUnixSeconds, RecallOptions options)
     {
