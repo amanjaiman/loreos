@@ -189,8 +189,14 @@ public sealed class RecallServiceTests
         // its place a second time by being recent or certain enough.
         Assert.Equal(
             [
-                "flight-1mo", "flight-3mo", "flight-5mo", "flight-16mo",
-                "flight-20mo", "flight-12mo", "flight-8mo", "flight-24mo",
+                "flight-1mo",
+                "flight-3mo",
+                "flight-5mo",
+                "flight-16mo",
+                "flight-20mo",
+                "flight-12mo",
+                "flight-8mo",
+                "flight-24mo",
             ],
             hits.Select(hit => hit.Id).ToArray());
 
