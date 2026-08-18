@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Lore.Agent.Capture;
 using Lore.Agent.Capture.Episodes;
 using Lore.Agent.Lifecycle;
 using Lore.Agent.Memory;
@@ -58,7 +59,7 @@ public static class ActivityEndpoints
         // The day's capture economy: decision counts since LOCAL midnight + the budget.
         app.MapGet("/system/economy", async (
             [FromServices] ActivityStore activity,
-            [FromServices] LifecycleOptions lifecycle,
+            [FromServices] LiveCaptureSettings capture,
             [FromServices] TimeProvider time,
             CancellationToken ct) =>
         {
@@ -67,7 +68,7 @@ public static class ActivityEndpoints
                 .GetDecisionCountsSinceAsync(midnight, ct).ConfigureAwait(false);
             int promoted = counts.GetValueOrDefault("promoted");
             return Results.Json(
-                new EconomyDto(counts, promoted, lifecycle.DailyBudget), ResponseJson);
+                new EconomyDto(counts, promoted, capture.Current.Lifecycle.DailyBudget), ResponseJson);
         });
 
         // Evidence for a memory (spec 005 R3): the episodes that supported it, resolved in one
@@ -112,22 +113,22 @@ public static class ActivityEndpoints
 
         // Staging curation: the user's tap outranks the budget and the evidence rule.
         app.MapPost("/staging/{id}/promote", (string id, [FromServices] IMemoryService memory,
-            [FromServices] ActivityStore activity, [FromServices] LifecycleOptions lifecycle,
+            [FromServices] ActivityStore activity, [FromServices] LiveCaptureSettings capture,
             [FromServices] TimeProvider time, CancellationToken ct) =>
             TransitionStagedAsync(
-                id, memory, activity, time, promote: true, lifecycle, ct));
+                id, memory, activity, time, promote: true, capture.Current.Lifecycle, ct));
 
         app.MapPost("/staging/{id}/dismiss", (string id, [FromServices] IMemoryService memory,
-            [FromServices] ActivityStore activity, [FromServices] LifecycleOptions lifecycle,
+            [FromServices] ActivityStore activity, [FromServices] LiveCaptureSettings capture,
             [FromServices] TimeProvider time, CancellationToken ct) =>
             TransitionStagedAsync(
-                id, memory, activity, time, promote: false, lifecycle, ct));
+                id, memory, activity, time, promote: false, capture.Current.Lifecycle, ct));
 
         // Still-true confirmation: for state, push the horizon out; for everything else,
         // just re-stamp. Confirmation is user authority — confidence rises to the cap.
         app.MapPost("/memories/{id}/confirm", async (
             string id, [FromServices] IMemoryService memory,
-            [FromServices] LifecycleOptions lifecycle, [FromServices] TimeProvider time,
+            [FromServices] LiveCaptureSettings capture, [FromServices] TimeProvider time,
             CancellationToken ct) =>
         {
             MemoryRecord? record = await memory.GetAsync(id, ct).ConfigureAwait(false);
@@ -145,7 +146,7 @@ public static class ActivityEndpoints
             };
             if (meta.Kind == MemoryKinds.State)
             {
-                patch["expires_at"] = now + lifecycle.DefaultHorizonDays * 86_400L;
+                patch["expires_at"] = now + capture.Current.Lifecycle.DefaultHorizonDays * 86_400L;
             }
 
             MemoryRecord? updated = await memory.PatchMetadataAsync(id, patch, ct).ConfigureAwait(false);

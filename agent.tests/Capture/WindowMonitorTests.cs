@@ -24,9 +24,17 @@ public sealed class WindowMonitorTests
 
     private static (WindowMonitor Monitor, FakeWindowSource Source, FakeTimeProvider Time) Build()
     {
+        (WindowMonitor monitor, FakeWindowSource source, FakeTimeProvider time, _) = BuildLive();
+        return (monitor, source, time);
+    }
+
+    private static (WindowMonitor Monitor, FakeWindowSource Source, FakeTimeProvider Time,
+        LiveCaptureSettings Settings) BuildLive(TimeSpan? dwell = null)
+    {
         var source = new FakeWindowSource();
         var time = new FakeTimeProvider();
-        return (new WindowMonitor(source, time, Dwell), source, time);
+        var settings = new LiveCaptureSettings(new CaptureOptions { DwellThreshold = dwell ?? Dwell });
+        return (new WindowMonitor(source, time, settings), source, time, settings);
     }
 
     private static WindowSnapshot Window(long handle, string title = "doc") =>
@@ -120,8 +128,8 @@ public sealed class WindowMonitorTests
         WindowObservation retitled = monitor.Poll();
 
         // The user did not look away; the app relabelled itself. Dwell already earned stands,
-        // and the reported change is still TitleChanged so the loop's handle+title key sees a
-        // new key and re-captures the new content.
+        // and the reported change is still TitleChanged so the loop can tell a title-only change
+        // apart from an unchanged window and re-read it on the shorter of the two gaps.
         Assert.Equal(WindowChange.TitleChanged, retitled.Change);
         Assert.True(retitled.HasDwelled);
         Assert.Equal(Dwell, retitled.Dwell);
@@ -190,9 +198,35 @@ public sealed class WindowMonitorTests
     }
 
     [Fact]
-    public void Constructor_rejects_a_negative_dwell_threshold()
+    public void Constructor_requires_its_dependencies()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(
-            () => new WindowMonitor(new FakeWindowSource(), new FakeTimeProvider(), TimeSpan.FromSeconds(-1)));
+        // A negative dwell threshold used to be rejected here. It is now repaired at the snapshot
+        // boundary instead (see LiveCaptureSettingsTests), because the value is live: there is no
+        // longer a construction-time moment at which it could be checked once and for all, and
+        // throwing on a hand-edited config.json was never the right answer anyway.
+        Assert.Throws<ArgumentNullException>(
+            () => new WindowMonitor(new FakeWindowSource(), new FakeTimeProvider(), null!));
+    }
+
+    // ── v2-008 R2: the dwell threshold is live ─────────────────────────────────────
+
+    [Fact]
+    public void A_dwell_threshold_change_applies_from_the_very_next_poll()
+    {
+        (WindowMonitor monitor, FakeWindowSource source, FakeTimeProvider time,
+            LiveCaptureSettings settings) = BuildLive(dwell: TimeSpan.FromSeconds(30));
+        source.Next = Window(1);
+        monitor.Poll();
+
+        time.Advance(TimeSpan.FromSeconds(5));
+        Assert.False(monitor.Poll().HasDwelled); // 5s of focus against a 30s threshold
+
+        settings.Update(new System.Text.Json.Nodes.JsonObject { ["dwellThreshold"] = "00:00:03" });
+
+        // No restart, and no lost focus time: the five seconds already accumulated are measured
+        // against the new threshold rather than being reset by the change.
+        WindowObservation after = monitor.Poll();
+        Assert.True(after.HasDwelled);
+        Assert.Equal(TimeSpan.FromSeconds(5), after.Dwell);
     }
 }

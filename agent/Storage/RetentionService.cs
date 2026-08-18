@@ -31,22 +31,22 @@ public sealed class RetentionService : BackgroundService
     internal static readonly TimeSpan SweepInterval = TimeSpan.FromDays(1);
 
     private readonly ActivityStore _store;
-    private readonly CaptureOptions _options;
+    private readonly LiveCaptureSettings _settings;
     private readonly TimeProvider _time;
     private readonly ILogger<RetentionService> _logger;
 
     public RetentionService(
         ActivityStore store,
-        CaptureOptions options,
+        LiveCaptureSettings settings,
         TimeProvider time,
         ILogger<RetentionService> logger)
     {
         ArgumentNullException.ThrowIfNull(store);
-        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(time);
         ArgumentNullException.ThrowIfNull(logger);
         _store = store;
-        _options = options;
+        _settings = settings;
         _time = time;
         _logger = logger;
     }
@@ -89,21 +89,25 @@ public sealed class RetentionService : BackgroundService
     /// <summary>Run one sweep; returns how many rows it removed.</summary>
     internal async Task<int> SweepAsync(CancellationToken cancellationToken)
     {
+        // One read for the whole sweep (v2-008 R2), so the window and the diagnostics switch can
+        // never disagree part-way through it. Both are live now: T007 had to leave them bound at
+        // startup, which meant turning diagnostics off left the table filling until a restart.
+        CaptureSnapshot settings = _settings.Current;
         DateTimeOffset now = _time.GetUtcNow();
         int removed = 0;
 
         // retentionDays 0 means keep forever — an explicit user choice, so no prune at all
         // rather than a very long window. A negative value reads the same way.
-        if (_options.RetentionDays > 0)
+        if (settings.RetentionDays > 0)
         {
             removed += await _store
-                .PruneOlderThanAsync(now.AddDays(-_options.RetentionDays), cancellationToken)
+                .PruneOlderThanAsync(now.AddDays(-settings.RetentionDays), cancellationToken)
                 .ConfigureAwait(false);
         }
 
         // With diagnostics off the table is emptied, not merely bounded: rows written during an
         // earlier troubleshooting session should not outlive the session that asked for them.
-        removed += _options.Diagnostics
+        removed += settings.Diagnostics
             ? await _store
                 .PruneRawCapturesAsync(now - RawCaptureMaxAge, RawCaptureMaxRows, cancellationToken)
                 .ConfigureAwait(false)

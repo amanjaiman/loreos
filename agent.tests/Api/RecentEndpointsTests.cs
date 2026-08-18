@@ -92,7 +92,8 @@ public sealed class RecentEndpointsTests
             services =>
             {
                 services.AddSingleton(store);
-                services.AddSingleton(new CaptureOptions { Diagnostics = diagnostics });
+                services.AddSingleton(new LiveCaptureSettings(
+                    new CaptureOptions { Diagnostics = diagnostics }));
             },
             app => app.MapRecentEndpoints());
 

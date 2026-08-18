@@ -3,7 +3,19 @@ namespace Lore.Agent.Capture.Episodes;
 /// <summary>Groups post-filter observations into episodes with cheap local signals —
 /// no inference calls (v2-001). Pure logic over injected time values: the capture loop
 /// owns the clock; this class only compares timestamps it is handed, so tests drive it
-/// with recorded traces. Not thread-safe by design — the capture loop is single-threaded.</summary>
+/// with recorded traces. Not thread-safe by design — the capture loop is single-threaded.
+///
+/// <para>Thresholds are read from <see cref="LiveCaptureSettings"/> at the top of each public
+/// call and passed down (v2-008 R2), so a settings change applies from the <b>next</b>
+/// observation. Reading once per call, rather than per use, is what keeps one <c>Add</c>
+/// internally consistent — the bound that closes an episode and the truncation applied to its
+/// samples are decided by the same numbers even if a <c>PATCH</c> lands mid-call. Nothing here
+/// force-closes or discards the open episode when the values change: the observations already
+/// collected stand, and the new thresholds simply govern the next one.</para>
+///
+/// <para>Both documented invariants survive that: the class still takes every time value from
+/// its caller (the options now arrive the same way), and it is still single-threaded by design
+/// — the only shared state it touches is one volatile reference read, never written.</para></summary>
 public sealed class EpisodeBuilder
 {
     // Floor on a sample's time weight (v2-008 R6.3). Time-spent leads selection, but it
@@ -11,7 +23,7 @@ public sealed class EpisodeBuilder
     // scores above a long stretch that is 95% the same as a sample already chosen.
     private const double MinTimeWeight = 0.05;
 
-    private readonly EpisodeOptions _options;
+    private readonly LiveCaptureSettings _settings;
     private readonly List<CapturedObservation> _samples = [];
     private readonly List<string> _executables = [];
     private readonly List<string> _titles = [];
@@ -23,30 +35,18 @@ public sealed class EpisodeBuilder
     private string _lastText = string.Empty;
     private int _count;
 
-    public EpisodeBuilder(EpisodeOptions options)
+    /// <param name="settings">The live capture settings. The degenerate-bounds checks this
+    /// constructor used to make (maxObservations ≥ 2, maxAge > 0, maxSamples ≥ 2,
+    /// sampleMaxChars ≥ 1) moved to <see cref="CaptureSnapshot.From"/> when the values became
+    /// live: a constructor can only validate the one set it is handed, and throwing is the wrong
+    /// answer for a hand-edited config.json — it took the agent down at DI resolution over a
+    /// mistyped number, and once the values can change at run time it would be a background
+    /// thread killing the capture loop mid-episode. Every snapshot this builder reads has already
+    /// been repaired.</param>
+    public EpisodeBuilder(LiveCaptureSettings settings)
     {
-        ArgumentNullException.ThrowIfNull(options);
-        if (options.MaxObservations < 2)
-        {
-            throw new ArgumentException("capture.episodes maxObservations must be at least 2", nameof(options));
-        }
-
-        if (options.MaxAge <= TimeSpan.Zero)
-        {
-            throw new ArgumentException("capture.episodes maxAge must be positive", nameof(options));
-        }
-
-        if (options.MaxSamples < 2)
-        {
-            throw new ArgumentException("capture.episodes maxSamples must be at least 2", nameof(options));
-        }
-
-        if (options.SampleMaxChars < 1)
-        {
-            throw new ArgumentException("capture.episodes sampleMaxChars must be at least 1", nameof(options));
-        }
-
-        _options = options;
+        ArgumentNullException.ThrowIfNull(settings);
+        _settings = settings;
     }
 
     /// <summary>Whether an episode is currently open.</summary>
@@ -58,29 +58,30 @@ public sealed class EpisodeBuilder
     public Episode? Add(CapturedObservation observation)
     {
         ArgumentNullException.ThrowIfNull(observation);
+        EpisodeOptions options = _settings.Current.Episodes;
 
         Episode? closed = null;
-        if (HasOpenEpisode && !Joins(observation))
+        if (HasOpenEpisode && !Joins(observation, options))
         {
-            closed = CloseOpen(_lastAt);
+            closed = CloseOpen(_lastAt, options);
         }
 
         if (!HasOpenEpisode)
         {
-            Open(observation);
+            Open(observation, options);
         }
         else
         {
-            Append(observation);
+            Append(observation, options);
         }
 
         // Bounds are checked after the append so the triggering observation stays in
         // the episode it grew — the next observation starts fresh. A just-opened episode
         // (count 1, age zero) can never trip a bound, so a continuity-break close and a
         // bound close are mutually exclusive within one Add.
-        if (_count >= _options.MaxObservations || _lastAt - _startedAt >= _options.MaxAge)
+        if (_count >= options.MaxObservations || _lastAt - _startedAt >= options.MaxAge)
         {
-            return CloseOpen(_lastAt);
+            return CloseOpen(_lastAt, options);
         }
 
         return closed;
@@ -88,39 +89,42 @@ public sealed class EpisodeBuilder
 
     /// <summary>Close the open episode when nothing has arrived for
     /// <see cref="EpisodeOptions.IdleTimeout"/>. Called every capture tick.</summary>
-    public Episode? CloseIfIdle(DateTimeOffset now) =>
-        HasOpenEpisode && now - _lastAt >= _options.IdleTimeout ? CloseOpen(_lastAt) : null;
+    public Episode? CloseIfIdle(DateTimeOffset now)
+    {
+        EpisodeOptions options = _settings.Current.Episodes;
+        return HasOpenEpisode && now - _lastAt >= options.IdleTimeout ? CloseOpen(_lastAt, options) : null;
+    }
 
     /// <summary>Close and return the open episode regardless of timing (agent shutdown
     /// flushes so a day's last episode is never lost).</summary>
-    public Episode? Flush() => HasOpenEpisode ? CloseOpen(_lastAt) : null;
+    public Episode? Flush() => HasOpenEpisode ? CloseOpen(_lastAt, _settings.Current.Episodes) : null;
 
     // An observation joins when it is RELATED (same app, similar title, or similar text)
     // AND recent enough. Cheap signals only.
-    private bool Joins(CapturedObservation observation)
+    private bool Joins(CapturedObservation observation, EpisodeOptions options)
     {
-        if (observation.At - _lastAt >= _options.ContinuityGap)
+        if (observation.At - _lastAt >= options.ContinuityGap)
         {
             return false;
         }
 
         bool sameApp = _executables.Contains(observation.Executable, StringComparer.OrdinalIgnoreCase);
         return sameApp
-            || TextSimilarity.Similarity(_titles[^1], observation.Title) >= _options.TitleSimilarityThreshold
-            || TextSimilarity.Similarity(_lastText, observation.Text) >= _options.TextSimilarityThreshold;
+            || TextSimilarity.Similarity(_titles[^1], observation.Title) >= options.TitleSimilarityThreshold
+            || TextSimilarity.Similarity(_lastText, observation.Text) >= options.TextSimilarityThreshold;
     }
 
-    private void Open(CapturedObservation observation)
+    private void Open(CapturedObservation observation, EpisodeOptions options)
     {
         _id = "ep-" + Guid.NewGuid().ToString("N")[..12];
         _startedAt = observation.At;
-        Append(observation, opening: true);
+        Append(observation, options, opening: true);
     }
 
-    private void Append(CapturedObservation observation, bool opening = false)
+    private void Append(CapturedObservation observation, EpisodeOptions options, bool opening = false)
     {
         bool duplicate = !opening
-            && TextSimilarity.Similarity(_lastText, observation.Text) >= _options.DuplicateThreshold;
+            && TextSimilarity.Similarity(_lastText, observation.Text) >= options.DuplicateThreshold;
 
         _lastAt = observation.At;
         _lastText = observation.Text;
@@ -149,7 +153,7 @@ public sealed class EpisodeBuilder
         }
     }
 
-    private Episode? CloseOpen(DateTimeOffset endedAt)
+    private Episode? CloseOpen(DateTimeOffset endedAt, EpisodeOptions options)
     {
         if (!HasOpenEpisode)
         {
@@ -162,7 +166,7 @@ public sealed class EpisodeBuilder
             endedAt,
             [.. _executables],
             [.. _titles],
-            SelectSamples(endedAt),
+            SelectSamples(endedAt, options),
             _count,
             ContentTypeMix());
 
@@ -204,7 +208,7 @@ public sealed class EpisodeBuilder
     // adding) means an exact repeat of something already chosen scores zero however long it
     // was held — time should promote evidence, never buy a slot for a redundant snippet —
     // while MinTimeWeight keeps a short-but-novel observation in contention.
-    private List<string> SelectSamples(DateTimeOffset endedAt)
+    private List<string> SelectSamples(DateTimeOffset endedAt, EpisodeOptions options)
     {
         // Indices, not the observations themselves: CapturedObservation is a record, so two
         // identical readings compare equal and a "have I chosen this?" test by value would
@@ -223,7 +227,7 @@ public sealed class EpisodeBuilder
         TimeSpan[] spans = SampleSpans(endedAt);
         TimeSpan longest = spans.Length == 0 ? TimeSpan.Zero : spans.Max();
 
-        while (chosen.Count < Math.Min(_options.MaxSamples, _samples.Count))
+        while (chosen.Count < Math.Min(options.MaxSamples, _samples.Count))
         {
             int best = -1;
             double bestScore = double.MinValue;
@@ -253,7 +257,7 @@ public sealed class EpisodeBuilder
         }
 
         chosen.Sort();
-        return [.. chosen.Select(index => Truncate(_samples[index].Text))];
+        return [.. chosen.Select(index => Truncate(_samples[index].Text, options.SampleMaxChars))];
     }
 
     // How long each retained sample stood as the newest thing seen. Clamped at zero because
@@ -280,6 +284,6 @@ public sealed class EpisodeBuilder
     private static double TimeWeight(TimeSpan span, TimeSpan longest) =>
         longest <= TimeSpan.Zero ? 1.0 : Math.Max(MinTimeWeight, span / longest);
 
-    private string Truncate(string text) =>
-        text.Length <= _options.SampleMaxChars ? text : text[.._options.SampleMaxChars];
+    private static string Truncate(string text, int maxChars) =>
+        text.Length <= maxChars ? text : text[..maxChars];
 }

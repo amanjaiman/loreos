@@ -153,7 +153,7 @@ public sealed class ContractTests : IAsyncLifetime, IDisposable
         services.AddSingleton(new LogTail(_logPath));
         // /recent gates on the opt-in diagnostics switch (v2-008 R4.2); on, so the contract
         // exercises the route with the seeded raw capture actually flowing through it.
-        services.AddSingleton(new CaptureOptions { Diagnostics = true });
+        services.AddSingleton(new LiveCaptureSettings(new CaptureOptions { Diagnostics = true }));
 
         ApiHost.AddOpenApi(services);
     }

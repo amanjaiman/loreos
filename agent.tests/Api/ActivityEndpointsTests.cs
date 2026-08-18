@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Lore.Agent.Api.Endpoints;
+using Lore.Agent.Capture;
 using Lore.Agent.Capture.Episodes;
 using Lore.Agent.Lifecycle;
 using Lore.Agent.Memory;
@@ -47,7 +48,10 @@ public sealed class ActivityEndpointsTests : IDisposable
         {
             services.AddSingleton(_activity);
             services.AddSingleton<IMemoryService>(_memory);
-            services.AddSingleton(new LifecycleOptions { DailyBudget = ConfiguredBudget });
+            services.AddSingleton(new LiveCaptureSettings(new CaptureOptions
+            {
+                Lifecycle = new LifecycleOptions { DailyBudget = ConfiguredBudget },
+            }));
             services.AddSingleton<TimeProvider>(_time);
         },
         app =>

@@ -2,8 +2,14 @@ namespace Lore.Agent.Capture;
 
 /// <summary>How the capture loop runs, bound from the <c>capture</c> config section.
 /// Episode/lifecycle thresholds live in the nested options; the blocklist is the user's
-/// own apps and keywords.</summary>
-public sealed class CaptureOptions
+/// own apps and keywords.
+///
+/// <para>This type is the <b>startup seed only</b> (v2-008 R2). Nothing reads it at run time:
+/// it is bound once, handed to <see cref="LiveCaptureSettings"/>, and from there every value
+/// is served from the atomically-replaced <see cref="CaptureSnapshot"/> so a
+/// <c>PATCH /config</c> applies without an agent restart. It is deliberately not registered in
+/// DI — a second, frozen source of truth is exactly the stale-read bug R2 exists to remove.</para></summary>
+public sealed record CaptureOptions
 {
     /// <summary>Master switch. When false the loop idles and captures nothing.</summary>
     public bool Enabled { get; init; } = true;
@@ -18,6 +24,22 @@ public sealed class CaptureOptions
     /// re-extraction so a window held in focus isn't re-read on every poll. Content changes
     /// within this window are caught at the next re-examination.</summary>
     public TimeSpan RecaptureInterval { get; init; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>The minimum time before the same window <b>handle</b> is re-extracted after a
+    /// <b>title-only</b> change (v2-008 R6.2's consequence). Shorter than
+    /// <see cref="RecaptureInterval"/>, because a new title is real evidence that the content
+    /// moved on — but not zero, because plenty of titles churn without the content moving at
+    /// all: a media player's elapsed clock, a terminal's progress line, an unread badge.
+    ///
+    /// <para>Before R6.2 the dwell timer was accidentally doing this job — every title change
+    /// reset it, so a fast-retitling window never dwelled and was never captured. Fixing that
+    /// left <c>CaptureAgent.ShouldProcess</c>, which keys on handle + title, with nothing to
+    /// hold it back: at a 2s poll such a window was extracted on <em>every</em> poll, ~1,800
+    /// readings an hour against ~144 for every other window, with OCR on the expensive path
+    /// and nearly all of it absorbed downstream as near-duplicates. Ten seconds puts it at
+    /// ~2.5× a static window rather than ~12×, while still re-reading genuinely new content
+    /// well inside the time a person spends reading it.</para></summary>
+    public TimeSpan TitleRecaptureInterval { get; init; } = TimeSpan.FromSeconds(10);
 
     /// <summary>Episode segmentation thresholds (v2 pipeline).</summary>
     public Episodes.EpisodeOptions Episodes { get; init; } = new();
@@ -42,9 +64,9 @@ public sealed class CaptureOptions
     /// <para>Only post-filter text is ever written, and the table is hard-bounded to 24 hours or
     /// 500 rows. With this off nothing is written and <c>GET /recent</c> reports empty.</para>
     ///
-    /// <para>Bound at startup, so a change takes effect on the next agent start — unlike the
-    /// pause and blocklist choices, which are live. That is the right trade for a diagnostic the
-    /// user turns on deliberately when they sit down to debug something.</para></summary>
+    /// <para>Live since v2-008 R2: it rides in <see cref="CaptureSnapshot"/>, so the switch takes
+    /// effect on the next poll rather than the next agent start. T007 had to leave it
+    /// startup-bound because the live snapshot carried only pause + blocklist at the time.</para></summary>
     public bool Diagnostics { get; init; }
 
     /// <summary>Executables the user never wants captured.</summary>

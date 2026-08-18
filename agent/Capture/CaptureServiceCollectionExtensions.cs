@@ -4,6 +4,7 @@ using Lore.Agent.Inference;
 using Lore.Agent.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Lore.Agent.Capture;
@@ -21,9 +22,13 @@ public static class CaptureServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
+        // The bound options seed the live snapshot and are then done with. Deliberately NOT
+        // registered in DI (v2-008 R2): every consumer reads LiveCaptureSettings so a PATCH
+        // /config applies with no restart, and a second frozen copy in the container is exactly
+        // the stale read that would put one back.
         CaptureOptions options = configuration.GetSection("capture").Get<CaptureOptions>() ?? new CaptureOptions();
-        services.AddSingleton(options);
-        services.AddSingleton<LiveCaptureSettings>();
+        services.AddSingleton(sp => new LiveCaptureSettings(
+            options, sp.GetService<ILogger<LiveCaptureSettings>>()));
         services.AddSingleton(TimeProvider.System);
 
         // Win32 / UI Automation seams — the only places that touch the platform.
@@ -41,11 +46,11 @@ public static class CaptureServiceCollectionExtensions
         // Trust-critical sensitivity filter.
         services.AddSingleton<SensitivityFilter>();
 
-        // Window monitor (dwell threshold from config).
+        // Window monitor (dwell threshold read live, per poll).
         services.AddSingleton(sp => new WindowMonitor(
             sp.GetRequiredService<IForegroundWindowSource>(),
             sp.GetRequiredService<TimeProvider>(),
-            options.DwellThreshold));
+            sp.GetRequiredService<LiveCaptureSettings>()));
 
         // Placeholder backend until the provider layer (004) registers the real one.
         services.AddSingleton<IInferenceBackend, NullInferenceBackend>();
@@ -63,9 +68,9 @@ public static class CaptureServiceCollectionExtensions
         // Registered here, next to the store it sweeps, so the two can never be wired apart.
         services.AddHostedService<RetentionService>();
 
-        // Episode segmentation feeding the skeptical distiller and the lifecycle engine.
-        services.AddSingleton(options.Episodes);
-        services.AddSingleton(options.Lifecycle);
+        // Episode segmentation feeding the skeptical distiller and the lifecycle engine. Both take
+        // their thresholds from the live snapshot, so neither EpisodeOptions nor LifecycleOptions
+        // is registered on its own.
         services.AddSingleton<Episodes.EpisodeBuilder>();
         services.AddSingleton<Distill.Distiller>();
         services.AddSingleton<Episodes.IEpisodeProcessor, Lifecycle.LifecycleEngine>();

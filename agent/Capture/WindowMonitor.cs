@@ -20,32 +20,35 @@ namespace Lore.Agent.Capture;
 /// The user did not switch away; the app just relabelled itself, so the dwell it has
 /// already earned still stands.</para>
 ///
-/// <para>New content is still read promptly: <c>CaptureAgent.ShouldProcess</c> keys on
-/// handle + title, so a retitled window is a new key and is re-captured on the next tick.
-/// Dwell answers "has the user settled here?", which the title does not speak to; the key
-/// answers "is this the same content?", which it does.</para></summary>
+/// <para>New content is still read promptly, just not on every poll:
+/// <c>CaptureAgent.ShouldProcess</c> gives a title-only change its own short re-read gap,
+/// distinct from the longer interval a wholly unchanged window waits out. Dwell answers "has
+/// the user settled here?", which the title does not speak to; that gap answers "is there
+/// likely new content?", which it does — <em>likely</em> being why the gap is not zero.</para>
+///
+/// <para>The dwell threshold is read from <see cref="LiveCaptureSettings"/> on every
+/// <see cref="Poll"/> rather than captured at construction (v2-008 R2), so moving the
+/// attentiveness control changes how long a window must settle without an agent restart. A
+/// change mid-dwell is harmless: <c>_focusedSince</c> is untouched, so the window is simply
+/// measured against the new threshold from the next poll — it never loses the focus time it has
+/// already earned.</para></summary>
 public sealed class WindowMonitor
 {
     private readonly IForegroundWindowSource _source;
     private readonly TimeProvider _time;
-    private readonly TimeSpan _dwellThreshold;
+    private readonly LiveCaptureSettings _settings;
 
     private WindowSnapshot _current = WindowSnapshot.None;
     private DateTimeOffset _focusedSince;
 
-    public WindowMonitor(IForegroundWindowSource source, TimeProvider time, TimeSpan dwellThreshold)
+    public WindowMonitor(IForegroundWindowSource source, TimeProvider time, LiveCaptureSettings settings)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(time);
-        if (dwellThreshold < TimeSpan.Zero)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(dwellThreshold), dwellThreshold, "Dwell threshold cannot be negative.");
-        }
-
+        ArgumentNullException.ThrowIfNull(settings);
         _source = source;
         _time = time;
-        _dwellThreshold = dwellThreshold;
+        _settings = settings;
     }
 
     /// <summary>Read the foreground window once and classify it against the previous
@@ -53,6 +56,7 @@ public sealed class WindowMonitor
     /// window carries the accumulated dwell forward (v2-008 R6.2).</summary>
     public WindowObservation Poll()
     {
+        TimeSpan dwellThreshold = _settings.Current.DwellThreshold;
         WindowSnapshot next = _source.Current();
         DateTimeOffset now = _time.GetUtcNow();
         WindowChange change = Classify(_current, next);
@@ -79,7 +83,7 @@ public sealed class WindowMonitor
         }
 
         TimeSpan dwell = now - _focusedSince;
-        return new WindowObservation(next, change, dwell, dwell >= _dwellThreshold);
+        return new WindowObservation(next, change, dwell, dwell >= dwellThreshold);
     }
 
     private static WindowChange Classify(WindowSnapshot previous, WindowSnapshot next)

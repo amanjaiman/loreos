@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Lore.Agent.Capture;
 using Lore.Agent.Capture.Episodes;
 
@@ -16,7 +17,12 @@ public sealed class EpisodeBuilderTests
         => new(T0 + TimeSpan.FromMinutes(minutes), exe, title, text, type);
 
     private static EpisodeBuilder Builder(EpisodeOptions? options = null) =>
-        new(options ?? new EpisodeOptions());
+        new(Live(options));
+
+    /// <summary>The builder's thresholds now arrive through the live snapshot (v2-008 R2), so a
+    /// test that wants to move them mid-episode holds on to this.</summary>
+    private static LiveCaptureSettings Live(EpisodeOptions? options = null) =>
+        new(new CaptureOptions { Episodes = options ?? new EpisodeOptions() });
 
     [Fact]
     public void Related_observations_within_the_gap_join_one_episode()
@@ -73,12 +79,27 @@ public sealed class EpisodeBuilderTests
     }
 
     [Fact]
-    public void Options_with_degenerate_bounds_are_rejected()
+    public void Options_with_degenerate_bounds_are_repaired_rather_than_rejected()
     {
-        Assert.Throws<ArgumentException>(() => Builder(new EpisodeOptions { MaxObservations = 1 }));
-        Assert.Throws<ArgumentException>(() => Builder(new EpisodeOptions { MaxAge = TimeSpan.Zero }));
-        Assert.Throws<ArgumentException>(() => Builder(new EpisodeOptions { MaxSamples = 1 }));
-        Assert.Throws<ArgumentException>(() => Builder(new EpisodeOptions { SampleMaxChars = 0 }));
+        // These four bounds were constructor arguments checked by throwing until v2-008 R2 made
+        // them live; the checks moved to CaptureSnapshot.From, which repairs them to the defaults
+        // (asserted in LiveCaptureSettingsTests). What matters here is the consequence: a builder
+        // handed a hand-edited config.json full of nonsense still segments normally instead of
+        // taking the capture loop down with it.
+        EpisodeBuilder builder = Builder(new EpisodeOptions
+        {
+            MaxObservations = 1,
+            MaxAge = TimeSpan.Zero,
+            MaxSamples = 1,
+            SampleMaxChars = 0,
+        });
+
+        Assert.Null(builder.Add(Obs(0)));
+        Assert.Null(builder.Add(Obs(1, text: "swelling timeline after extraction and what to eat")));
+
+        Episode episode = builder.Flush()!;
+        Assert.Equal(2, episode.ObservationCount); // MaxObservations 1 would have closed at one
+        Assert.All(episode.Samples, sample => Assert.NotEmpty(sample)); // SampleMaxChars 0 would empty them
     }
 
     [Fact]
@@ -270,6 +291,60 @@ public sealed class EpisodeBuilderTests
 
         Assert.Equal([new ContentTypeTally(ContentType.Reading, 1)], first.ContentTypeMix);
         Assert.Equal([new ContentTypeTally(ContentType.Coding, 1)], second.ContentTypeMix);
+    }
+
+    // ── v2-008 R2: thresholds are live, and a change never disturbs the open episode ──
+
+    [Fact]
+    public void A_threshold_change_mid_episode_applies_from_the_next_observation()
+    {
+        LiveCaptureSettings settings = Live(new EpisodeOptions { MaxObservations = 100 });
+        var builder = new EpisodeBuilder(settings);
+
+        builder.Add(Obs(0));
+        builder.Add(Obs(1, text: "swelling timeline after extraction and what to eat"));
+        builder.Add(Obs(2, text: "soft foods list for dental recovery week one"));
+
+        // The user drags attentiveness down mid-episode. Three observations are already in.
+        settings.Update(new JsonObject
+        {
+            ["episodes"] = new JsonObject { ["maxObservations"] = 4 },
+        });
+
+        // Nothing was force-closed, discarded, or rewritten by the change itself…
+        Assert.True(builder.HasOpenEpisode);
+
+        // …and the new cap governs from the very next observation: the fourth closes the episode
+        // with all four inside it, exactly as if it had been configured that way from the start.
+        Episode? closed = builder.Add(Obs(3, text: "when to switch back to solid food after surgery"));
+        Assert.NotNull(closed);
+        Assert.Equal(4, closed.ObservationCount);
+        Assert.Equal(T0, closed.StartedAt); // the original start survived the change
+        Assert.False(builder.HasOpenEpisode);
+    }
+
+    [Fact]
+    public void A_sample_cap_raised_mid_episode_applies_to_the_episode_that_is_open()
+    {
+        // The other half of "applies from the next observation": a value only read when the
+        // episode closes takes the value in force at that moment, not the one it opened with.
+        LiveCaptureSettings settings = Live(new EpisodeOptions { MaxSamples = 2, MaxObservations = 100 });
+        var builder = new EpisodeBuilder(settings);
+
+        builder.Add(Obs(0, text: "first page about dental surgery basics"));
+        for (int i = 1; i < 6; i++)
+        {
+            builder.Add(Obs(i, text: $"middle page {i} covering topic variant {i} with distinct words w{i}"));
+        }
+
+        settings.Update(new JsonObject
+        {
+            ["episodes"] = new JsonObject { ["maxSamples"] = 5 },
+        });
+
+        Episode episode = builder.Flush()!;
+        Assert.Equal(6, episode.ObservationCount); // every observation still there
+        Assert.Equal(5, episode.Samples.Count);
     }
 
     [Fact]
