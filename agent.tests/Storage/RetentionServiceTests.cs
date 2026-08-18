@@ -27,10 +27,11 @@ public sealed class RetentionServiceTests : IDisposable
     public void Dispose() => _store.Dispose();
 
     private RetentionService Build(int retentionDays = 90, bool diagnostics = false) =>
-        new(_store,
-            new CaptureOptions { RetentionDays = retentionDays, Diagnostics = diagnostics },
-            _time,
-            NullLogger<RetentionService>.Instance);
+        Build(new LiveCaptureSettings(
+            new CaptureOptions { RetentionDays = retentionDays, Diagnostics = diagnostics }));
+
+    private RetentionService Build(LiveCaptureSettings settings) =>
+        new(_store, settings, _time, NullLogger<RetentionService>.Instance);
 
     private Task SeedEpisodeAsync(string id, DateTimeOffset endedAt) =>
         _store.SaveEpisodeAsync(new Episode(
@@ -213,11 +214,48 @@ public sealed class RetentionServiceTests : IDisposable
         Assert.Empty(await _store.GetRecentEpisodesAsync());
     }
 
+    // ── v2-008 R2: retention and diagnostics are live ─────────────────────────────
+
+    [Fact]
+    public async Task Switching_diagnostics_off_empties_the_table_on_the_next_sweep()
+    {
+        // T007 left this bound at startup, so turning the troubleshooting switch off kept the
+        // table filling until the user restarted the agent. It rides in the live snapshot now.
+        var settings = new LiveCaptureSettings(new CaptureOptions { Diagnostics = true });
+        await SeedRawCaptureAsync("read a minute ago", Now.AddMinutes(-1));
+
+        using RetentionService service = Build(settings);
+        await service.SweepAsync(CancellationToken.None);
+        Assert.Single(await _store.GetRecentRawCapturesAsync()); // diagnostics on: kept
+
+        settings.Update(new System.Text.Json.Nodes.JsonObject { ["diagnostics"] = false });
+        await service.SweepAsync(CancellationToken.None);
+
+        Assert.Empty(await _store.GetRecentRawCapturesAsync()); // no restart in between
+    }
+
+    [Fact]
+    public async Task A_shortened_retention_window_applies_to_the_next_sweep()
+    {
+        var settings = new LiveCaptureSettings(new CaptureOptions { RetentionDays = 90 });
+        await SeedEpisodeAsync("thirty-days-old", Now.AddDays(-30));
+
+        using RetentionService service = Build(settings);
+        await service.SweepAsync(CancellationToken.None);
+        Assert.Single(await _store.GetRecentEpisodesAsync()); // inside a 90-day window
+
+        settings.Update(new System.Text.Json.Nodes.JsonObject { ["retentionDays"] = 7 });
+        await service.SweepAsync(CancellationToken.None);
+
+        Assert.Empty(await _store.GetRecentEpisodesAsync());
+    }
+
     [Fact]
     public void Constructor_validates_dependencies()
     {
+        var settings = new LiveCaptureSettings(new CaptureOptions());
         Assert.Throws<ArgumentNullException>(() => new RetentionService(
-            null!, new CaptureOptions(), _time, NullLogger<RetentionService>.Instance));
+            null!, settings, _time, NullLogger<RetentionService>.Instance));
         Assert.Throws<ArgumentNullException>(() => new RetentionService(
             _store, null!, _time, NullLogger<RetentionService>.Instance));
     }

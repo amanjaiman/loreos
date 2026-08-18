@@ -30,10 +30,12 @@ public static class RecentEndpoints
         // session left behind are on their way out at the next retention sweep. Reporting them
         // would tell the user Lore is recording what it reads when it is not.
         app.MapGet("/recent", async (
-            [FromServices] ActivityStore store, [FromServices] CaptureOptions capture,
+            [FromServices] ActivityStore store, [FromServices] LiveCaptureSettings capture,
             int? limit, CancellationToken ct) =>
         {
-            IReadOnlyList<RawCaptureEntry> captures = capture.Diagnostics
+            // Read live (v2-008 R2), so switching diagnostics off empties this response on the next
+            // request rather than at the next agent start.
+            IReadOnlyList<RawCaptureEntry> captures = capture.Current.Diagnostics
                 ? await store.GetRecentRawCapturesAsync(Normalize(limit), ct).ConfigureAwait(false)
                 : [];
             return Results.Ok(new RecentCaptures(captures.Select(RawCaptureDto.From).ToArray()));

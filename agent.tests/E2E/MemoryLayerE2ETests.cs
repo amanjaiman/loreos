@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
+using Lore.Agent.Capture;
 using Lore.Agent.Capture.Episodes;
 using Lore.Agent.Distill;
 using Lore.Agent.Lifecycle;
@@ -146,7 +147,7 @@ public sealed class MemoryLayerE2ETests : IAsyncLifetime, IDisposable
             memory,
             activity,
             backend,
-            new LifecycleOptions(),
+            new LiveCaptureSettings(new CaptureOptions()),
             TimeProvider.System,
             NullLogger<LifecycleEngine>.Instance);
 

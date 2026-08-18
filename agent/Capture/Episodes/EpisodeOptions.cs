@@ -2,8 +2,13 @@ namespace Lore.Agent.Capture.Episodes;
 
 /// <summary>Episode segmentation thresholds (v2-001), bound from the
 /// <c>capture.episodes</c> config section. Thresholds are config, not code — bad splits
-/// are tuned, not patched (spec risk: segmentation is heuristic).</summary>
-public sealed class EpisodeOptions
+/// are tuned, not patched (spec risk: segmentation is heuristic).
+///
+/// <para>A record, not a plain class, since v2-008 R2: these values now ride in the live
+/// <see cref="CaptureSnapshot"/> and are replaced wholesale on <c>PATCH /config</c>, so the
+/// snapshot needs a cheap <c>with</c> to repair one out-of-range field without restating
+/// every other one (and silently dropping any added later).</para></summary>
+public sealed record EpisodeOptions
 {
     /// <summary>Max gap between observations for the newer one to join the open episode;
     /// a longer gap breaks continuity and closes the episode.</summary>

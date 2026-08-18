@@ -58,7 +58,7 @@ Each task is PR-sized and lands through the `no-mistakes` gate.
   Re-run the golden corpus; `weak-state` should drop out again and the eight bookings should
   come back in strict recency order.
 
-- [ ] **T003 — Live capture snapshot (R2).** Extend `LiveCaptureSettings` to carry a full
+- [x] **T003 — Live capture snapshot (R2).** ✅ Done. Extend `LiveCaptureSettings` to carry a full
   resolved snapshot, replaced atomically on `PATCH /config`. Repoint `CaptureAgent`,
   `WindowMonitor` (dwell is a ctor field today), `EpisodeBuilder`, and `LifecycleEngine`.
   Resolves to today's defaults — no user-visible change yet. A mid-episode threshold change
@@ -76,6 +76,39 @@ Each task is PR-sized and lands through the `no-mistakes` gate.
     unchanged windows. Scale it with `attentiveness` alongside the other timings. A retitling
     window must still be captured (R6.2's acceptance) — just not 12× more often than every
     other window.
+
+  **What landed.** `CaptureSnapshot` (new record) carries pause, blocklist, `PollInterval`,
+  `DwellThreshold`, `RecaptureInterval`, the new `TitleRecaptureInterval`, the whole
+  `EpisodeOptions` and `LifecycleOptions`, `Diagnostics` and `RetentionDays`.
+  `LiveCaptureSettings` swaps it wholesale under `Volatile.Read`/`Write`; `PATCH /config`
+  still goes through the existing `Update(capture)` seam. `CaptureAgent`, `WindowMonitor`,
+  `EpisodeBuilder`, `LifecycleEngine`, `RetentionService`, `RecentEndpoints`,
+  `ActivityEndpoints` and `SystemEndpoints` all read it. **`CaptureOptions`, `EpisodeOptions`
+  and `LifecycleOptions` are no longer registered in DI at all** — there is exactly one source
+  of truth, guarded by a structural test. Resolves to today's defaults; no user-visible change.
+
+  - **Validation moved to the snapshot boundary.** `EpisodeBuilder`'s constructor checks are now
+    in `CaptureSnapshot.From`, which both the startup binding and every PATCH go through: a bad
+    value is replaced with the default and logged, never thrown. Throwing took the agent down at
+    DI resolution over a mistyped number, and with the values live it would be a background
+    thread killing the capture loop mid-episode. Scope is exactly what can break the loop
+    (`Task.Delay` on a non-positive interval, a negative substring index, a bound that closes
+    every episode at its first observation) plus a 1-minute ceiling on `PollInterval`, which
+    catches `"pollInterval": 2` — the binder reads a bare `2` as two **days**. Lifecycle
+    thresholds are deliberately not range-checked: none has such a path.
+  - **Title-only gap: 10s.** ~2.5× a static window's read rate instead of ~12×, cutting a
+    retitling window from ~1,800 readings/hour to ~360 while keeping worst-case staleness for
+    genuinely new content at 10 seconds. T004 scales it with `attentiveness`.
+  - **T002's test changed.** `A_window_that_rewrites_its_title_every_poll_is_still_captured`
+    asserted 5 observations within a 20-second script — an assertion about the *unbounded*
+    behaviour T002 shipped, where every retitle was a fresh key. Its script now runs 45 seconds
+    and it asserts exactly 5 observations (t = 4, 14, 24, 34, 44). Being captured is what R6.2
+    asks for and is still asserted; being captured on every poll never was.
+  - **Absent keys keep the value in force**, rather than reverting to the built-in default — the
+    startup binding draws on configuration sources besides config.json, and a blocklist edit
+    must not silently discard a timing set through one of them. T004 replaces that fallback base
+    with the resolved preset, which is what makes R3's "delete the raw key, the preset's value
+    returns" work.
 
 - [ ] **T004 — Preset resolution and config schema (R3).** Resolve
   `attentiveness` / `certainty` / `detail` → values; explicit raw keys win per-field;
