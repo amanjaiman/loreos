@@ -361,8 +361,49 @@ glance contributes another of equal weight. Dwell time never reaches the prompt 
 Weight selection by time-spent alongside diversity, so the evidence reflects where the day
 actually went.
 
-**Acceptance:** an episode whose observations are 90% one document yields samples
-predominantly from that document; a window whose title changes every 2s is captured.
+**R6.2 has a consequence this spec originally missed.** Dwell was accidentally acting as the
+rate limiter for retitling windows. Once a title change no longer resets it, `ShouldProcess`
+keys on `handle + title`, so a window retitling every poll is extracted on *every poll* —
+~1,800 readings/hour at 2s polling against ~144 at a 25s re-read, with OCR on the expensive
+path, and nearly all of it absorbed downstream as near-duplicates. **A title-only re-read
+needs its own minimum gap**, carried in the live snapshot (T003). Capturing these windows at
+all is the fix; capturing them 12× more often than any other window is not.
+
+**Acceptance:** a window whose title changes every 2s is captured, *and* is not re-extracted
+more often than the title-only gap allows. For sample selection, the episode must present
+**more candidate samples than `MaxSamples` slots** — with 8 slots and most episodes yielding
+fewer than 8 distinct samples, selection never has to choose and the old algorithm passes
+too. Pin a sample budget below the candidate count so the assertion discriminates.
+
+---
+
+## R5.4 — Two consequences of R5.3, decided
+
+Moving the floor to the semantic axis had two effects beyond the age fix. Both were found by
+T010 and decided deliberately.
+
+**Confidence no longer gates inclusion.** It was a factor in the blended score, so a
+low-confidence memory used to be excluded as a side effect. On the semantic axis it only
+affects rank — a 0.3-confidence "I might be coming down with a cold" now returns. That
+weakens the contract `RecallService` states for itself: *"a client must be able to trust
+that whatever comes back is worth context space."*
+
+**Decision: add `RecallOptions.MinConfidence`, default 0.5**, as a second inclusion gate
+beside the semantic floor. Keep if `semantic >= Floor AND confidence >= MinConfidence`; order
+by the blend. Real bookings sit at ~0.9 so the age fix is untouched; the wisdom-teeth case at
+0.7 still surfaces; near-speculation does not.
+
+**Recency ordering was not delivered.** All eight bookings return, but past ~187 days
+`TemporalFactor` is pinned at `ExperienceDecayFloor` for every row, so age stops contributing
+and the tail sorts by embedder noise (measured: `1mo, 3mo, 5mo, 16mo, 20mo, 12mo, 8mo, 24mo`).
+
+**Decision: lower `ExperienceDecayFloor` from 0.6 to 0.2.** That floor existed to stop old
+memories vanishing; R5.3 moved that guarantee to the semantic floor, so the decay floor is now
+free to do its real job — ordering — for far longer. Saturation moves from ~187 days to ~587
+(`365 × -ln(floor)`), and it can no longer cause exclusion.
+
+**Acceptance:** the eight bookings return in strict recency order; a 0.3-confidence memory is
+excluded while a 0.7-confidence one is kept; no unrelated pair clears both gates.
 
 ---
 

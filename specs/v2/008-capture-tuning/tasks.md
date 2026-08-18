@@ -51,6 +51,13 @@ Each task is PR-sized and lands through the `no-mistakes` gate.
     polling against ~144 at 25s). Wanted, per R6.2's acceptance, but it deserves a floor —
     likely a minimum gap for a title-only re-read — sized alongside T003's live snapshot.
 
+- [ ] **T011 — Recall calibration follow-ups (R5.4).** Two decided consequences of T010.
+  Add `RecallOptions.MinConfidence` (default 0.5) as a second inclusion gate beside the
+  semantic floor — `semantic >= Floor AND confidence >= MinConfidence`, ordered by the blend.
+  Lower `ExperienceDecayFloor` 0.6 → 0.2, now safe because it can no longer cause exclusion.
+  Re-run the golden corpus; `weak-state` should drop out again and the eight bookings should
+  come back in strict recency order.
+
 - [ ] **T003 — Live capture snapshot (R2).** Extend `LiveCaptureSettings` to carry a full
   resolved snapshot, replaced atomically on `PATCH /config`. Repoint `CaptureAgent`,
   `WindowMonitor` (dwell is a ctor field today), `EpisodeBuilder`, and `LifecycleEngine`.
@@ -60,6 +67,15 @@ Each task is PR-sized and lands through the `no-mistakes` gate.
     snapshot. T007 had to leave them startup-bound (it was scoped out of `LiveCaptureSettings`),
     so toggling diagnostics currently needs an agent restart. Once in the snapshot, the
     `_options` reads in `CaptureAgent` and `RecentEndpoints` become snapshot reads.
+  - **From T002 — fix the title-churn throttle (do not skip).** T002's R6.2 fix made
+    retitling windows capturable and, as a side effect, uncapped: `ShouldProcess` keys on
+    `handle + title`, so they now bypass `RecaptureInterval` entirely (~1,800 readings/hour
+    at 2s polling vs ~144 at 25s, with OCR on the expensive path). Add a **title-only
+    re-read gap** to the snapshot — a minimum interval before the same *window* is
+    re-extracted after a title-only change, distinct from the full `RecaptureInterval` for
+    unchanged windows. Scale it with `attentiveness` alongside the other timings. A retitling
+    window must still be captured (R6.2's acceptance) — just not 12× more often than every
+    other window.
 
 - [ ] **T004 — Preset resolution and config schema (R3).** Resolve
   `attentiveness` / `certainty` / `detail` → values; explicit raw keys win per-field;
