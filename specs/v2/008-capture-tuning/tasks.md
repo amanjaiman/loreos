@@ -51,12 +51,43 @@ Each task is PR-sized and lands through the `no-mistakes` gate.
     polling against ~144 at 25s). Wanted, per R6.2's acceptance, but it deserves a floor —
     likely a minimum gap for a title-only re-read — sized alongside T003's live snapshot.
 
-- [ ] **T011 — Recall calibration follow-ups (R5.4).** Two decided consequences of T010.
-  Add `RecallOptions.MinConfidence` (default 0.5) as a second inclusion gate beside the
-  semantic floor — `semantic >= Floor AND confidence >= MinConfidence`, ordered by the blend.
-  Lower `ExperienceDecayFloor` 0.6 → 0.2, now safe because it can no longer cause exclusion.
-  Re-run the golden corpus; `weak-state` should drop out again and the eight bookings should
-  come back in strict recency order.
+- [x] **T011 — Recall calibration follow-ups (R5.4).** ✅ Done. Both decided consequences of
+  T010 land as specified. `RecallOptions.MinConfidence` (0.5) is a second inclusion gate
+  beside the semantic floor — `semantic >= Floor AND confidence >= MinConfidence`, ordered by
+  the blend — and `ExperienceDecayFloor` drops 0.6 → 0.2, moving saturation from ~187 days to
+  ~587. `Floor`, `ExperienceWeight`, `ExperienceDecayDays` and `Blend` untouched.
+
+  **Golden corpus re-run pair by pair. Both acceptance criteria met.** The eight bookings
+  return in **strict recency order** — `1mo, 3mo, 5mo, 8mo, 12mo, 16mo, 20mo, 24mo` at
+  0.6788 / 0.5786 / 0.4858 / 0.3796 / 0.2705 / 0.2008 / 0.1485 / 0.1465 — inverting T010's
+  noisy `…16mo, 20mo, 12mo, 8mo…`. `weak-state` (0.3 confidence) drops out of the takeout
+  query while `tea` (0.8) stays, **despite `weak-state` scoring higher semantically** (0.55
+  vs 0.48) — the clearest demonstration that the two gates measure different things. The
+  wisdom-teeth case is unaffected. The kept set is exactly T010's minus `weak-state`: **no
+  pair newly clears either gate**, and the carbonara true-negative is still empty.
+
+  **Two things to carry forward, neither a blocker:**
+  - **The ordering gap is narrowed, not closed.** Saturation moved to ~587 days, so the 20-
+    and 24-month rows (600 and 730 days) are *still* both pinned at `ExperienceDecayFloor`
+    and still separated by embedder noise (0.8250 vs 0.8140) rather than by age. They happen
+    to land in recency order on this corpus; that is a coincidence of these similarities, not
+    a property of the scoring. Everything out to 16 months is genuinely recency-ordered.
+    Ordering a history longer than ~19 months needs a lower floor or a larger
+    `ExperienceDecayDays` — a further calibration, not a defect. Asserted explicitly.
+  - **Nothing outside the aged experiences reordered.** The decay-floor change is visible on
+    exactly one non-flight row, `marathon-old` (seven years, past saturation under either
+    value): its blend falls ~0.29 → ~0.10. It still returns — the semantic floor, not the
+    decay floor, has guaranteed that since R5.3 — and still ranks below `france`. No
+    experience changed position relative to any `state` or `identity` memory; `france` at 60
+    days is inside the live-decay window under both floors, so the cross-kind ordering tests
+    (`Old_experiences_decay_below_current_facts_at_equal_similarity`) are untouched.
+
+  Tests updated: the wisdom-teeth test and its `LoreToolsTests` sibling (3 hits → 2),
+  `Flight_booking_history_returns_every_booking_however_old` (T010's known-gap assertions
+  replaced by strict recency plus the honest 20/24mo saturation note),
+  `Experience_decay_is_gentle_and_floored` (0.6 → 0.2 plus a saturation-day assertion), and
+  two new tests pinning the confidence gate's independence and its `>=` boundary. **No
+  `GoldenCorpus` similarity value was changed.** 493 agent + 100 CLI tests green.
 
 - [ ] **T003 — Live capture snapshot (R2).** Extend `LiveCaptureSettings` to carry a full
   resolved snapshot, replaced atomically on `PATCH /config`. Repoint `CaptureAgent`,
