@@ -390,8 +390,8 @@ that whatever comes back is worth context space."*
 
 **Decision: add `RecallOptions.MinConfidence`, default 0.5**, as a second inclusion gate
 beside the semantic floor. Keep if `semantic >= Floor AND confidence >= MinConfidence`; order
-by the blend. Real bookings sit at ~0.9 so the age fix is untouched; the wisdom-teeth case at
-0.7 still surfaces; near-speculation does not.
+by the blend. Real bookings sit at ~0.9 so the age fix is untouched; the wisdom-teeth case
+(0.8 in the corpus) still surfaces; near-speculation does not.
 
 **Recency ordering was not delivered.** All eight bookings return, but past ~187 days
 `TemporalFactor` is pinned at `ExperienceDecayFloor` for every row, so age stops contributing
