@@ -191,14 +191,31 @@ That split is the point — it is what makes "full control" true without a wall 
 
 `GET /config` additionally returns a **read-only** `capture.resolved` block containing the
 effective values, so the UI can render honest consequence lines and a power user can see
-what a preset actually means:
+what a preset actually means.
+
+**`resolved` must echo the writable keys exactly — same names, same value formats.**
 
 ```json
-"capture": { ..., "resolved": { "pollIntervalSeconds": 2, "recaptureIntervalSeconds": 25,
-  "maxObservations": 48, "statementMaxChars": 200, "highSignalConfidence": 0.85 } }
+"capture": { ..., "resolved": { "pollInterval": "00:00:02", "recaptureInterval": "00:00:25",
+  "episodes": { "maxObservations": 48 }, "highSignalConfidence": 0.85 } }
 ```
 
+The original draft of this spec had `resolved` report `pollIntervalSeconds: 2` as a plain
+number while the writable key is a TimeSpan string (`"pollInterval": "00:00:02"`). That is a
+trap: the obvious workflow for a tinkerer is to read `resolved`, copy a line into `capture`
+to pin it, and the binder then reads `2` as **two days**. Echoing the writable shape makes
+copy-a-line-to-pin-it correct by construction, which is the whole point of the
+preset-plus-override design. (T003 added a one-minute ceiling on `PollInterval` that catches
+this particular mistake, but the shape should not invite it.)
+
 `PATCH /config` must ignore or reject `capture.resolved` rather than persisting it.
+
+**Absent is not the same as default.** For "delete the raw key and the preset's value
+returns" to work, resolution has to distinguish a key that is *explicitly present* from one
+that is *absent* — which is the same distinction raw-override-wins needs. T003's live
+snapshot deliberately keeps an absent key's current value in force (so a blocklist edit can't
+discard a timing set from another config source); T004 must replace that fallback base with
+the resolved preset.
 
 Unknown or misspelled preset names fall back to `balanced` and log a warning — never crash
 the agent on a hand-edited config.
