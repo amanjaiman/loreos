@@ -55,8 +55,13 @@ smaller.
 
 - Agent unit tests cover preset resolution (including raw-override precedence and garbage
   preset names), the live snapshot swap, retention pruning, and the three defect fixes.
-- The golden corpus is re-run for any preset whose prompt text differs; the E2E acceptance
-  harness pins `balanced`. Temperature 0 is unchanged.
+- `balanced` is proven byte-for-byte identical to the pre-v2-008 prompt (apart from the
+  templated cap) — the single most valuable assertion in the prompt work, since it shows
+  nothing changed for existing users. Temperature 0 is unchanged.
+- **Correction:** an earlier draft said "re-run the golden corpus for any preset whose prompt
+  text differs." That was wrong — `GoldenCorpus.cs` is a *recall* fixture and has no bearing
+  on `DistillPrompt`. The only prompt-behaviour harness is the opt-in E2E test, which pins
+  `balanced`, so `minimal` and `rich` need a live-model check at T009.
 - The recall-floor check (T001) is a seeded-store test, not a manual inspection — eight
   flight bookings across two years, all returned at `k = 30`.
 - App lint, typecheck, and package build cover the renderer.

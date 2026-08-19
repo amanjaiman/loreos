@@ -178,6 +178,13 @@ A threshold change mid-episode is harmless and must not be special-cased: the ne
 simply applies from the next observation. An in-flight episode is never discarded or
 force-closed by a settings change.
 
+**One documented exception (found by T005): `SampleMaxChars` applies retroactively.**
+`EpisodeBuilder` holds full sample text in memory and truncates only at episode close, so
+moving the `detail` control mid-episode governs samples already collected rather than just
+future ones. Harmless in both directions — raising it yields more text, lowering it less, and
+the sensitivity filter has already run on all of it — but it is a genuine deviation from the
+rule above and is recorded rather than quietly tolerated.
+
 **Acceptance:** with the agent running, moving `attentiveness` to `light` measurably slows
 the observation rate within one poll cycle, with no restart and no lost episode; a
 `PATCH /config` that touches only `provider` leaves capture timing untouched.
@@ -472,8 +479,19 @@ excluded while a 0.7-confidence one is kept; no unrelated pair clears both gates
 - **Balanced is the upgrade path.** A config written before this spec, with no preset keys,
   must resolve to `balanced` on every control with no user action.
 - **Temperature 0 stays.** The distill prompt varies by detail level but remains
-  deterministic; the E2E acceptance harness pins `balanced` (or runs per-preset), and the
-  golden corpus is re-run for any preset whose prompt text differs.
+  deterministic: the same episode at the same stop renders byte-identically.
+- **`balanced` must render byte-for-byte identical to the pre-v2-008 prompt**, apart from the
+  templated statement cap. That equivalence is the proof the refactor did not silently change
+  what Lore remembers for every existing user, and it is worth more than any other assertion
+  in R1.3.
+- **Note: "re-run the golden corpus per preset" was wrong** and is corrected here.
+  `agent.tests/Recall/GoldenCorpus.cs` is a *recall* fixture — hand-authored embedding
+  similarities calibrating `RecallScorer`/`RecallService`. Nothing in it touches
+  `DistillPrompt`. The only harness that pins prompt behaviour is the opt-in E2E test
+  (`LORE_TEST_E2E=1`, needs a live model), and it pins `balanced`. **A behavioural check of
+  `minimal` and `rich` against a live model is therefore still outstanding** and belongs with
+  T009's live app check — unit tests can prove the prompt text changed, not that the model
+  responds to it as intended.
 
 ## Out of scope
 
