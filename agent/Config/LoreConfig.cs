@@ -24,6 +24,15 @@ public sealed class LoreConfig : IDisposable
     /// persisted inline (they are migrated to the credential store on write).</summary>
     private static readonly string[] SecretProperties = ["api_key"];
 
+    /// <summary>Derived, read-only blocks the API adds to a response and this class must never
+    /// write back (v2-008 R3). <c>capture.resolved</c> is the effective capture values — every one
+    /// of them echoing a writable key — so persisting it would silently pin every preset-derived
+    /// number at whatever it happened to be, and the three controls would stop doing anything.
+    /// Stripped on write rather than only at the endpoint, so no read-modify-write can round-trip
+    /// it into the file and a file that already holds one is cleaned up by the next PATCH.</summary>
+    private static readonly (string Section, string Property)[] DerivedProperties =
+        [("capture", Capture.CaptureSnapshot.ResolvedProperty)];
+
     private static readonly JsonSerializerOptions WriteOptions = new() { WriteIndented = true };
 
     private readonly string _path;
@@ -72,6 +81,7 @@ public sealed class LoreConfig : IDisposable
         {
             JsonObject merged = await LoadAsync(cancellationToken).ConfigureAwait(false);
             Merge(merged, patch);
+            StripDerived(merged);
 
             // Relocate an inline provider.api_key into the credential store and rewrite it as a
             // handle, reusing the v1 migration so there is one code path that moves a key out of
@@ -120,6 +130,15 @@ public sealed class LoreConfig : IDisposable
             {
                 target[pair.Key] = pair.Value?.DeepClone();
             }
+        }
+    }
+
+    // Drop the API's derived blocks before anything is written. See DerivedProperties.
+    private static void StripDerived(JsonObject root)
+    {
+        foreach ((string section, string property) in DerivedProperties)
+        {
+            (root[section] as JsonObject)?.Remove(property);
         }
     }
 

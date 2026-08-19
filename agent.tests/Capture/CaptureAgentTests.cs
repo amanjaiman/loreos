@@ -428,7 +428,7 @@ public sealed class CaptureAgentTests
         // 45 simulated seconds, 46 chances to read the window:
         //   unthrottled (what T002 shipped) → 42 readings
         //   title-only gap of 10s           →  5 readings, at t = 4, 14, 24, 34, 44
-        //   unchanged window, 30s interval  →  2 readings, at t = 4 and 34
+        //   unchanged window, 25s interval  →  2 readings, at t = 4 and 29
         Assert.Equal(5, churning.Metrics.Snapshot().Observed);
         Assert.Equal(2, still.Metrics.Snapshot().Observed);
     }
@@ -448,8 +448,12 @@ public sealed class CaptureAgentTests
             windowSource: time => new ScriptedSource(
                 time,
                 RetitlingScript(retitle: false),
+                // The whole capture section, as ConfigEndpoints hands it over — a key left out of
+                // it is a key deleted from config.json, and since T004 that means "use the
+                // preset's value", which would put the poll interval back to two seconds.
                 onPoll: () => h!.Settings.Update(new System.Text.Json.Nodes.JsonObject
                 {
+                    ["pollInterval"] = "00:00:00.020",
                     ["recaptureInterval"] = "00:00:05",
                 }),
                 at: 5),
@@ -533,6 +537,7 @@ public sealed class CaptureAgentTests
             dwell: TimeSpan.FromSeconds(4));
         h.Settings.Update(new System.Text.Json.Nodes.JsonObject
         {
+            ["pollInterval"] = "00:00:00.020", // see above: the whole section, not just the change
             ["titleRecaptureInterval"] = "00:00:05",
         });
 

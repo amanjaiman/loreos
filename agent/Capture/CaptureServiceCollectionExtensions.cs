@@ -26,7 +26,17 @@ public static class CaptureServiceCollectionExtensions
         // registered in DI (v2-008 R2): every consumer reads LiveCaptureSettings so a PATCH
         // /config applies with no restart, and a second frozen copy in the container is exactly
         // the stale read that would put one back.
-        CaptureOptions options = configuration.GetSection("capture").Get<CaptureOptions>() ?? new CaptureOptions();
+        //
+        // Preset first, raw keys second (v2-008 R3). Binding ONTO the resolved preset rather than
+        // onto a fresh CaptureOptions is what distinguishes "explicitly present" from "absent" on
+        // this path: the binder only writes a property the configuration actually has, so an
+        // explicit key wins for its own field and everything else keeps the preset's value. The
+        // same rule is applied to the live path in LiveCaptureSettings.Update, where presence in
+        // the JSON object is the test.
+        IConfigurationSection section = configuration.GetSection("capture");
+        CaptureOptions options = CapturePresets.Resolve(
+            section["attentiveness"], section["certainty"], section["detail"]);
+        section.Bind(options);
         services.AddSingleton(sp => new LiveCaptureSettings(
             options, sp.GetService<ILogger<LiveCaptureSettings>>()));
         services.AddSingleton(TimeProvider.System);

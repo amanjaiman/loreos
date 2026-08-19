@@ -22,7 +22,8 @@ public sealed class LiveCaptureSettingsTests
     [Fact]
     public void An_empty_config_resolves_to_the_shipped_defaults()
     {
-        // T003 is plumbing: it must change no behaviour at all until T004 puts presets on top.
+        // The shipped defaults ARE the balanced column since T004 (CapturePresetsTests pins that
+        // both ways), so an unconfigured agent and an explicitly-balanced one are the same agent.
         CaptureSnapshot snapshot = Build().Current;
         var defaults = new CaptureOptions();
 
@@ -90,14 +91,15 @@ public sealed class LiveCaptureSettingsTests
     }
 
     [Fact]
-    public void A_patch_that_touches_only_the_provider_leaves_capture_timing_alone()
+    public void A_blocklist_edit_leaves_an_explicit_timing_alone()
     {
         // R2's second acceptance. ConfigEndpoints only calls Update when the patch carries a
-        // capture block, but the whole capture section arrives when it does, so an untouched key
-        // must survive the round trip rather than reverting.
+        // capture block, but the whole capture section arrives when it does, so a key the user did
+        // not touch is still in the object and must survive the round trip rather than reverting.
         var settings = Build(new CaptureOptions { PollInterval = TimeSpan.FromSeconds(5) });
 
-        settings.Update(Capture("""{ "blocklistApps": ["1password"] }"""));
+        settings.Update(Capture(
+            """{ "pollInterval": "00:00:05", "blocklistApps": ["1password"] }"""));
 
         Assert.Equal(TimeSpan.FromSeconds(5), settings.Current.PollInterval);
         Assert.True(settings.Blocklist.MatchesApp("1password.exe"));
@@ -172,11 +174,14 @@ public sealed class LiveCaptureSettingsTests
     [Fact]
     public void Unparseable_values_are_ignored_rather_than_read_as_zero()
     {
-        var settings = Build(new CaptureOptions { PollInterval = TimeSpan.FromSeconds(5) });
+        // A value the binder could not read is treated as absent, which since T004 means "take the
+        // preset's" — light's 5s poll here, not zero and not whatever was in force a moment ago.
+        var settings = Build(new CaptureOptions { PollInterval = TimeSpan.FromSeconds(30) });
 
         settings.Update(Capture(
             """
             {
+              "attentiveness": "light",
               "pollInterval": "every couple of seconds",
               "retentionDays": "quite a while",
               "episodes": { "maxSamples": true }
@@ -185,7 +190,7 @@ public sealed class LiveCaptureSettingsTests
 
         Assert.Equal(TimeSpan.FromSeconds(5), settings.Current.PollInterval);
         Assert.Equal(90, settings.Current.RetentionDays);
-        Assert.Equal(8, settings.Current.Episodes.MaxSamples);
+        Assert.Equal(6, settings.Current.Episodes.MaxSamples);
     }
 
     [Fact]
