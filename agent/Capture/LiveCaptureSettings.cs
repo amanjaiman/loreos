@@ -27,6 +27,13 @@ public sealed class LiveCaptureSettings
 
     private CaptureSnapshot _current;
 
+    /// <param name="options">The startup seed. It must <b>already</b> have had its presets
+    /// resolved and the explicit config keys laid over them — see
+    /// <see cref="CaptureServiceCollectionExtensions.AddCapturePipeline"/>, which is the only
+    /// production caller. Resolving here instead is not possible on purpose: once options are
+    /// bound, a value equal to the built-in default is indistinguishable from an absent key, and
+    /// telling those two apart is the whole of v2-008 R3.</param>
+    /// <param name="logger">Optional; receives the repair and preset warnings.</param>
     public LiveCaptureSettings(CaptureOptions options, ILogger<LiveCaptureSettings>? logger = null)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -50,10 +57,16 @@ public sealed class LiveCaptureSettings
     ///
     /// <para><c>PATCH /config</c> deep-merges and hands over the <b>whole</b> capture section, not
     /// the patch, so a key the caller did not mention is still present here if config.json holds
-    /// it. A key that is genuinely absent keeps the value already in force: the startup binding
-    /// draws on configuration sources other than config.json, and a blocklist edit must not
-    /// silently discard a timing set through one of them. (T004 replaces that fallback base with
-    /// the resolved preset, which is what lets deleting a raw key restore the preset's value.)</para>
+    /// it. <b>What is genuinely absent falls back to the resolved preset</b> (v2-008 R3), never to
+    /// the value currently in force — that is exactly what makes "delete the raw key and the
+    /// preset's value returns, with no restart" true. Presence in this object <em>is</em> the
+    /// "explicitly present" test; there is nothing else to consult.</para>
+    ///
+    /// <para>T003 kept an absent key's current value instead, so that a blocklist edit could not
+    /// discard a timing set through a configuration source other than config.json (an environment
+    /// variable, say). R3 knowingly trades that away: an override typed anywhere but config.json
+    /// now survives only until the first capture PATCH, which is the price of a delete that
+    /// actually reverts. The blocklist is the one field kept on T003's rule — see below.</para>
     ///
     /// <para>Values are read exactly as the startup binder reads them — case-insensitive names,
     /// TimeSpans as <c>"hh:mm:ss"</c> strings, numbers as numbers or numeric strings — so what
@@ -63,18 +76,38 @@ public sealed class LiveCaptureSettings
     {
         ArgumentNullException.ThrowIfNull(capture);
         CaptureSnapshot previous = Volatile.Read(ref _current);
-        var merged = new CaptureOptions
+
+        // Resolved silently: CaptureSnapshot.From resolves again and owns the warning, so a single
+        // PATCH never logs the same misspelled preset name twice.
+        CaptureOptions preset = CapturePresets.Resolve(
+            ReadString(capture, "attentiveness"),
+            ReadString(capture, "certainty"),
+            ReadString(capture, "detail"));
+        var merged = preset with
         {
-            Enabled = ReadBool(capture, "enabled") ?? previous.Enabled,
-            PollInterval = ReadTimeSpan(capture, "pollInterval") ?? previous.PollInterval,
-            DwellThreshold = ReadTimeSpan(capture, "dwellThreshold") ?? previous.DwellThreshold,
-            RecaptureInterval = ReadTimeSpan(capture, "recaptureInterval") ?? previous.RecaptureInterval,
+            // The raw names, not the resolved ones: From resolves them again, and it can only warn
+            // about a misspelling if the misspelling is still here to see.
+            Attentiveness = ReadString(capture, "attentiveness"),
+            Certainty = ReadString(capture, "certainty"),
+            Detail = ReadString(capture, "detail"),
+            Enabled = ReadBool(capture, "enabled") ?? preset.Enabled,
+            PollInterval = ReadTimeSpan(capture, "pollInterval") ?? preset.PollInterval,
+            DwellThreshold = ReadTimeSpan(capture, "dwellThreshold") ?? preset.DwellThreshold,
+            RecaptureInterval = ReadTimeSpan(capture, "recaptureInterval") ?? preset.RecaptureInterval,
             TitleRecaptureInterval =
-                ReadTimeSpan(capture, "titleRecaptureInterval") ?? previous.TitleRecaptureInterval,
-            Episodes = MergeEpisodes(Section(capture, "episodes"), previous.Episodes),
-            Lifecycle = MergeLifecycle(Section(capture, "lifecycle"), previous.Lifecycle),
-            RetentionDays = ReadInt(capture, "retentionDays") ?? previous.RetentionDays,
-            Diagnostics = ReadBool(capture, "diagnostics") ?? previous.Diagnostics,
+                ReadTimeSpan(capture, "titleRecaptureInterval") ?? preset.TitleRecaptureInterval,
+            StatementMaxChars = ReadInt(capture, "statementMaxChars") ?? preset.StatementMaxChars,
+            Episodes = MergeEpisodes(Section(capture, "episodes"), preset.Episodes),
+            Lifecycle = MergeLifecycle(Section(capture, "lifecycle"), preset.Lifecycle),
+            RetentionDays = ReadInt(capture, "retentionDays") ?? preset.RetentionDays,
+            Diagnostics = ReadBool(capture, "diagnostics") ?? preset.Diagnostics,
+            // The one deliberate exception to "absent means the preset": the blocklist is the
+            // user's own data, no preset touches it, and so there is nothing to revert TO — the
+            // only question is which way to fail on a section that somehow arrives without it.
+            // Keeping what is in force means Lore goes on filtering; the alternative is a silently
+            // empty blocklist and a capture of the thing the user most wanted left alone. Clearing
+            // it is still one PATCH away, because the editor sends an empty array, which is
+            // present, not absent.
             BlocklistApps = ReadStrings(capture, "blocklistApps", "blocklist_apps")
                 ?? [.. previous.Blocklist.Apps],
             BlocklistKeywords = ReadStrings(capture, "blocklistKeywords", "blocklist_keywords")
@@ -141,6 +174,9 @@ public sealed class LiveCaptureSettings
     }
 
     private static JsonObject? Section(JsonObject value, string name) => Find(value, name) as JsonObject;
+
+    private static string? ReadString(JsonObject value, string name) =>
+        Find(value, name) is JsonValue node && node.TryGetValue(out string? text) ? text : null;
 
     private static bool? ReadBool(JsonObject value, string name) => Find(value, name) switch
     {

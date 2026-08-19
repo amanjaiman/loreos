@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Lore.Agent.Api.Endpoints;
 using Lore.Agent.Capture;
 using Lore.Agent.Config;
@@ -170,6 +171,110 @@ public sealed class ConfigEndpointsTests : IDisposable
             .EnsureSuccessStatusCode();
 
         Assert.Null(status.Current.WindowTitle);
+    }
+
+    // ── v2-008 R3: capture.resolved is read-only, derived, and never persisted ─────
+
+    [Fact]
+    public async Task Get_reports_the_effective_capture_values_under_resolved()
+    {
+        // What the Settings consequence lines are derived from. It must reflect the file, not the
+        // preset name: `light` timings, but the cap this user pinned by hand.
+        await File.WriteAllTextAsync(_path, """
+            { "capture": { "attentiveness": "light", "episodes": { "maxObservations": 64 } } }
+            """);
+        // Seeded the way AddCapturePipeline seeds it: the preset first, the explicit key on top.
+        CaptureOptions options = CapturePresets.Resolve("light", null, null);
+        var settings = new LiveCaptureSettings(options with
+        {
+            Episodes = options.Episodes with { MaxObservations = 64 },
+        });
+        await using LoreApiHarness harness = await StartAsync(
+            new InMemoryCredentialStore(), liveCapture: settings);
+
+        using JsonDocument doc = JsonDocument.Parse(await GetStringAsync(harness, "/config"));
+        JsonElement resolved = doc.RootElement.GetProperty("capture").GetProperty("resolved");
+
+        // Writable names, writable formats — a TimeSpan string, not a number of seconds.
+        Assert.Equal("00:00:05", resolved.GetProperty("pollInterval").GetString());
+        Assert.Equal("00:00:40", resolved.GetProperty("recaptureInterval").GetString());
+        Assert.Equal("light", resolved.GetProperty("attentiveness").GetString());
+        Assert.Equal("balanced", resolved.GetProperty("detail").GetString());
+        Assert.Equal(64, resolved.GetProperty("episodes").GetProperty("maxObservations").GetInt32());
+        Assert.Equal(6, resolved.GetProperty("episodes").GetProperty("maxSamples").GetInt32());
+
+        // The writable keys are still there beside it, untouched.
+        Assert.Equal("light", doc.RootElement.GetProperty("capture").GetProperty("attentiveness").GetString());
+    }
+
+    [Fact]
+    public async Task Patch_never_persists_resolved_even_on_a_read_modify_write()
+    {
+        // The realistic way it would leak: read GET /config, change one control, send the capture
+        // block straight back. Persisting it would pin every preset-derived number at whatever it
+        // was and the three controls would stop doing anything at all.
+        var settings = new LiveCaptureSettings(new CaptureOptions());
+        await using LoreApiHarness harness = await StartAsync(
+            new InMemoryCredentialStore(), liveCapture: settings);
+
+        using JsonDocument read = JsonDocument.Parse(await GetStringAsync(harness, "/config"));
+        var capture = (JsonObject)JsonNode.Parse(read.RootElement.GetProperty("capture").GetRawText())!;
+        Assert.True(capture.ContainsKey("resolved")); // it really is being sent back
+        capture["attentiveness"] = "close";
+
+        HttpResponseMessage response = await harness.Client.PatchAsJsonAsync(
+            new Uri("/config", UriKind.Relative), new JsonObject { ["capture"] = capture });
+        response.EnsureSuccessStatusCode();
+
+        // Not in the file…
+        string persisted = await File.ReadAllTextAsync(_path);
+        Assert.DoesNotContain("resolved", persisted, StringComparison.Ordinal);
+        Assert.DoesNotContain("00:00:02", persisted, StringComparison.Ordinal);
+
+        // …so the preset the user just picked is what governs, not the balanced numbers that rode
+        // in on the round trip.
+        Assert.Equal(TimeSpan.FromSeconds(15), settings.Current.RecaptureInterval);
+        Assert.Equal(80, settings.Current.Episodes.MaxObservations);
+
+        // The response still carries the fresh resolved block, so the caller sees what its own
+        // patch resolved to without another round trip.
+        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(
+            "00:00:15",
+            doc.RootElement.GetProperty("capture").GetProperty("resolved")
+                .GetProperty("recaptureInterval").GetString());
+    }
+
+    [Fact]
+    public async Task A_config_file_that_already_holds_resolved_is_cleaned_up_on_the_next_write()
+    {
+        // Belt and braces: the strip lives at the persistence boundary, not only at the endpoint,
+        // so a file written by an earlier build (or by hand) loses the block rather than keeping
+        // it forever as a set of invisible overrides.
+        await File.WriteAllTextAsync(_path, """
+            { "capture": { "resolved": { "pollInterval": "00:00:02" }, "attentiveness": "close" } }
+            """);
+        await using LoreApiHarness harness = await StartAsync(new InMemoryCredentialStore());
+
+        (await harness.Client.PatchAsJsonAsync(
+            new Uri("/config", UriKind.Relative), new { capture = new { detail = "rich" } }))
+            .EnsureSuccessStatusCode();
+
+        string persisted = await File.ReadAllTextAsync(_path);
+        Assert.DoesNotContain("resolved", persisted, StringComparison.Ordinal);
+        Assert.Contains("close", persisted, StringComparison.Ordinal); // the real keys survive
+    }
+
+    [Fact]
+    public async Task Get_adds_nothing_when_there_is_no_capture_pipeline_to_report_on()
+    {
+        // A host mapping these endpoints without the capture pipeline has no effective values, and
+        // inventing a capture block for it would be a lie.
+        await using LoreApiHarness harness = await StartAsync(new InMemoryCredentialStore());
+
+        using JsonDocument doc = JsonDocument.Parse(await GetStringAsync(harness, "/config"));
+
+        Assert.Empty(doc.RootElement.EnumerateObject());
     }
 
     public void Dispose()

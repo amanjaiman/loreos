@@ -23,9 +23,13 @@ public static class ConfigEndpoints
     {
         ArgumentNullException.ThrowIfNull(app);
 
-        app.MapGet("/config", async ([FromServices] LoreConfig config, CancellationToken ct) =>
+        app.MapGet("/config", async (
+            [FromServices] LoreConfig config,
+            [FromServices] IServiceProvider services,
+            CancellationToken ct) =>
         {
             JsonObject current = await config.ReadScrubbedAsync(ct).ConfigureAwait(false);
+            AddResolved(current, services);
             return Results.Json(current);
         });
 
@@ -45,6 +49,13 @@ public static class ConfigEndpoints
             // onboarding (and any later model/embedder change) is applied to the live agent rather
             // than waiting for a restart. Capture has its own lightweight snapshot update below.
             bool providerChanged = patch.ContainsKey("provider") || patch.ContainsKey("embedder");
+
+            // capture.resolved is derived, read-only state (v2-008 R3). Dropping it here means the
+            // commonest way it could be written back — read GET /config, change one control, send
+            // the block back — is a no-op rather than a config file full of pinned numbers that
+            // would then override every preset. LoreConfig strips it again before it writes, so
+            // this is convenience; that is the guarantee.
+            (patch["capture"] as JsonObject)?.Remove(CaptureSnapshot.ResolvedProperty);
 
             await PatchGate.WaitAsync(ct).ConfigureAwait(false);
             try
@@ -66,6 +77,10 @@ public static class ConfigEndpoints
                     await reloader.ReloadAsync(ct).ConfigureAwait(false);
                 }
 
+                // After the write and after the live update, so the caller sees what its own patch
+                // resolved to without another round trip — and so nothing added here can be
+                // persisted by construction.
+                AddResolved(updated, services);
                 return Results.Json(updated);
             }
             finally
@@ -75,5 +90,29 @@ public static class ConfigEndpoints
         });
 
         return app;
+    }
+
+    // Hang the effective capture values off capture.resolved (v2-008 R3), echoing the writable
+    // keys exactly so the Settings consequence lines can be derived from what is actually in force
+    // — including a raw override typed straight into config.json — rather than from a preset name,
+    // and so a line can be copied back into `capture` to pin it.
+    //
+    // Only when the live snapshot is actually there: a host mapping these endpoints without the
+    // capture pipeline has no effective values to report, and inventing a `capture` block for it
+    // would be a lie.
+    private static void AddResolved(JsonObject config, IServiceProvider services)
+    {
+        if (services.GetService<LiveCaptureSettings>() is not { } liveCapture)
+        {
+            return;
+        }
+
+        if (config["capture"] is not JsonObject capture)
+        {
+            capture = [];
+            config["capture"] = capture;
+        }
+
+        capture[CaptureSnapshot.ResolvedProperty] = liveCapture.Current.ToResolvedJson();
     }
 }

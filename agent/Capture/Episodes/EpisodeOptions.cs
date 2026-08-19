@@ -21,8 +21,14 @@ public sealed record EpisodeOptions
     /// <summary>An episode never spans longer than this, related or not.</summary>
     public TimeSpan MaxAge { get; init; } = TimeSpan.FromMinutes(45);
 
-    /// <summary>An episode never holds more observations than this.</summary>
-    public int MaxObservations { get; init; } = 40;
+    /// <summary>An episode never holds more observations than this.
+    ///
+    /// <para>48, not the 40 shipped before v2-008. This — not the clock — is what ends most
+    /// episodes, so it must scale with <see cref="CaptureOptions.RecaptureInterval"/> (30s → 25s
+    /// in the same change) or the attentiveness control would change episode <em>length</em>
+    /// rather than capture density, roughly doubling AI spend at the close stop. The
+    /// 30/48/80 ↔ 40s/25s/15s pairings hold every stop at a ~20-minute episode.</para></summary>
+    public int MaxObservations { get; init; } = 48;
 
     /// <summary>Title-token Jaccard at or above which two windows count as related.</summary>
     public double TitleSimilarityThreshold { get; init; } = 0.4;

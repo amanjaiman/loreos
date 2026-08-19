@@ -141,15 +141,64 @@ Each task is PR-sized and lands through the `no-mistakes` gate.
     with the resolved preset, which is what makes R3's "delete the raw key, the preset's value
     returns" work.
 
-- [ ] **T004 — Preset resolution and config schema (R3).** Resolve
-  `attentiveness` / `certainty` / `detail` → values; explicit raw keys win per-field;
-  unknown names fall back to `balanced` with a warning. Add the read-only `capture.resolved`
-  block to `GET /config` and make `PATCH` ignore it.
+- [x] **T004 — Preset resolution and config schema (R3).** ✅ Done. `CapturePresets` holds the
+  three tables (`AttentivenessPreset` / `CertaintyPreset` / `DetailPreset` enums, config stores
+  the name) and is the one place a name becomes numbers. Both paths resolve the preset into a
+  **base** `CaptureOptions` and then lay the explicitly-present raw keys over it:
+  `AddCapturePipeline` binds the `capture` section *onto* the resolved preset (the binder only
+  writes keys configuration actually has), and `LiveCaptureSettings.Update` uses presence in the
+  handed-over JSON object. `CaptureSnapshot.From` still owns all validation, and now resolves the
+  presets a second time so **repairs fall back to the preset's value, not the built-in default** —
+  a `light` user who mistypes a cap gets light's 30 back, not balanced's 48.
+
+  - **T003's fallback base is gone.** An absent key now takes the resolved preset, never the value
+    currently in force; that is what makes "delete the raw key, the preset's value returns" work.
+    The cost T003 named is real and accepted: a timing set through a configuration source other
+    than config.json (an environment variable) now survives only until the first capture PATCH.
+    **The blocklist is the one field deliberately kept on T003's rule**: no preset touches it, so
+    there is nothing to revert to, and the wrong way to fail on a section that arrives without it
+    is to stop filtering. Clearing it deliberately still works — the editor sends an empty array,
+    which is present, not absent.
+  - **The shipped defaults ARE the balanced column**, pinned by a test both ways.
+    `CaptureOptions.RecaptureInterval` 30s → **25s** and `EpisodeOptions.MaxObservations` 40 →
+    **48** as R1.1 requires. Nothing else moved. **T009 must carry this in the release notes.**
+  - **`TitleRecaptureInterval` scales 15 / 10 / 6 seconds** across light/balanced/close. It is not
+    in R1.1's table (T003 added the knob afterwards). The values hold it at a constant ~2.5× the
+    read rate of a window sitting still — the ratio T003 sized 10s to get — against each stop's
+    40/25/15 re-read. Pinned at 10s a `light` user would see retitling windows read 4× as often as
+    everything else, which is the cost blow-out the knob exists to prevent. Asserted as a ratio,
+    not as three literals, so a retune of `RecaptureInterval` cannot silently break the pairing.
+  - **`capture.statementMaxChars`** (120 / 200 / 500) is a new writable key carried in the
+    snapshot alongside the resolved `Detail` stop, for T005 to consume. It moves with
+    `episodes.sampleMaxChars` (400 / 600 / 900) and is individually overridable like everything
+    else.
+  - **`capture.resolved`** is added to `GET /config` (and to the `PATCH` response, so a caller
+    sees what its own patch resolved to) whenever the capture pipeline is registered. It echoes
+    every writable key except the blocklists — TimeSpans as `"hh:mm:ss"` strings, `episodes` and
+    `lifecycle` nested exactly as they are written — so a line copied out of it and into `capture`
+    pins that value; a test round-trips the whole block back through `Update` and asserts an
+    identical snapshot. It is stripped both at the endpoint and in `LoreConfig.PatchAsync`, so no
+    read-modify-write can persist it and a file that already holds one is cleaned on the next
+    write.
+  - **Preset names are `string?` on `CaptureOptions`, not enums.** The configuration binder
+    *throws* on an enum value it cannot parse, which would take the agent down at startup over a
+    typo in a file we invite the user to edit. Parsing is `CapturePresets`' job: unknown → warn +
+    balanced, absent/empty → balanced silently (that is every pre-v2-008 config, not a mistake).
+    A bare number is rejected too — `Enum.TryParse` would have read `"1"` as an ordinal.
+  - **Four T003 tests were rewritten**, all for the fallback-base change: two seeded a value via
+    the constructor and then PATCHed a partial object, which now resets that value to the preset.
+    They pass the whole capture section instead, which is what `ConfigEndpoints` actually hands
+    over. 546 agent + 100 CLI tests green.
 
 - [ ] **T005 — Detail level in the distill prompt (R1.3).** Swap the detail directive and
   statement cap (120 / 200 / 500) with `SampleMaxChars` (400 / 600 / 900). Encode the
   binding rule: depth changes, fact count does not, and a single observed choice never
   becomes a `preference`. Re-run the golden corpus per preset.
+  - **From T004:** both values are already live in `CaptureSnapshot` — `StatementMaxChars` and
+    the resolved `Detail` stop for the directive; `Episodes.SampleMaxChars` is already applied by
+    `EpisodeBuilder`. `DistillPrompt.Build` still hardcodes "under 200 characters" in its prompt
+    text; that literal is what T005 templates. Read them from `LiveCaptureSettings.Current`, not
+    from a startup-bound options object — there is no longer one to inject.
 
 - [ ] **T006 — Settings controls (R1.4).** Add `SegmentedControl` to the vendored design
   system, then three controls in `CapturePrivacy.tsx` below the capture toggle and above the
