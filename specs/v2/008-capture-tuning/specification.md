@@ -39,8 +39,20 @@ The tradeoff: **how much Lore notices vs. battery, CPU, and how many AI calls yo
 | `PollInterval` | 5s | 2s | 2s |
 | `DwellThreshold` | 10s | 4s | 3s |
 | `RecaptureInterval` | 40s | 25s | 15s |
+| `TitleRecaptureInterval` | 15s | 10s | 6s |
 | `Episodes.MaxObservations` | 30 | 48 | 80 |
 | `Episodes.MaxSamples` | 6 | 8 | 12 |
+
+`PollInterval` is deliberately 2s at both `balanced` and `close` — the `close` stop buys
+its extra attention through dwell, re-read, and the episode bounds, not by spinning the
+foreground poll faster. It reads like a typo and is not one.
+
+`TitleRecaptureInterval` (added by T003, sized here) holds retitling windows at a constant
+**~2.5× the read rate of a window sitting still** at every stop. Pinning it at one value
+across all three would make a `light` user read retitling windows 4× more often than
+everything else — the cost blow-out the knob exists to prevent. Implementations should
+assert the *ratio*, not the three literals, so retuning `RecaptureInterval` cannot silently
+break the pairing.
 
 `MaxObservations` **must** scale with `RecaptureInterval`. It — not the clock — is what
 ends most episodes today, so changing the interval alone changes episode *length* instead
@@ -81,9 +93,13 @@ choice, not just a cheaper one.
 
 | | `minimal` | `balanced` (default) | `rich` |
 |---|---|---|---|
-| Statement character cap | 120 | 200 | 500 |
+| `capture.statementMaxChars` | 120 | 200 | 500 |
 | `Episodes.SampleMaxChars` | 400 | 600 | 900 |
 | Prompt detail directive | terse | today's wording | specifics-first |
+
+The statement cap is a top-level `capture` key, beside the nested `episodes.sampleMaxChars`
+(T004). `DistillPrompt` currently hardcodes "under 200 characters" in its system prompt —
+that literal is what T005 templates from this value.
 
 Both caps move together: the model cannot write "seat 14C" if the sample it read was
 truncated before that text. Raising the output cap without the input cap produces longer
@@ -213,9 +229,30 @@ this particular mistake, but the shape should not invite it.)
 **Absent is not the same as default.** For "delete the raw key and the preset's value
 returns" to work, resolution has to distinguish a key that is *explicitly present* from one
 that is *absent* — which is the same distinction raw-override-wins needs. T003's live
-snapshot deliberately keeps an absent key's current value in force (so a blocklist edit can't
-discard a timing set from another config source); T004 must replace that fallback base with
-the resolved preset.
+snapshot deliberately kept an absent key's current value in force; T004 replaced that
+fallback base with the resolved preset.
+
+Three things T004 established that this section originally left open:
+
+- **Presence must be read where it is still visible.** Once options are bound, a value equal
+  to the built-in default is indistinguishable from an absent key, so resolution cannot live
+  inside `LiveCaptureSettings`'s constructor or `CaptureSnapshot.From`. It happens at the two
+  points that can still see presence: the startup binder (which writes only what the config
+  actually has) and the merged `capture` JSON object on the live path.
+- **`resolved` excludes the blocklists and reports repaired preset names.** A UI rendering
+  honest consequence lines needs the full effective set, but duplicating potentially long
+  user-data arrays into every `GET` buys nothing. A misspelled `"attentivenes"` shows as
+  `"attentiveness": "balanced"` under `resolved`, so T006's control lands on the stop
+  actually in force rather than on nothing.
+- **The blocklist is the one field an absent key does not revert.** No preset touches it, so
+  there is nothing to revert *to*, and the only question is which way to fail: keeping what
+  is in force means Lore goes on filtering, while clearing it means capturing the thing the
+  user most wanted left alone. Deliberate clearing still works, because the editor sends an
+  empty array — which is present, not absent.
+
+**Accepted cost:** a timing set through a configuration source other than `config.json` (an
+environment variable, say) now survives only until the first capture `PATCH`. That is the
+price of a delete that actually reverts.
 
 Unknown or misspelled preset names fall back to `balanced` and log a warning — never crash
 the agent on a hand-edited config.
