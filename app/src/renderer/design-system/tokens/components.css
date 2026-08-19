@@ -153,6 +153,34 @@ select.lore-input { appearance: none; padding-right: var(--space-8); cursor: poi
 .lore-switch input:focus-visible + .lore-switch__track { box-shadow: var(--ring); }
 .lore-switch input:disabled + .lore-switch__track { opacity: 0.5; }
 
+/* ---------- Segmented control ---------- */
+.lore-segmented-field .lore-field__hint {
+  /* The consequence line under a segmented control is the point of the control, not a
+     footnote to it — body size, not the smaller subtle hint the text fields use. */
+  font-size: var(--text-sm); color: var(--text-muted); line-height: var(--lh-relaxed);
+}
+.lore-segmented {
+  display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+  align-items: center; gap: 2px;
+  background: var(--surface-2); border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-control); padding: 3px;
+}
+.lore-segmented__opt { display: inline-flex; cursor: pointer; user-select: none; }
+.lore-segmented__opt input { position: absolute; opacity: 0; width: 0; height: 0; }
+.lore-segmented__label {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--font-sans); font-size: var(--text-sm); font-weight: var(--fw-medium);
+  color: var(--text-muted); text-align: center; white-space: nowrap;
+  padding: 7px 14px; border-radius: calc(var(--radius-control) - 2px);
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.lore-segmented__opt:hover .lore-segmented__label { color: var(--text); }
+.lore-segmented__opt input:checked + .lore-segmented__label {
+  background: var(--surface); color: var(--text); box-shadow: var(--shadow-xs);
+}
+.lore-segmented__opt input:focus-visible + .lore-segmented__label { box-shadow: var(--ring); }
+.lore-segmented__opt input:disabled + .lore-segmented__label { opacity: 0.5; cursor: not-allowed; }
+
 /* ---------- Badge ---------- */
 .lore-badge {
   display: inline-flex; align-items: center; gap: var(--space-2);

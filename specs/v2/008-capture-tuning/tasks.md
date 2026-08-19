@@ -236,13 +236,58 @@ Each task is PR-sized and lands through the `no-mistakes` gate.
     model — it belongs with T009's live app check.**
   - 563 agent + 100 CLI tests green (546 + 17 new); `dotnet format --verify-no-changes` clean.
 
-- [ ] **T006 — Settings controls (R1.4).** Add `SegmentedControl` to the vendored design
-  system, then three controls in `CapturePrivacy.tsx` below the capture toggle and above the
-  blocklist. Consequence lines derive from `capture.resolved`, never from preset names.
-  Saves through the existing `api.patchConfig` queue.
-  - **From T007:** also add the "Record what Lore reads (for troubleshooting)" switch for
-    `capture.diagnostics` (R4.2). T007 built the backend but left the renderer alone to
-    avoid colliding with this task's rewrite of `CapturePrivacy.tsx`.
+- [x] **T006 — Settings controls (R1.4).** ✅ Done. `SegmentedControl` joins the vendored design
+  system (`components/forms/`: `.jsx` + `.d.ts` + `.prompt.md`, a `lore-segmented` block in
+  `tokens/components.css`, exported from `index.ts`), and `CapturePrivacy.tsx` renders the three
+  stops in a new **How Lore watches** card between the capture toggle and the blocklist, with
+  T007's diagnostics switch in a **Diagnostics** card beside it. Every change writes immediately
+  through the existing `api.patchConfig` queue; the patch is built from the writable keys only, so
+  `capture.resolved` is never sent back.
+  - **From T007:** the "Record what Lore reads (for troubleshooting)" switch for
+    `capture.diagnostics` (R4.2) is in, bound to `resolved.diagnostics`, off by default.
+
+  - **The consequence lines are a module, not strings in the view.** `renderer/lib/capture.ts`
+    parses `capture.resolved` (TimeSpan strings included) and returns one sentence per control, so
+    the derivation is testable without a DOM and the view holds no arithmetic. Each line names the
+    fields it reads:
+    - attentiveness ← `pollInterval`, `dwellThreshold`, `recaptureInterval`,
+      `episodes.maxObservations`, `episodes.maxAge` — *"Lore reads your screen about every 25
+      seconds, once a window has held your attention for 4 seconds — roughly 24 AI calls in an
+      8-hour day."*
+    - certainty ← `lifecycle.highSignalConfidence`, `lifecycle.stagedTtlDays` — *"Lore keeps a
+      memory on its own when it's at least 85% sure — anything less waits in review for 14 days."*
+    - detail ← `statementMaxChars`, `episodes.sampleMaxChars` — *"Each memory is written in up to
+      200 characters, from samples of up to 600 characters of what was on screen."*
+    - retention (under the diagnostics switch) ← `retentionDays`.
+  - **The read cadence is `max(pollInterval, recaptureInterval)` and the episode length is capped
+    by `episodes.maxAge`.** Quoting the re-read gap alone would overstate a config whose poll is
+    slower than it, and `maxObservations × re-read` alone would promise 7-hour episodes to anyone
+    who pinned a large cap. One closed episode is one distill call, so the call count falls out of
+    whichever bound ends the episode first.
+  - **R1.4's illustrative "roughly 40 AI calls a day" does not follow from R1.1's own table.**
+    Every stop is deliberately held at a ~20-minute episode, so the honest number is the same at
+    all three — 24 in an 8-hour day, 40 would need a ~12-minute episode or a 13-hour day. The
+    control therefore shows an unchanged call count as attentiveness moves, which is exactly what
+    R1.1's cap scaling was designed to deliver; the day length is stated in the sentence because it
+    is the one assumption in it that is not read off `resolved`.
+  - **A repaired preset name lands on the stop in force.** The control's selection is
+    `resolved.attentiveness` (etc.) when the agent reports it, the raw config key when it does not,
+    and `balanced` when neither is a known stop — so `"attentivenes": "close"` shows balanced
+    selected rather than nothing.
+  - **When `resolved` is absent the caption says so** rather than falling back to preset numbers:
+    an agent that is down, or a host without the capture pipeline, gets *"Lore reports what these
+    settings do while it's running."*
+  - **The segmented controls are deliberately not disabled while a save is in flight**, unlike the
+    two switches. They are a radio group, and disabling one mid-change drops keyboard focus out of
+    the group; the save queue already serializes writes.
+  - **No renderer test framework exists** (`app/package.json` has lint / typecheck / format only,
+    and no jest/vitest), so none was invented. Verified instead by compiling `lib/capture.ts` and
+    driving it with hand-built `resolved` blocks, and by rendering `SegmentedControl` through
+    `react-dom/server`: the override case (preset `close`, `recaptureInterval` pinned to
+    `"00:02:00"` in config.json) shows *"about every 2 minutes … roughly 11 AI calls"*, and a
+    `sampleMaxChars` override shows the raw 1500 under `minimal`. `npm run lint`, `typecheck`,
+    `format:check` and `package` all green. **Not verified:** the live app — the stops writing
+    config, taking effect without a restart, and surviving a reload still need a running agent.
 
 - [x] **T007 — Retention and bounded diagnostics (R4).** `capture.retentionDays` (default
   90, `0` = forever) pruning `episodes` / `decisions` / `activity_log` on start and daily.

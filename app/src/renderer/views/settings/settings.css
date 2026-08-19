@@ -103,6 +103,14 @@
   line-height: var(--lh-relaxed);
 }
 
+/* The three capture presets (v2-008 R1). Each control carries a consequence line under
+   it, so the rows need more air between them than a plain field stack. */
+.set-presets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
 .set-theme {
   margin-top: var(--space-2);
 }
