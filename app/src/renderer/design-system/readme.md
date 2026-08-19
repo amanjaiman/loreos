@@ -120,7 +120,7 @@ The voice is **calm, certain, and quietly clever**. Lore is an assistant that ha
 
 **Components** — `window.LoreDesignSystem_d94c44.<Name>`
 
-- `components/forms/` — **Button, IconButton, Input, Textarea, Select, Checkbox, Radio, Switch**
+- `components/forms/` — **Button, IconButton, Input, Textarea, Select, Checkbox, Radio, Switch, SegmentedControl**
 - `components/feedback/` — **Badge, Tag, Spinner, ProgressBar, Toast, Tooltip**
 - `components/surfaces/` — **Card, Avatar, Tabs, Divider, Dialog**
 - `components/theming/` — **ThemeSelector** (+ `LORE_THEMES`, `applyLoreTheme`) — switches between the two themes: **Coastal** (Minimal · Light) and **Nocturne** (Techy · Dark). Drop `<ThemeSelector />` anywhere to make both available across that surface; it applies + persists the choice on `<html>`.
