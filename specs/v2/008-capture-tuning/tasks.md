@@ -190,15 +190,51 @@ Each task is PR-sized and lands through the `no-mistakes` gate.
     They pass the whole capture section instead, which is what `ConfigEndpoints` actually hands
     over. 546 agent + 100 CLI tests green.
 
-- [ ] **T005 — Detail level in the distill prompt (R1.3).** Swap the detail directive and
-  statement cap (120 / 200 / 500) with `SampleMaxChars` (400 / 600 / 900). Encode the
-  binding rule: depth changes, fact count does not, and a single observed choice never
-  becomes a `preference`. Re-run the golden corpus per preset.
-  - **From T004:** both values are already live in `CaptureSnapshot` — `StatementMaxChars` and
-    the resolved `Detail` stop for the directive; `Episodes.SampleMaxChars` is already applied by
-    `EpisodeBuilder`. `DistillPrompt.Build` still hardcodes "under 200 characters" in its prompt
-    text; that literal is what T005 templates. Read them from `LiveCaptureSettings.Current`, not
-    from a startup-bound options object — there is no longer one to inject.
+- [x] **T005 — Detail level in the distill prompt (R1.3).** ✅ Done. `DistillPrompt.Build` takes
+  `(Episode, DetailPreset, int statementMaxChars)`; `Distiller` reads both from
+  `LiveCaptureSettings.Current` **once per episode** and holds the pair for that call, so a PATCH
+  landing mid-distill can never pair `rich`'s directive with `minimal`'s cap. The templated cap
+  and one directive sentence are the *only* things that move with the stop — the skepticism, the
+  kinds, the confidence rule and the worked examples are byte-identical at all three, because
+  those decide what Lore remembers and this control decides only how fully it is written down.
+  Temperature stays 0.
+
+  - **`balanced` is proven byte-identical to the pre-T005 prompt.** The old
+    `DistillPrompt.System` literal is frozen verbatim in `DistillPromptTests` as
+    `LegacySystemPrompt` and asserted equal, ordinally, to `Build(episode, Balanced, 200)`. That
+    is the assertion that says the refactor did not silently change what Lore remembers for
+    every existing user, and it is why the E2E harness — which pins `balanced` — needed no
+    recalibration. `MemoryLayerE2ETests` now shares one `LiveCaptureSettings` between the
+    distiller and the engine, seeded with defaults, i.e. explicitly the middle stop.
+  - **The three directives.** `minimal` says what to leave out ("Keep the statement GENERAL —
+    the core fact only, without the particulars…"), because a 120-char cap already enforces
+    brevity and on its own would just truncate the same specifics. `balanced` is today's
+    sentence, frozen. `rich` leads with the specifics and then carries the binding rule in the
+    terms detail invites: "Detail means a LONGER statement, never MORE facts: one event stays
+    one fact, and a single observed choice is never a preference — seat 14C is a detail of this
+    booking, not a preference for aisle seats." The header's "never infer identity traits from a
+    single page view" is unchanged and asserted present at all three stops, so `rich` restates
+    that guard rather than replacing it. Directive lengths are 201 / 243 / 524 characters, so
+    `rich` costs ~280 characters more than `balanced` per episode and `minimal` costs ~40 less.
+    A test pins that ordering and a 400-character ceiling on `rich`'s excess, so prompt weight
+    cannot creep.
+  - **The cap is a separate argument from the stop, deliberately.** A raw
+    `capture.statementMaxChars` wins over the preset for that field alone (R3), so the two can
+    legitimately disagree; deriving the number from the enum would have quietly discarded the
+    override. Pinned by a test that renders `rich` at 300.
+  - **`SampleMaxChars` verified to reach truncation, not just the snapshot.** A test drives the
+    real `EpisodeBuilder` off each resolved stop with a specific planted at character 700 of the
+    sample: it reaches the user message at `rich` (900) and is cut at `balanced` (600) and
+    `minimal` (400). That is the "both caps move together" claim tested end to end rather than
+    asserted.
+  - **The golden corpus does not cover this task.** `GoldenCorpus` is a recall fixture — hand
+    authored embedding similarities calibrating `RecallScorer`/`RecallService`. Nothing in it
+    touches `DistillPrompt`, so "re-run the golden corpus per preset" has no work behind it. The
+    only harness that pins prompt behaviour is the opt-in E2E one (`LORE_TEST_E2E=1`, needs
+    Ollama), and it pins `balanced`, which the equivalence test proves unmoved. **A real
+    per-preset behavioural check on `minimal` and `rich` still has to be run against a live
+    model — it belongs with T009's live app check.**
+  - 563 agent + 100 CLI tests green (546 + 17 new); `dotnet format --verify-no-changes` clean.
 
 - [ ] **T006 — Settings controls (R1.4).** Add `SegmentedControl` to the vendored design
   system, then three controls in `CapturePrivacy.tsx` below the capture toggle and above the
