@@ -106,6 +106,36 @@ Capture passes through the sensitivity filter chain (blocklist → UIA structura
 regex) **before** it is stored or could ever be sent to a configured model. That
 chain is the project's most heavily tested code (constitution §6).
 
+## How long it is kept
+
+- **Memories are kept until you delete them.** Nothing expires them on your behalf.
+- **The evidence behind them is not kept forever.** Episodes, the decision trail and
+  the activity log are pruned after `capture.retentionDays` — **90 days** by default —
+  on startup and once a day. Set it to `0` to keep them indefinitely. Pruning evidence
+  never deletes the memories that evidence supported; a memory whose episodes have
+  aged out simply shows fewer supporting details.
+- **Lore does not record what it reads.** The `raw_captures` table exists for
+  troubleshooting and is **off by default**. Turning on *Record what Lore reads* in
+  Settings → Capture & Privacy bounds it hard — the last 24 hours or 500 rows,
+  whichever is smaller — and only ever stores text that already cleared the filter
+  chain above. Turning it back off deletes what it collected.
+
+## Tuning what Lore captures
+
+Settings → Capture & Privacy carries three controls, and each one shows in plain
+English what your current setting actually does — derived from the values in force,
+so the sentence stays true even if you hand-edit `config.json`:
+
+- **How closely Lore watches** — how often your screen is read. This changes CPU and
+  OCR work, not how many AI calls Lore makes.
+- **How sure Lore has to be** — how confident Lore must be before keeping a memory on
+  its own rather than holding it for your review.
+- **How much detail** — how much specificity goes into each memory. The lower stop
+  stores less about you by design.
+
+Every underlying value stays editable in `config.json`, and a value you set there
+wins over the preset (constitution §4.2 — your machine, your rules).
+
 ## How to verify these claims yourself
 
 1. Watch your network while Lore runs. You should see traffic to exactly two kinds

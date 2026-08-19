@@ -32,7 +32,15 @@ that sentence is what makes the control understandable, more than the label is.
 
 ### R1.1 — "How closely Lore watches" (`attentiveness`)
 
-The tradeoff: **how much Lore notices vs. battery, CPU, and how many AI calls you pay for.**
+The tradeoff: **how much Lore notices vs. battery, CPU, and OCR work.**
+
+**Correction (T006): this control is not an AI-spend dial.** Earlier drafts said it was.
+Because the cap scaling below deliberately holds every stop at a ~20-minute episode, and one
+closed episode is exactly one distill call, **AI call volume is roughly the same at all three
+stops** — about 24 in an 8-hour day. What actually moves is the *reading* rate (poll 5s → 2s,
+re-read 40s → 15s), which is CPU, OCR and battery. The flat call count is a feature — it is
+precisely what the cap scaling was designed to deliver — but it must not be sold as a cost
+slider, and a consequence line claiming otherwise would be false.
 
 | | `light` | `balanced` (default) | `close` |
 |---|---|---|---|
@@ -139,9 +147,13 @@ records. This is a positive reason for a frequent traveller to turn the control 
 - The design system has no 3-stop control today (`Card`, `Switch`, `ChipListEditor` only);
   add a `SegmentedControl` to the vendored DS rather than improvising in the view.
 - Each control renders its consequence line from the **resolved** values (R3), e.g.
-  *"Lore reads your screen about every 25 seconds — roughly 40 AI calls a day."* Do not
-  hardcode these strings against preset names; derive them so a `config.json` override
-  shows the truth.
+  *"Lore reads your screen about every 25 seconds, once a window has held your attention for
+  4 seconds — roughly 24 AI calls in an 8-hour day."* Do not hardcode these strings against
+  preset names; derive them so a `config.json` override shows the truth.
+- A "calls per day" figure needs an assumed active day. State it **in the sentence** ("in an
+  8-hour day") rather than burying it in a constant — it is the one quantity in the caption
+  that is not read from `resolved`, and a reader deserves to see the assumption they are
+  being asked to accept.
 - Saves immediately on change, through the existing `api.patchConfig` queue in that file.
 
 **Acceptance:** changing any control writes config, takes effect without an agent restart

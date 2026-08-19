@@ -53,6 +53,27 @@ LLM — so it's fast enough to run per turn, and it returns *empty* rather than
 padding with weak matches. Expired `state` never surfaces; staged and archived
 rows are invisible; old experiences fade gently but never vanish.
 
+Two independent gates decide what comes back, because "is this relevant?" and
+"is this trustworthy?" are different questions and a single blended score cannot
+say which one failed:
+
+- **Relevance** — the semantic similarity floor. Age and confidence never affect it,
+  so a booking from two years ago is as findable as one from last week.
+- **Trustworthiness** — a minimum confidence. Lore's own hunches stay out of your
+  assistant's context until they earn their place.
+
+Scoring then *orders* what passed, weighting recent experiences above old ones. This
+is what makes "never vanish" true in practice rather than only in intent: for a long
+time it wasn't, because age was allowed to push a relevant memory below the relevance
+bar entirely.
+
+The practical consequence, and the reason it matters: ask an agent to book a flight and
+it can pull your **last eight bookings** rather than the single closest match, then work
+out for itself that you mostly pick window seats. Lore stores what happened; the agent
+reasons about what it means. That division is deliberate — one aisle seat is not a
+preference for aisle seats, and a memory layer that guessed otherwise would overwrite
+its own evidence.
+
 ## Everything is auditable
 
 Every episode and every decision (staged / promoted / deferred / revised /

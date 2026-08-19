@@ -299,9 +299,51 @@ Each task is PR-sized and lands through the `no-mistakes` gate.
   user has done before. Model-facing string — change deliberately, keep the every-message
   framing.
 
-- [ ] **T009 — Delivery.** Docs (`docs/privacy.md`, `docs/architecture.md`), release notes
-  covering the `balanced` re-read change (30s → 25s, ~20% more readings), local checks,
-  and the live app check from the plan.
+- [x] **T009 — Delivery.** ✅ Docs and release notes done; automated checks green. Updated
+  `docs/privacy.md` (retention, the off-by-default diagnostics bound, the three controls) and
+  `docs/memory-model.md` (the two recall gates, and why "never vanish" is now true in practice
+  rather than only in intent). Release notes carry the `balanced` default change (30s → 25s,
+  40 → 48 observations, ~20% more readings at unchanged AI cost).
+
+  **Automated, on the merged branch:** 563 agent + 100 CLI tests green,
+  `dotnet format --verify-no-changes` clean, renderer `lint` and `typecheck` clean.
+
+  ### Outstanding — needs a human at a running app
+
+  Nothing below can be closed by the test suite. Each is recorded because it was *not* done,
+  not because it is optional.
+
+  1. **The three controls end to end.** Move each stop; confirm it writes config, takes effect
+     with no agent restart, and survives an app reload. Then hand-edit a raw value into
+     `config.json` that contradicts its preset and confirm the consequence line shows the real
+     value — a caption that lies under an override is this feature's likeliest defect.
+  2. **Visual check** of `SegmentedControl` in Coastal and Coastal Dark. It was verified by
+     server-rendered markup only; nobody has looked at it.
+  3. **`minimal` and `rich` against a live model.** Unit tests prove the prompt text differs,
+     never that the model responds as intended. Only `balanced` is pinned behaviourally (by
+     byte-identity to the pre-v2-008 prompt). Run the opt-in E2E harness (`LORE_TEST_E2E=1`)
+     per stop, and sanity-check that `rich` adds detail without inventing preferences.
+  4. **MCP schema check (from T008).** `kinds` is the first collection-typed *parameter* on any
+     tool in `LoreTools.cs`; unit tests call the C# method directly and never exercise the
+     SDK's JSON-schema generation. Connect a real MCP client, confirm `recall` advertises
+     `kinds` as an array and that `["experience"]` filters. If the SDK chokes, switch to
+     `string[]?`.
+  5. **Retention against a real database.** Prune correctness is unit-tested; behaviour against
+     a long-lived multi-megabyte SQLite file (including the `VACUUM`) is not.
+
+  ### Known gaps, deliberately not fixed
+
+  - **`Episode.ContentTypeMix` is not persisted** (T002). The `episodes` table has no column
+    and this repo has no schema-migration mechanism at all, so adding one would break existing
+    installs' inserts. It is a live distiller input only; episodes read back from storage carry
+    an empty mix. An audit gap, not a behaviour gap — but the repo's first migration is now
+    owed.
+  - **Recency ordering degrades past ~19 months** (T011). Saturation moved from 187 to 587
+    days; beyond that, experiences are again separated by embedder noise rather than age.
+  - **The diagnostics bound (24h / 500 rows) is quoted as a literal in the Settings caption**
+    (T006) and is not in `capture.resolved`. It will drift if T007's ceiling is ever retuned.
+  - **`SampleMaxChars` applies retroactively** within an open episode (T005), since
+    `EpisodeBuilder` truncates at close.
   - **Live MCP schema check (from T008).** T008 added `kinds` as an `IReadOnlyList<string>?`
     tool parameter — the first collection-typed *parameter* on any tool in `LoreTools.cs`
     (all other `IReadOnlyList` uses there are locals or return types). Unit tests invoke the
