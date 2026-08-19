@@ -151,7 +151,7 @@ public sealed class LifecycleEngineTests : IDisposable
     public void Dispose() => _activity.Dispose();
 
     private LifecycleEngine BuildEngine() => new(
-        new Distiller(_backend, NullLogger<Distiller>.Instance),
+        new Distiller(_backend, _settings, NullLogger<Distiller>.Instance),
         _memory,
         _activity,
         _backend,

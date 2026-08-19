@@ -142,12 +142,16 @@ public sealed class MemoryLayerE2ETests : IAsyncLifetime, IDisposable
         using var activity = new ActivityStore(":memory:");
         var backend = new OpenAiCompatibleBackend(
             _ollamaHttp!, new Uri(OllamaUrl + "/v1"), apiKey: null, ChatModel, maxTokens: 800);
+        // Defaults, so every preset resolves to `balanced` (v2-008 R1) — the harness pins the
+        // middle stop, per the spec's constraints, and `balanced` renders the pre-v2-008 prompt
+        // byte for byte. A run against another stop means seeding this with that preset name.
+        var settings = new LiveCaptureSettings(new CaptureOptions());
         var engine = new LifecycleEngine(
-            new Distiller(backend, NullLogger<Distiller>.Instance),
+            new Distiller(backend, settings, NullLogger<Distiller>.Instance),
             memory,
             activity,
             backend,
-            new LiveCaptureSettings(new CaptureOptions()),
+            settings,
             TimeProvider.System,
             NullLogger<LifecycleEngine>.Instance);
 
