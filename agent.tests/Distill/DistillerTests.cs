@@ -1,3 +1,5 @@
+using System.Text.Json.Nodes;
+using Lore.Agent.Capture;
 using Lore.Agent.Capture.Episodes;
 using Lore.Agent.Distill;
 using Lore.Agent.Inference;
@@ -37,10 +39,12 @@ public sealed class DistillerTests
         ["browser"],
         ["Wisdom tooth extraction aftercare", "What to eat after oral surgery"],
         ["aftercare instructions...", "soft food suggestions..."],
-        6);
+        6,
+        [new ContentTypeTally(ContentType.Reading, 6)]);
 
-    private static Distiller Build(StubBackend backend) =>
-        new(backend, NullLogger<Distiller>.Instance);
+    private static Distiller Build(StubBackend backend, LiveCaptureSettings? settings = null) =>
+        new(backend, settings ?? new LiveCaptureSettings(new CaptureOptions()),
+            NullLogger<Distiller>.Instance);
 
     [Fact]
     public async Task Happy_path_returns_parsed_facts()
@@ -64,6 +68,43 @@ public sealed class DistillerTests
         Assert.Contains("Wisdom tooth extraction aftercare", backend.LastRequest!.UserPrompt, StringComparison.Ordinal);
         Assert.Contains("Duration: 25 min", backend.LastRequest.UserPrompt, StringComparison.Ordinal);
         Assert.Contains("NO FACTS", backend.LastRequest.SystemPrompt, StringComparison.Ordinal);
+    }
+
+    // v2-008 R1.3 + R2. The detail stop is read from the live snapshot on every episode, so a
+    // user who moves the control in Settings gets the new directive on the NEXT episode — no
+    // restart, and the episode currently open is not dropped to get it.
+    [Fact]
+    public async Task The_detail_stop_in_force_reaches_the_prompt_without_a_restart()
+    {
+        var settings = new LiveCaptureSettings(new CaptureOptions());
+        var backend = new StubBackend("""{"facts": []}""");
+        Distiller distiller = Build(backend, settings);
+
+        await distiller.DistillAsync(Episode);
+        Assert.Contains("under 200 characters", backend.LastRequest!.SystemPrompt, StringComparison.Ordinal);
+
+        settings.Update(new JsonObject { ["detail"] = "rich" });
+        await distiller.DistillAsync(Episode);
+
+        Assert.Contains("under 500 characters", backend.LastRequest!.SystemPrompt, StringComparison.Ordinal);
+        Assert.Contains("Lead with the CONCRETE specifics", backend.LastRequest.SystemPrompt, StringComparison.Ordinal);
+    }
+
+    // The two halves of R1.3 must come from ONE read. A PATCH landing between them could pair
+    // rich's "lead with the specifics" with minimal's 120-character cap — a prompt that asks for
+    // something it forbids in the same breath, and one no settings combination should produce.
+    [Fact]
+    public async Task The_directive_and_the_cap_come_from_the_same_snapshot()
+    {
+        var settings = new LiveCaptureSettings(new CaptureOptions());
+        var backend = new StubBackend("""{"facts": []}""");
+
+        settings.Update(new JsonObject { ["detail"] = "minimal" });
+        await Build(backend, settings).DistillAsync(Episode);
+
+        Assert.Contains("under 120 characters", backend.LastRequest!.SystemPrompt, StringComparison.Ordinal);
+        Assert.Contains("Keep the statement GENERAL", backend.LastRequest.SystemPrompt, StringComparison.Ordinal);
+        Assert.DoesNotContain("Lead with the CONCRETE", backend.LastRequest.SystemPrompt, StringComparison.Ordinal);
     }
 
     [Fact]

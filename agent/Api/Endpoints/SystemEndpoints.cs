@@ -89,8 +89,8 @@ public static class SystemEndpoints
     }
 
     // enabled mirrors config.capture.enabled, read live so a PATCH /config pause is reflected at
-    // once (the user pauses capture through config). Falls back to the startup snapshot, then to
-    // the capture default (on) when neither the config file nor the options are available.
+    // once (the user pauses capture through config). Falls back to the running capture snapshot,
+    // then to the capture default (on) when neither the config file nor the snapshot is available.
     private static async Task<bool> IsCaptureEnabledAsync(IServiceProvider services, CancellationToken ct)
     {
         LoreConfig? config = services.GetService<LoreConfig>();
@@ -105,7 +105,7 @@ public static class SystemEndpoints
             }
         }
 
-        return services.GetService<CaptureOptions>()?.Enabled ?? true;
+        return services.GetService<LiveCaptureSettings>()?.Enabled ?? true;
     }
 
     private static bool IsProviderConfigured(ProviderOptions options)

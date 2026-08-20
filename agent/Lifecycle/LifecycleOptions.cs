@@ -2,8 +2,13 @@ namespace Lore.Agent.Lifecycle;
 
 /// <summary>Lifecycle routing thresholds (v2-001), bound from the
 /// <c>capture.lifecycle</c> config section. The similarity bands are calibrated by the
-/// golden corpus (T007); they are config, not code.</summary>
-public sealed class LifecycleOptions
+/// golden corpus (T007); they are config, not code.
+///
+/// <para>A record, not a plain class, since v2-008 R2: these values now ride in the live
+/// <see cref="Capture.CaptureSnapshot"/> and are replaced wholesale on <c>PATCH /config</c>,
+/// so the snapshot needs a cheap <c>with</c> to carry one changed field forward without
+/// restating every other one.</para></summary>
+public sealed record LifecycleOptions
 {
     /// <summary>Search score at or above which a candidate IS an existing memory
     /// (reinforce / promote-from-staged).</summary>

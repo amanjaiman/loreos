@@ -4,6 +4,7 @@ using Lore.Agent.Inference;
 using Lore.Agent.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Lore.Agent.Capture;
@@ -21,9 +22,23 @@ public static class CaptureServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        CaptureOptions options = configuration.GetSection("capture").Get<CaptureOptions>() ?? new CaptureOptions();
-        services.AddSingleton(options);
-        services.AddSingleton<LiveCaptureSettings>();
+        // The bound options seed the live snapshot and are then done with. Deliberately NOT
+        // registered in DI (v2-008 R2): every consumer reads LiveCaptureSettings so a PATCH
+        // /config applies with no restart, and a second frozen copy in the container is exactly
+        // the stale read that would put one back.
+        //
+        // Preset first, raw keys second (v2-008 R3). Binding ONTO the resolved preset rather than
+        // onto a fresh CaptureOptions is what distinguishes "explicitly present" from "absent" on
+        // this path: the binder only writes a property the configuration actually has, so an
+        // explicit key wins for its own field and everything else keeps the preset's value. The
+        // same rule is applied to the live path in LiveCaptureSettings.Update, where presence in
+        // the JSON object is the test.
+        IConfigurationSection section = configuration.GetSection("capture");
+        CaptureOptions options = CapturePresets.Resolve(
+            section["attentiveness"], section["certainty"], section["detail"]);
+        section.Bind(options);
+        services.AddSingleton(sp => new LiveCaptureSettings(
+            options, sp.GetService<ILogger<LiveCaptureSettings>>()));
         services.AddSingleton(TimeProvider.System);
 
         // Win32 / UI Automation seams — the only places that touch the platform.
@@ -41,11 +56,11 @@ public static class CaptureServiceCollectionExtensions
         // Trust-critical sensitivity filter.
         services.AddSingleton<SensitivityFilter>();
 
-        // Window monitor (dwell threshold from config).
+        // Window monitor (dwell threshold read live, per poll).
         services.AddSingleton(sp => new WindowMonitor(
             sp.GetRequiredService<IForegroundWindowSource>(),
             sp.GetRequiredService<TimeProvider>(),
-            options.DwellThreshold));
+            sp.GetRequiredService<LiveCaptureSettings>()));
 
         // Placeholder backend until the provider layer (004) registers the real one.
         services.AddSingleton<IInferenceBackend, NullInferenceBackend>();
@@ -58,9 +73,14 @@ public static class CaptureServiceCollectionExtensions
             return new ActivityStore(Path.Combine(memory.DataDir, "activity.db"));
         });
 
-        // Episode segmentation feeding the skeptical distiller and the lifecycle engine.
-        services.AddSingleton(options.Episodes);
-        services.AddSingleton(options.Lifecycle);
+        // Keeps that store bounded (v2-008 R4): prunes evidence past capture.retentionDays and
+        // holds the opt-in raw_captures diagnostic to its 24h/500-row ceiling, on start and daily.
+        // Registered here, next to the store it sweeps, so the two can never be wired apart.
+        services.AddHostedService<RetentionService>();
+
+        // Episode segmentation feeding the skeptical distiller and the lifecycle engine. Both take
+        // their thresholds from the live snapshot, so neither EpisodeOptions nor LifecycleOptions
+        // is registered on its own.
         services.AddSingleton<Episodes.EpisodeBuilder>();
         services.AddSingleton<Distill.Distiller>();
         services.AddSingleton<Episodes.IEpisodeProcessor, Lifecycle.LifecycleEngine>();

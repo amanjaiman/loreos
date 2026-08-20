@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Lore.Agent.Capture;
 using Lore.Agent.Capture.Episodes;
 
@@ -11,11 +12,17 @@ public sealed class EpisodeBuilderTests
         int minutes,
         string exe = "browser",
         string title = "Wisdom tooth aftercare — Clinic",
-        string text = "aftercare instructions for wisdom tooth extraction recovery")
-        => new(T0 + TimeSpan.FromMinutes(minutes), exe, title, text, ContentType.Reading);
+        string text = "aftercare instructions for wisdom tooth extraction recovery",
+        ContentType type = ContentType.Reading)
+        => new(T0 + TimeSpan.FromMinutes(minutes), exe, title, text, type);
 
     private static EpisodeBuilder Builder(EpisodeOptions? options = null) =>
-        new(options ?? new EpisodeOptions());
+        new(Live(options));
+
+    /// <summary>The builder's thresholds now arrive through the live snapshot (v2-008 R2), so a
+    /// test that wants to move them mid-episode holds on to this.</summary>
+    private static LiveCaptureSettings Live(EpisodeOptions? options = null) =>
+        new(new CaptureOptions { Episodes = options ?? new EpisodeOptions() });
 
     [Fact]
     public void Related_observations_within_the_gap_join_one_episode()
@@ -72,12 +79,27 @@ public sealed class EpisodeBuilderTests
     }
 
     [Fact]
-    public void Options_with_degenerate_bounds_are_rejected()
+    public void Options_with_degenerate_bounds_are_repaired_rather_than_rejected()
     {
-        Assert.Throws<ArgumentException>(() => Builder(new EpisodeOptions { MaxObservations = 1 }));
-        Assert.Throws<ArgumentException>(() => Builder(new EpisodeOptions { MaxAge = TimeSpan.Zero }));
-        Assert.Throws<ArgumentException>(() => Builder(new EpisodeOptions { MaxSamples = 1 }));
-        Assert.Throws<ArgumentException>(() => Builder(new EpisodeOptions { SampleMaxChars = 0 }));
+        // These four bounds were constructor arguments checked by throwing until v2-008 R2 made
+        // them live; the checks moved to CaptureSnapshot.From, which repairs them to the defaults
+        // (asserted in LiveCaptureSettingsTests). What matters here is the consequence: a builder
+        // handed a hand-edited config.json full of nonsense still segments normally instead of
+        // taking the capture loop down with it.
+        EpisodeBuilder builder = Builder(new EpisodeOptions
+        {
+            MaxObservations = 1,
+            MaxAge = TimeSpan.Zero,
+            MaxSamples = 1,
+            SampleMaxChars = 0,
+        });
+
+        Assert.Null(builder.Add(Obs(0)));
+        Assert.Null(builder.Add(Obs(1, text: "swelling timeline after extraction and what to eat")));
+
+        Episode episode = builder.Flush()!;
+        Assert.Equal(2, episode.ObservationCount); // MaxObservations 1 would have closed at one
+        Assert.All(episode.Samples, sample => Assert.NotEmpty(sample)); // SampleMaxChars 0 would empty them
     }
 
     [Fact]
@@ -169,6 +191,160 @@ public sealed class EpisodeBuilderTests
         Episode episode = builder.Flush()!;
 
         Assert.Equal("0123456789", Assert.Single(episode.Samples));
+    }
+
+    // ── v2-008 R6.3: selection weighted by time spent ─────────────────────────────
+
+    // The document below is read for 16 minutes but produces ONE sample, because the
+    // re-readings are near-duplicates that Append counts and drops. The chess glance lasts a
+    // minute and produces its own sample. Before R6.3 the two were interchangeable and the
+    // glance won on novelty alone; the episode's evidence then described the minute, not the
+    // quarter of an hour.
+    private static EpisodeBuilder SeedTimeDominantEpisode(EpisodeBuilder builder)
+    {
+        builder.Add(Obs(0, text: "quarterly revenue report opening the document"));
+        for (int minute = 1; minute <= 16; minute++)
+        {
+            // Every reading after the first is byte-identical: counted, never sampled.
+            builder.Add(Obs(minute, text: "quarterly revenue report alpha beta gamma delta epsilon zeta"));
+        }
+
+        builder.Add(Obs(17, text: "chess queen knight endgame puzzle tactics"));
+        builder.Add(Obs(18, text: "weather forecast rain thursday umbrella"));
+        return builder;
+    }
+
+    [Fact]
+    public void A_time_dominant_observation_beats_a_more_novel_glance_for_a_sample_slot()
+    {
+        // MaxSamples 3: first and last are always kept, so exactly one slot is contested —
+        // between the document (16 of the episode's 18 minutes, but 0.75 novelty because its
+        // opening line shares wording with the first sample) and the chess glance (one
+        // minute, novelty 1.0). Pure diversity picks chess; time-weighted selection does not.
+        EpisodeBuilder builder = SeedTimeDominantEpisode(
+            Builder(new EpisodeOptions { MaxSamples = 3, MaxObservations = 100 }));
+
+        Episode episode = builder.Flush()!;
+
+        Assert.Equal(3, episode.Samples.Count);
+        Assert.Contains(
+            episode.Samples, s => s.StartsWith("quarterly revenue report alpha", StringComparison.Ordinal));
+        Assert.DoesNotContain(episode.Samples, s => s.StartsWith("chess", StringComparison.Ordinal));
+
+        // Samples stay in chronological order regardless of the order they were scored in.
+        Assert.StartsWith("quarterly revenue report opening", episode.Samples[0], StringComparison.Ordinal);
+        Assert.StartsWith("weather forecast", episode.Samples[^1], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void With_no_measurable_duration_selection_falls_back_to_pure_diversity()
+    {
+        // Same episode with every observation at the same instant — the degenerate case that
+        // only tests and clock skew produce. With no time to weigh by, the most novel
+        // candidate wins exactly as it did before R6.3.
+        EpisodeBuilder builder = Builder(new EpisodeOptions { MaxSamples = 3, MaxObservations = 100 });
+        builder.Add(Obs(0, text: "quarterly revenue report opening the document"));
+        builder.Add(Obs(0, text: "quarterly revenue report alpha beta gamma delta epsilon zeta"));
+        builder.Add(Obs(0, text: "chess queen knight endgame puzzle tactics"));
+        builder.Add(Obs(0, text: "weather forecast rain thursday umbrella"));
+
+        Episode episode = builder.Flush()!;
+
+        Assert.Contains(episode.Samples, s => s.StartsWith("chess", StringComparison.Ordinal));
+        Assert.DoesNotContain(
+            episode.Samples, s => s.StartsWith("quarterly revenue report alpha", StringComparison.Ordinal));
+    }
+
+    // ── v2-008 R6.1: the content-type mix reaches the episode ─────────────────────
+
+    [Fact]
+    public void Content_type_mix_counts_every_observation_busiest_kind_first()
+    {
+        EpisodeBuilder builder = Builder(new EpisodeOptions { MaxObservations = 100 });
+
+        builder.Add(Obs(0, text: "review of the espresso machine grinder burr", type: ContentType.Reading));
+        builder.Add(Obs(1, text: "add to cart espresso machine 64mm burr grinder", type: ContentType.Shopping));
+        for (int minute = 2; minute <= 7; minute++)
+        {
+            // Near-duplicates: dropped from the samples, but they are where the time went and
+            // so they must still count toward the mix.
+            builder.Add(Obs(minute, text: "add to cart espresso machine 64mm burr grinder", type: ContentType.Shopping));
+        }
+
+        builder.Add(Obs(8, text: "long form article about coffee extraction", type: ContentType.Reading));
+        Episode episode = builder.Flush()!;
+
+        Assert.Equal(9, episode.ObservationCount);
+        Assert.Equal(
+            [new ContentTypeTally(ContentType.Shopping, 7), new ContentTypeTally(ContentType.Reading, 2)],
+            episode.ContentTypeMix);
+    }
+
+    [Fact]
+    public void Content_type_mix_does_not_leak_across_episodes()
+    {
+        EpisodeBuilder builder = Builder();
+        builder.Add(Obs(0, type: ContentType.Reading));
+        Episode first = builder.Add(
+            Obs(1, exe: "code", title: "recall.rs", text: "fn blend(scores)", type: ContentType.Coding))!;
+        Episode second = builder.Flush()!;
+
+        Assert.Equal([new ContentTypeTally(ContentType.Reading, 1)], first.ContentTypeMix);
+        Assert.Equal([new ContentTypeTally(ContentType.Coding, 1)], second.ContentTypeMix);
+    }
+
+    // ── v2-008 R2: thresholds are live, and a change never disturbs the open episode ──
+
+    [Fact]
+    public void A_threshold_change_mid_episode_applies_from_the_next_observation()
+    {
+        LiveCaptureSettings settings = Live(new EpisodeOptions { MaxObservations = 100 });
+        var builder = new EpisodeBuilder(settings);
+
+        builder.Add(Obs(0));
+        builder.Add(Obs(1, text: "swelling timeline after extraction and what to eat"));
+        builder.Add(Obs(2, text: "soft foods list for dental recovery week one"));
+
+        // The user drags attentiveness down mid-episode. Three observations are already in.
+        settings.Update(new JsonObject
+        {
+            ["episodes"] = new JsonObject { ["maxObservations"] = 4 },
+        });
+
+        // Nothing was force-closed, discarded, or rewritten by the change itself…
+        Assert.True(builder.HasOpenEpisode);
+
+        // …and the new cap governs from the very next observation: the fourth closes the episode
+        // with all four inside it, exactly as if it had been configured that way from the start.
+        Episode? closed = builder.Add(Obs(3, text: "when to switch back to solid food after surgery"));
+        Assert.NotNull(closed);
+        Assert.Equal(4, closed.ObservationCount);
+        Assert.Equal(T0, closed.StartedAt); // the original start survived the change
+        Assert.False(builder.HasOpenEpisode);
+    }
+
+    [Fact]
+    public void A_sample_cap_raised_mid_episode_applies_to_the_episode_that_is_open()
+    {
+        // The other half of "applies from the next observation": a value only read when the
+        // episode closes takes the value in force at that moment, not the one it opened with.
+        LiveCaptureSettings settings = Live(new EpisodeOptions { MaxSamples = 2, MaxObservations = 100 });
+        var builder = new EpisodeBuilder(settings);
+
+        builder.Add(Obs(0, text: "first page about dental surgery basics"));
+        for (int i = 1; i < 6; i++)
+        {
+            builder.Add(Obs(i, text: $"middle page {i} covering topic variant {i} with distinct words w{i}"));
+        }
+
+        settings.Update(new JsonObject
+        {
+            ["episodes"] = new JsonObject { ["maxSamples"] = 5 },
+        });
+
+        Episode episode = builder.Flush()!;
+        Assert.Equal(6, episode.ObservationCount); // every observation still there
+        Assert.Equal(5, episode.Samples.Count);
     }
 
     [Fact]

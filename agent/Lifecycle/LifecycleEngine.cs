@@ -1,3 +1,4 @@
+using Lore.Agent.Capture;
 using Lore.Agent.Capture.Episodes;
 using Lore.Agent.Distill;
 using Lore.Agent.Inference;
@@ -21,7 +22,7 @@ public sealed class LifecycleEngine : IEpisodeProcessor
     private readonly IMemoryService _memory;
     private readonly ActivityStore _activity;
     private readonly IInferenceBackend _backend;
-    private readonly LifecycleOptions _options;
+    private readonly LiveCaptureSettings _settings;
     private readonly TimeProvider _time;
     private readonly ILogger<LifecycleEngine> _logger;
 
@@ -30,7 +31,7 @@ public sealed class LifecycleEngine : IEpisodeProcessor
         IMemoryService memory,
         ActivityStore activity,
         IInferenceBackend backend,
-        LifecycleOptions options,
+        LiveCaptureSettings settings,
         TimeProvider time,
         ILogger<LifecycleEngine> logger)
     {
@@ -38,17 +39,24 @@ public sealed class LifecycleEngine : IEpisodeProcessor
         ArgumentNullException.ThrowIfNull(memory);
         ArgumentNullException.ThrowIfNull(activity);
         ArgumentNullException.ThrowIfNull(backend);
-        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(time);
         ArgumentNullException.ThrowIfNull(logger);
         _distiller = distiller;
         _memory = memory;
         _activity = activity;
         _backend = backend;
-        _options = options;
+        _settings = settings;
         _time = time;
         _logger = logger;
     }
+
+    /// <summary>The routing thresholds in force right now (v2-008 R2), so the certainty control
+    /// applies to the next candidate rather than the next agent start. Every use is an independent
+    /// comparison against the store, so a snapshot swap between two of them can only change where
+    /// a single candidate lands — it can never leave a memory half-written or disturb an episode,
+    /// which is already off the builder and persisted by the time routing begins.</summary>
+    private LifecycleOptions Options => _settings.Current.Lifecycle;
 
     public async Task ProcessAsync(Episode episode, CancellationToken cancellationToken = default)
     {
@@ -101,7 +109,7 @@ public sealed class LifecycleEngine : IEpisodeProcessor
         IReadOnlyList<MemoryRecord> neighbors = await _memory.SearchAsync(
             fact.Statement,
             UserId,
-            _options.MatchNeighbors,
+            Options.MatchNeighbors,
             new Dictionary<string, object?>
             {
                 ["status"] = MemoryFilters.In([MemoryStatuses.Staged, MemoryStatuses.Active]),
@@ -115,7 +123,7 @@ public sealed class LifecycleEngine : IEpisodeProcessor
 
         if (best is not null && bestMeta is not null)
         {
-            if (bestMeta.Status == MemoryStatuses.Active && bestScore >= _options.SameFactThreshold)
+            if (bestMeta.Status == MemoryStatuses.Active && bestScore >= Options.SameFactThreshold)
             {
                 await ReinforceAsync(episode, fact, best, bestMeta, now, ct).ConfigureAwait(false);
                 return;
@@ -124,7 +132,7 @@ public sealed class LifecycleEngine : IEpisodeProcessor
             // A staged candidate promotes on same-TOPIC support: staging exists to
             // accumulate evidence, and a second episode rarely words the fact
             // identically — requiring the same-fact band here would stall promotion.
-            if (bestMeta.Status == MemoryStatuses.Staged && bestScore >= _options.SameTopicThreshold)
+            if (bestMeta.Status == MemoryStatuses.Staged && bestScore >= Options.SameTopicThreshold)
             {
                 // Duplicate guard: a staged candidate can outscore an ACTIVE memory that already
                 // covers the same topic (a tentative wording matches a later episode more closely
@@ -133,7 +141,7 @@ public sealed class LifecycleEngine : IEpisodeProcessor
                 // any active memory on the topic; if arbitration agrees it's the same fact, fold
                 // into that memory and retire the staged duplicate. If the active is genuinely
                 // distinct (coexist), the staged candidate is the real match — promote it.
-                MemoryRecord? activeMatch = FindActive(neighbors, _options.SameTopicThreshold);
+                MemoryRecord? activeMatch = FindActive(neighbors, Options.SameTopicThreshold);
                 if (activeMatch is not null
                     && await ReconcileWithActiveAsync(episode, fact, activeMatch, now, ct).ConfigureAwait(false))
                 {
@@ -145,7 +153,7 @@ public sealed class LifecycleEngine : IEpisodeProcessor
                 return;
             }
 
-            if (bestMeta.Status == MemoryStatuses.Active && bestScore >= _options.SameTopicThreshold)
+            if (bestMeta.Status == MemoryStatuses.Active && bestScore >= Options.SameTopicThreshold)
             {
                 if (await ReconcileWithActiveAsync(episode, fact, best, now, ct).ConfigureAwait(false))
                 {
@@ -158,7 +166,7 @@ public sealed class LifecycleEngine : IEpisodeProcessor
             }
         }
 
-        if (fact.Confidence >= _options.HighSignalConfidence)
+        if (fact.Confidence >= Options.HighSignalConfidence)
         {
             // Committed action (booking, purchase, signed form): promote directly.
             await StoreActiveAsync(episode, fact, supersedes: string.Empty, now, ct).ConfigureAwait(false);
@@ -189,11 +197,11 @@ public sealed class LifecycleEngine : IEpisodeProcessor
         }
         else if (refine)
         {
-            confidence = Math.Min(_options.ConfidenceCap, fact.Confidence);
+            confidence = Math.Min(Options.ConfidenceCap, fact.Confidence);
         }
         else
         {
-            confidence = Math.Min(_options.ConfidenceCap, meta.Confidence + _options.ReinforceBump);
+            confidence = Math.Min(Options.ConfidenceCap, meta.Confidence + Options.ReinforceBump);
         }
 
         long expiresAt;
@@ -240,7 +248,7 @@ public sealed class LifecycleEngine : IEpisodeProcessor
             // budget can promote it.
             await _memory.PatchMetadataAsync(
                 staged.Id,
-                new Dictionary<string, object?> { ["expires_at"] = now + DaysToSeconds(_options.StagedTtlDays) },
+                new Dictionary<string, object?> { ["expires_at"] = now + DaysToSeconds(Options.StagedTtlDays) },
                 ct).ConfigureAwait(false);
             await LogAsync(episode.Id, "deferred", "daily promotion budget reached", fact, staged.Id, ct)
                 .ConfigureAwait(false);
@@ -261,8 +269,8 @@ public sealed class LifecycleEngine : IEpisodeProcessor
             {
                 ["status"] = MemoryStatuses.Active,
                 ["confidence"] = Math.Min(
-                    _options.ConfidenceCap,
-                    Math.Max(meta.Confidence, fact.Confidence) + _options.ReinforceBump),
+                    Options.ConfidenceCap,
+                    Math.Max(meta.Confidence, fact.Confidence) + Options.ReinforceBump),
                 ["kind"] = refine ? fact.Kind : meta.Kind,
                 ["expires_at"] = ExpiryFor(fact, now),
                 ["established_at"] = now,
@@ -305,7 +313,7 @@ public sealed class LifecycleEngine : IEpisodeProcessor
         Episode episode, CandidateFact fact, MemoryRecord active, long now, CancellationToken ct)
     {
         MemoryMetadata meta = MemoryMetadata.From(active)!;
-        if ((active.Score ?? 0.0) >= _options.SameFactThreshold)
+        if ((active.Score ?? 0.0) >= Options.SameFactThreshold)
         {
             await ReinforceAsync(episode, fact, active, meta, now, ct).ConfigureAwait(false);
             return true;
@@ -406,7 +414,7 @@ public sealed class LifecycleEngine : IEpisodeProcessor
         var metadata = new MemoryMetadata(
             Kind: fact.Kind,
             Status: MemoryStatuses.Active,
-            Confidence: Math.Min(_options.ConfidenceCap, fact.Confidence),
+            Confidence: Math.Min(Options.ConfidenceCap, fact.Confidence),
             ExpiresAt: ExpiryFor(fact, now),
             EstablishedAt: now,
             UpdatedReason: isRevision ? MemoryUpdateReasons.Revised : MemoryUpdateReasons.Promoted,
@@ -431,7 +439,7 @@ public sealed class LifecycleEngine : IEpisodeProcessor
             Kind: fact.Kind,
             Status: MemoryStatuses.Staged,
             Confidence: fact.Confidence,
-            ExpiresAt: now + DaysToSeconds(_options.StagedTtlDays),
+            ExpiresAt: now + DaysToSeconds(Options.StagedTtlDays),
             EstablishedAt: 0,
             UpdatedReason: MemoryUpdateReasons.Staged,
             Episodes: [episode.Id]);
@@ -447,7 +455,7 @@ public sealed class LifecycleEngine : IEpisodeProcessor
         DateTimeOffset midnight = DayBoundary.StartOfToday(_time);
         int today = await _activity
             .CountDecisionsSinceAsync("promoted", midnight, ct).ConfigureAwait(false);
-        return today < _options.DailyBudget;
+        return today < Options.DailyBudget;
     }
 
     // A matched candidate is a "committed refinement" of an existing memory when it is itself a
@@ -457,14 +465,14 @@ public sealed class LifecycleEngine : IEpisodeProcessor
     private bool IsCommittedRefinement(CandidateFact fact, MemoryMetadata meta) =>
         !meta.UserEdited
         && !meta.Pinned
-        && fact.Confidence >= _options.HighSignalConfidence
-        && meta.Confidence < _options.HighSignalConfidence;
+        && fact.Confidence >= Options.HighSignalConfidence
+        && meta.Confidence < Options.HighSignalConfidence;
 
     private long HorizonSeconds(CandidateFact fact) =>
         DaysToSeconds(Math.Clamp(
-            fact.HorizonDays ?? _options.DefaultHorizonDays,
-            _options.MinHorizonDays,
-            _options.MaxHorizonDays));
+            fact.HorizonDays ?? Options.DefaultHorizonDays,
+            Options.MinHorizonDays,
+            Options.MaxHorizonDays));
 
     private long ExpiryFor(CandidateFact fact, long now) =>
         fact.Kind == MemoryKinds.State

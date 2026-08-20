@@ -15,10 +15,14 @@ namespace Lore.Agent.Capture;
 /// processing round never kills the loop; a closed episode is persisted before
 /// processing so nothing is lost when the model or memoryd misbehaves. The loop waits
 /// for memoryd's readiness gate before its first tick and flushes the open episode on
-/// shutdown.</para></summary>
+/// shutdown.</para>
+///
+/// <para>Every setting is read from <see cref="LiveCaptureSettings"/>, once per tick, so a
+/// <c>PATCH /config</c> takes effect on the next tick with no restart (v2-008 R2). Taking one
+/// snapshot per tick rather than per read is what makes the tick self-consistent: the delay a
+/// tick waits out is the delay it decided with.</para></summary>
 public sealed class CaptureAgent : BackgroundService
 {
-    private readonly CaptureOptions _options;
     private readonly LiveCaptureSettings _settings;
     private readonly WindowMonitor _monitor;
     private readonly ITextExtractor _extractor;
@@ -32,11 +36,11 @@ public sealed class CaptureAgent : BackgroundService
     private readonly EpisodeBuilder _episodes;
     private readonly IEpisodeProcessor _episodeProcessor;
 
-    private string _lastProcessedKey = string.Empty;
+    private long? _lastProcessedHandle;
+    private string _lastProcessedTitle = string.Empty;
     private DateTimeOffset _lastProcessedAt = DateTimeOffset.MinValue;
 
     public CaptureAgent(
-        CaptureOptions options,
         LiveCaptureSettings settings,
         WindowMonitor monitor,
         ITextExtractor extractor,
@@ -50,7 +54,6 @@ public sealed class CaptureAgent : BackgroundService
         EpisodeBuilder episodes,
         IEpisodeProcessor episodeProcessor)
     {
-        ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(monitor);
         ArgumentNullException.ThrowIfNull(extractor);
@@ -63,7 +66,6 @@ public sealed class CaptureAgent : BackgroundService
         ArgumentNullException.ThrowIfNull(logger);
         ArgumentNullException.ThrowIfNull(episodes);
         ArgumentNullException.ThrowIfNull(episodeProcessor);
-        _options = options;
         _settings = settings;
         _monitor = monitor;
         _extractor = extractor;
@@ -92,17 +94,20 @@ public sealed class CaptureAgent : BackgroundService
         _logger.LogInformation("capture loop started");
         while (!stoppingToken.IsCancellationRequested)
         {
-            if (!_settings.Enabled)
+            // One read for the whole tick (v2-008 R2): a PATCH landing mid-tick applies from the
+            // next one, never halfway through this one.
+            CaptureSnapshot settings = _settings.Current;
+            if (!settings.Enabled)
             {
                 _captureStatus.RecordExcluded();
-                await DelaySafe(_options.PollInterval, stoppingToken).ConfigureAwait(false);
+                await DelaySafe(settings.PollInterval, stoppingToken).ConfigureAwait(false);
                 continue;
             }
 
             try
             {
                 WindowObservation observation = _monitor.Poll();
-                if (observation.HasDwelled && ShouldProcess(observation.Window))
+                if (observation.HasDwelled && ShouldProcess(observation.Window, settings))
                 {
                     await CaptureOnceAsync(observation.Window, stoppingToken).ConfigureAwait(false);
                 }
@@ -124,7 +129,7 @@ public sealed class CaptureAgent : BackgroundService
                 _logger.LogWarning(ex, "capture tick failed; continuing");
             }
 
-            await DelaySafe(_options.PollInterval, stoppingToken).ConfigureAwait(false);
+            await DelaySafe(settings.PollInterval, stoppingToken).ConfigureAwait(false);
         }
 
         // Shutdown flush: the day's last episode is distilled, not lost (v2-001 T004).
@@ -154,8 +159,11 @@ public sealed class CaptureAgent : BackgroundService
         ExtractedText extracted = await _extractor.ExtractAsync(window, cancellationToken).ConfigureAwait(false);
 
         // Pause can arrive while UIA/OCR is in flight. Discard that result before it can update
-        // status, activity, or an episode so the pause boundary is privacy-safe.
-        if (!_settings.Enabled)
+        // status, activity, or an episode so the pause boundary is privacy-safe. This is a FRESH
+        // read on purpose — the tick's snapshot predates the extraction, and the whole point here
+        // is to honour a setting that changed during it.
+        CaptureSnapshot settings = _settings.Current;
+        if (!settings.Enabled)
         {
             _captureStatus.RecordExcluded();
             return CaptureOutcome.Filtered;
@@ -182,6 +190,21 @@ public sealed class CaptureAgent : BackgroundService
         _captureStatus.RecordCaptured(window.Title, now);
 
         ContentType type = ContentClassifier.Classify(window, filtered.Text);
+
+        // Opt-in troubleshooting record (v2-008 R4.2), off by default. This sits deliberately
+        // BELOW the filter chain: every blocked window returned above, so the only text that can
+        // reach this line is `filtered.Text` — post-filter, exactly what episode intake receives.
+        // Text the SensitivityFilter dropped is never written here, and turning this on does not
+        // widen what Lore records by one character. The table is bounded by RetentionService.
+        if (settings.Diagnostics)
+        {
+            await _activity.LogRawCaptureAsync(
+                new RawCaptureEntry(
+                    now, window.ProcessExecutable, window.Title,
+                    extracted.Source.ToString(), type.ToString(), filtered.Text),
+                cancellationToken).ConfigureAwait(false);
+        }
+
         var observation = new CapturedObservation(
             now, window.ProcessExecutable, window.Title, filtered.Text, type);
         Episode? closed = _episodes.Add(observation);
@@ -224,20 +247,38 @@ public sealed class CaptureAgent : BackgroundService
         }
     }
 
-    // Process a window when it's newly in front, or when the re-capture interval has passed
-    // for the same window — so a window held in focus isn't re-extracted on every poll.
-    private bool ShouldProcess(WindowSnapshot window)
+    // Three cases, cheapest first:
+    //
+    //   a DIFFERENT window          → read it now. A new thing in front of the user is the whole
+    //                                 reason to look, and it has already earned its dwell.
+    //   the SAME window, NEW title  → read it once TitleRecaptureInterval has passed.
+    //   the SAME window, same title → read it once RecaptureInterval has passed.
+    //
+    // The middle case is v2-008 R6.2's consequence and the reason this method no longer keys on a
+    // concatenated handle+title string. Until R6.2, a window that rewrote its title faster than
+    // the dwell threshold never dwelled and so was never captured at all; dwell was accidentally
+    // the rate limiter. With that fixed, every retitle was a brand-new key and such a window was
+    // re-extracted on EVERY poll — ~1,800 OCR-bearing readings an hour against ~144 for a window
+    // that sits still, nearly all of them absorbed downstream as near-duplicates. It must still be
+    // captured; it must not be read twelve times more often than everything else. So a title-only
+    // change gets its own, shorter gap keyed on the window HANDLE alone.
+    private bool ShouldProcess(WindowSnapshot window, CaptureSnapshot settings)
     {
-        string key = window.Handle + "" + window.Title;
         DateTimeOffset now = _time.GetUtcNow();
-        if (key != _lastProcessedKey || now - _lastProcessedAt >= _options.RecaptureInterval)
+        bool sameWindow = _lastProcessedHandle == window.Handle;
+        bool sameTitle = sameWindow
+            && string.Equals(_lastProcessedTitle, window.Title, StringComparison.Ordinal);
+        TimeSpan gap = sameTitle ? settings.RecaptureInterval : settings.TitleRecaptureInterval;
+
+        if (sameWindow && now - _lastProcessedAt < gap)
         {
-            _lastProcessedKey = key;
-            _lastProcessedAt = now;
-            return true;
+            return false;
         }
 
-        return false;
+        _lastProcessedHandle = window.Handle;
+        _lastProcessedTitle = window.Title;
+        _lastProcessedAt = now;
+        return true;
     }
 
     private Task LogActivityAsync(

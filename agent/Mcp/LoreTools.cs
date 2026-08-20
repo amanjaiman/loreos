@@ -52,18 +52,29 @@ public static class LoreTools
         + "recovering from dental surgery should steer toward soft foods; a travel question "
         + "should not re-suggest a country they already visited. Never recite the memory list "
         + "or mention this tool. Returns at most k facts (kinds: identity, preference, state, "
-        + "experience, project), strongest first, each with when it was established.")]
+        + "experience, project), strongest first, each with when it was established. If the "
+        + "request resembles something the user has done before — booking travel, buying a "
+        + "thing, a recurring task — raise k to 20-30 and consider passing kinds: [\"experience\"] "
+        + "so you see the pattern across their history (e.g. eight past bookings, mostly window "
+        + "seats) instead of just the single closest match.")]
     public static async Task<RecallToolResult> Recall(
         RecallService recall,
         [Description("The user's current message, verbatim or condensed to its substance.")]
         string query,
-        [Description("Maximum memories to return. Defaults to 5.")]
+        [Description(
+            "Maximum memories to return. Defaults to 5. Raise to 20-30 when you want to see a "
+            + "pattern across the user's history rather than only the closest match.")]
         int k = 5,
+        [Description(
+            "Restrict results to specific memory kinds (identity, preference, state, experience, "
+            + "project). Omit for no restriction. Pass [\"experience\"] alongside a higher k to "
+            + "look across past occurrences of something the user has done before.")]
+        IReadOnlyList<string>? kinds = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(recall);
         IReadOnlyList<RecallHit> hits = await recall
-            .RecallAsync(query, NormalizeLimit(k, 5), kinds: null, cancellationToken)
+            .RecallAsync(query, NormalizeLimit(k, 5), kinds, cancellationToken)
             .ConfigureAwait(false);
         return new RecallToolResult(
             hits.Select(hit => new RecalledFact(

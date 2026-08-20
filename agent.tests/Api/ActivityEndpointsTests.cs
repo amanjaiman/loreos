@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Lore.Agent.Api.Endpoints;
+using Lore.Agent.Capture;
 using Lore.Agent.Capture.Episodes;
 using Lore.Agent.Lifecycle;
 using Lore.Agent.Memory;
@@ -47,7 +48,10 @@ public sealed class ActivityEndpointsTests : IDisposable
         {
             services.AddSingleton(_activity);
             services.AddSingleton<IMemoryService>(_memory);
-            services.AddSingleton(new LifecycleOptions { DailyBudget = ConfiguredBudget });
+            services.AddSingleton(new LiveCaptureSettings(new CaptureOptions
+            {
+                Lifecycle = new LifecycleOptions { DailyBudget = ConfiguredBudget },
+            }));
             services.AddSingleton<TimeProvider>(_time);
         },
         app =>
@@ -73,7 +77,7 @@ public sealed class ActivityEndpointsTests : IDisposable
     {
         var episode = new Episode(
             "ep-1", _time.Now.AddMinutes(-30), _time.Now.AddMinutes(-10),
-            ["browser"], ["Wisdom tooth aftercare"], ["sample text"], 5);
+            ["browser"], ["Wisdom tooth aftercare"], ["sample text"], 5, []);
         await _activity.SaveEpisodeAsync(episode);
         await _activity.LogDecisionAsync(new DecisionEntry(
             _time.Now, "ep-1", "staged", "awaiting a second episode",
@@ -102,7 +106,7 @@ public sealed class ActivityEndpointsTests : IDisposable
     {
         var episode = new Episode(
             "ep-1", _time.Now.AddMinutes(-30), _time.Now.AddMinutes(-10),
-            ["Figma.exe"], ["Figma — Lore rebrand"], ["sample text"], 12);
+            ["Figma.exe"], ["Figma — Lore rebrand"], ["sample text"], 12, []);
         await _activity.SaveEpisodeAsync(episode);
         string id = SeedMemory("I'm redesigning the Lore shell.", Meta(MemoryStatuses.Staged));
 
@@ -145,6 +149,29 @@ public sealed class ActivityEndpointsTests : IDisposable
         JsonElement body = await harness.Client.GetFromJsonAsync<JsonElement>($"/memories/{id}/evidence");
 
         Assert.Empty(body.GetProperty("episodes").EnumerateArray().ToArray());
+    }
+
+    [Fact]
+    public async Task Evidence_returns_the_episodes_that_survived_retention()
+    {
+        // v2-008 R4.3: retention prunes episodes and never memories, so a memory routinely
+        // outlives some of its evidence. The answer is the survivors — not an error, and not a
+        // hole in the list for the id that no longer resolves.
+        await _activity.SaveEpisodeAsync(new Episode(
+            "ep-2", _time.Now.AddMinutes(-30), _time.Now.AddMinutes(-10),
+            ["Figma.exe"], ["Figma — Lore rebrand"], ["sample text"], 12, []));
+        string id = SeedMemory(
+            "I'm redesigning the Lore shell.",
+            new MemoryMetadata(
+                MemoryKinds.State, MemoryStatuses.Active, 0.8,
+                _time.Now.ToUnixTimeSeconds() + 14 * 86_400, 0,
+                MemoryUpdateReasons.Staged, Episodes: ["ep-1", "ep-2"])); // ep-1 was pruned
+
+        await using LoreApiHarness harness = await StartAsync();
+        JsonElement body = await harness.Client.GetFromJsonAsync<JsonElement>($"/memories/{id}/evidence");
+
+        JsonElement ep = Assert.Single(body.GetProperty("episodes").EnumerateArray().ToArray());
+        Assert.Equal("ep-2", ep.GetProperty("id").GetString());
     }
 
     [Fact]

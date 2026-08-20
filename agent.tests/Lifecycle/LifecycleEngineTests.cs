@@ -1,3 +1,4 @@
+using Lore.Agent.Capture;
 using Lore.Agent.Capture.Episodes;
 using Lore.Agent.Distill;
 using Lore.Agent.Inference;
@@ -129,7 +130,8 @@ public sealed class LifecycleEngineTests : IDisposable
         ["browser"],
         ["Wisdom tooth aftercare"],
         ["aftercare text"],
-        4);
+        4,
+        []);
 
     private readonly ScriptedBackend _backend = new();
     private readonly FakeMemory _memory = new();
@@ -141,16 +143,19 @@ public sealed class LifecycleEngineTests : IDisposable
     // daily allowance). The cap's behaviour is what is under test, not its value.
     private const int TestDailyBudget = 3;
 
-    private readonly LifecycleOptions _options = new() { DailyBudget = TestDailyBudget };
+    private readonly LiveCaptureSettings _settings = new(new CaptureOptions
+    {
+        Lifecycle = new LifecycleOptions { DailyBudget = TestDailyBudget },
+    });
 
     public void Dispose() => _activity.Dispose();
 
     private LifecycleEngine BuildEngine() => new(
-        new Distiller(_backend, NullLogger<Distiller>.Instance),
+        new Distiller(_backend, _settings, NullLogger<Distiller>.Instance),
         _memory,
         _activity,
         _backend,
-        _options,
+        _settings,
         _time,
         NullLogger<LifecycleEngine>.Instance);
 

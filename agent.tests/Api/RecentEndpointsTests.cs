@@ -1,6 +1,7 @@
 using System.Net.Http;
 using System.Text.Json;
 using Lore.Agent.Api.Endpoints;
+using Lore.Agent.Capture;
 using Lore.Agent.Memory;
 using Lore.Agent.Storage;
 using Microsoft.Extensions.DependencyInjection;
@@ -70,9 +71,30 @@ public sealed class RecentEndpointsTests
         Assert.Equal(2, doc.RootElement.GetProperty("items").GetArrayLength());
     }
 
-    private static Task<LoreApiHarness> StartAsync(ActivityStore store) =>
+    [Fact]
+    public async Task Recent_is_empty_while_diagnostics_is_off()
+    {
+        // v2-008 R4.2: rows a previous troubleshooting session left behind are not reported once
+        // the switch is off — the endpoint must not imply Lore is recording what it reads when it
+        // isn't. (The retention sweep clears them from disk on its next pass.)
+        using var store = new ActivityStore(":memory:");
+        await store.LogRawCaptureAsync(new RawCaptureEntry(
+            At, "code.exe", "from an earlier session", "uia", "code", "text"));
+        await using LoreApiHarness harness = await StartAsync(store, diagnostics: false);
+
+        using JsonDocument doc = await GetJsonAsync(harness, "/recent");
+
+        Assert.Empty(doc.RootElement.GetProperty("items").EnumerateArray().ToArray());
+    }
+
+    private static Task<LoreApiHarness> StartAsync(ActivityStore store, bool diagnostics = true) =>
         LoreApiHarness.StartAsync(
-            services => services.AddSingleton(store),
+            services =>
+            {
+                services.AddSingleton(store);
+                services.AddSingleton(new LiveCaptureSettings(
+                    new CaptureOptions { Diagnostics = diagnostics }));
+            },
             app => app.MapRecentEndpoints());
 
     private static async Task<JsonDocument> GetJsonAsync(LoreApiHarness harness, string path)

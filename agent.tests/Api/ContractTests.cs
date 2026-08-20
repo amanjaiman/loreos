@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Lore.Agent.Api;
+using Lore.Agent.Capture;
 using Lore.Agent.Config;
 using Lore.Agent.Hosting;
 using Lore.Agent.Memory;
@@ -150,6 +151,9 @@ public sealed class ContractTests : IAsyncLifetime, IDisposable
         services.AddSingleton<IProviderReloader>(new NoOpReloader());
         services.AddSingleton<IMemorydReadiness>(new StubMemorydReadiness(ready: true));
         services.AddSingleton(new LogTail(_logPath));
+        // /recent gates on the opt-in diagnostics switch (v2-008 R4.2); on, so the contract
+        // exercises the route with the seeded raw capture actually flowing through it.
+        services.AddSingleton(new LiveCaptureSettings(new CaptureOptions { Diagnostics = true }));
 
         ApiHost.AddOpenApi(services);
     }

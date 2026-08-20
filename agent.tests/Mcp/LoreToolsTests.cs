@@ -23,11 +23,19 @@ public sealed class LoreToolsTests
         RecallToolResult result = await LoreTools.Recall(
             recall, "should I order takeout tonight");
 
-        RecalledFact fact = Assert.Single(result.Facts);
+        // This asserted Single() until v2-008 R5.3 moved the recall floor onto the semantic
+        // score, which let two weaker-but-on-topic rows back in; R5.4 then added the
+        // MinConfidence gate, which drops the 0.3-confidence hunch again and leaves two.
+        // See RecallServiceTests' wisdom-teeth test for the reasoning. The mapping is what
+        // this test is actually about, so it checks the shape of the strongest fact and
+        // that ordering still puts it first.
+        Assert.Equal(2, result.Facts.Count);
+        RecalledFact fact = result.Facts[0];
         Assert.Equal("I'm recovering from a wisdom tooth extraction.", fact.Statement);
         Assert.Equal("state", fact.Kind);
         Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", fact.Established);
         Assert.True(fact.Score > 0.5);
+        Assert.All(result.Facts, f => Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", f.Established));
     }
 
     [Fact]
@@ -42,6 +50,23 @@ public sealed class LoreToolsTests
             recall, "how do I cook pasta carbonara");
 
         Assert.Empty(result.Facts);
+    }
+
+    [Fact]
+    public async Task Recall_passes_kinds_and_a_raised_k_through_to_the_service()
+    {
+        // Mirrors R5.1: a caller aggregating across history raises k and restricts kinds
+        // (e.g. to "experience") rather than taking only the single closest match.
+        var recall = new Lore.Agent.Recall.RecallService(
+            new Recall.GoldenMemoryService(),
+            new Lore.Agent.Recall.RecallOptions(),
+            new Recall.GoldenTimeProvider());
+
+        RecallToolResult result = await LoreTools.Recall(
+            recall, "tell me about myself", k: 30, kinds: ["preference"]);
+
+        RecalledFact fact = Assert.Single(result.Facts);
+        Assert.Equal("preference", fact.Kind);
     }
 
     [Fact]

@@ -24,6 +24,11 @@ export { Radio } from './components/forms/Radio';
 export type { RadioProps } from './components/forms/Radio';
 export { Switch } from './components/forms/Switch';
 export type { SwitchProps } from './components/forms/Switch';
+export { SegmentedControl } from './components/forms/SegmentedControl';
+export type {
+  SegmentedControlProps,
+  SegmentedOption,
+} from './components/forms/SegmentedControl';
 
 // feedback
 export { Badge } from './components/feedback/Badge';
