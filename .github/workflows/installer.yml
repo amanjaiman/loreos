@@ -59,6 +59,12 @@ jobs:
           LORE_SIGN_TIMESTAMP_URL: ${{ vars.LORE_SIGN_TIMESTAMP_URL }}
         run: ./installer/build.ps1
 
+      # The artifact IS this workflow's output — it publishes no Release — so unlike
+      # release.yml's inspection copy it cannot be made non-fatal. It does get a retention
+      # window: the build is ~600 MB, and at the 90-day default these accumulated one per
+      # version alongside release.yml's until the account's artifact storage quota was full,
+      # which then failed every subsequent release at the upload step. Two weeks outlives any
+      # reason to come back to an on-demand installer build.
       - uses: actions/upload-artifact@v4
         with:
           name: lore-installer
@@ -67,3 +73,4 @@ jobs:
             app/out/make/**/*.nupkg
             app/out/make/**/RELEASES
           if-no-files-found: error
+          retention-days: 14
