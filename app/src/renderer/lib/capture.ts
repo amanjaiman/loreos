@@ -35,14 +35,6 @@ export const DETAIL_STOPS: SegmentedOption[] = [
   { value: 'rich', label: 'Rich' },
 ];
 
-/**
- * The hours of an active day the AI-call estimate is quoted against. Stated in the sentence
- * itself rather than hidden here: a call count with no window attached is not checkable, and
- * this is the one number in the consequence lines that is an assumption rather than a fact
- * read off `resolved`.
- */
-const ACTIVE_HOURS = 8;
-
 /** `capture.resolved`, parsed. Every field is what is actually in force. */
 export interface ResolvedCapture {
   attentiveness: string;
@@ -120,70 +112,6 @@ export function pickStop(
 }
 
 // ---- The consequence lines ------------------------------------------------------
-
-/**
- * "How closely Lore watches". Reads `pollInterval`, `dwellThreshold`, `recaptureInterval`,
- * `episodes.maxObservations` and `episodes.maxAge`.
- *
- * The read cadence is `max(poll, recapture)`: a window is re-read no sooner than the
- * re-read gap allows and no sooner than the loop ticks, so quoting the re-read alone would
- * overstate a config whose poll is slower. The AI-call count follows from what actually
- * ends an episode — the observation cap, or the age bound if that comes first — because one
- * closed episode is one distill call.
- */
-export function attentivenessLine(r: ResolvedCapture | null): string | null {
-  if (r === null || !finite(r.poll, r.recapture, r.maxObservations)) {
-    return null;
-  }
-  const read = Math.max(r.poll, r.recapture);
-  if (read <= 0) {
-    return null;
-  }
-  const dwell =
-    finite(r.dwell) && r.dwell > 0
-      ? `once a window has held your attention for ${duration(r.dwell)}`
-      : 'as soon as a window takes focus';
-  const episode = finite(r.maxAge)
-    ? Math.min(read * r.maxObservations, r.maxAge)
-    : read * r.maxObservations;
-  const calls = Math.max(1, Math.round((ACTIVE_HOURS * 3600) / episode));
-  return (
-    `Lore reads your screen about every ${duration(read)}, ${dwell} — ` +
-    `roughly ${calls} AI ${plural(calls, 'call')} in an ${ACTIVE_HOURS}-hour day.`
-  );
-}
-
-/**
- * "How sure Lore has to be". Reads `lifecycle.highSignalConfidence` and
- * `lifecycle.stagedTtlDays` — the bar for saving a memory unattended, and how long the rest
- * waits for you before it expires.
- */
-export function certaintyLine(r: ResolvedCapture | null): string | null {
-  if (r === null || !finite(r.highSignalConfidence)) {
-    return null;
-  }
-  const percent = Math.round(r.highSignalConfidence * 100);
-  const waits =
-    finite(r.stagedTtlDays) && r.stagedTtlDays > 0
-      ? `waits in review for ${r.stagedTtlDays} ${plural(r.stagedTtlDays, 'day')}`
-      : 'waits in review until you decide';
-  return `Lore keeps a memory on its own when it's at least ${percent}% sure — anything less ${waits}.`;
-}
-
-/**
- * "How much detail". Reads `statementMaxChars` and `episodes.sampleMaxChars` — the two caps
- * move together, because a memory cannot carry a detail the sample it was written from was
- * truncated before.
- */
-export function detailLine(r: ResolvedCapture | null): string | null {
-  if (r === null || !finite(r.statementMaxChars, r.sampleMaxChars)) {
-    return null;
-  }
-  return (
-    `Each memory is written in up to ${r.statementMaxChars} characters, ` +
-    `from samples of up to ${r.sampleMaxChars} characters of what was on screen.`
-  );
-}
 
 /** What retention does to the evidence behind memories. Reads `retentionDays` (R4.1). */
 export function retentionLine(r: ResolvedCapture | null): string | null {

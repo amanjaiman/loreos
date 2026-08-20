@@ -146,14 +146,27 @@ records. This is a positive reason for a frequent traveller to turn the control 
   below the existing capture toggle and above the blocklist.
 - The design system has no 3-stop control today (`Card`, `Switch`, `ChipListEditor` only);
   add a `SegmentedControl` to the vendored DS rather than improvising in the view.
-- Each control renders its consequence line from the **resolved** values (R3), e.g.
+- **The controls carry no explanatory text.** Label plus three stops, nothing beneath.
+
+  This reverses the original requirement, on the evidence of the built pane. R1.4 first
+  called a derived "consequence line" per control *the highest-leverage part of this task* —
   *"Lore reads your screen about every 25 seconds, once a window has held your attention for
-  4 seconds — roughly 24 AI calls in an 8-hour day."* Do not hardcode these strings against
-  preset names; derive them so a `config.json` override shows the truth.
-- A "calls per day" figure needs an assumed active day. State it **in the sentence** ("in an
-  8-hour day") rather than burying it in a constant — it is the one quantity in the caption
-  that is not read from `resolved`, and a reader deserves to see the assumption they are
-  being asked to accept.
+  4 seconds — roughly 24 AI calls in an 8-hour day."* Built and looked at, three of those
+  stacked read as a spec sheet: precise, honest, and not what someone opening Settings wants.
+  The labels and stop names were written to carry their own meaning, and they do.
+
+  `docs/privacy.md` explains what the three controls change, for anyone who wants it. That is
+  the right home for the detail — reference material you seek out, not a caption you must
+  read past every time.
+
+- **The selected stop still comes from `resolved`**, so a misspelled preset name in
+  `config.json` shows the stop actually in force rather than nothing. Dropping the captions
+  removes the requirement that they stay truthful under a raw override; it does not remove
+  the need for the control itself to reflect reality.
+- The diagnostics switch and the retention note keep their one-line descriptions. They are
+  not tuning stops: one turns on recording of what Lore reads, the other says how long
+  evidence is kept. Both are statements about data, and a switch with privacy consequences
+  should say what it does.
 - Saves immediately on change, through the existing `api.patchConfig` queue in that file.
 
 **Acceptance:** changing any control writes config, takes effect without an agent restart

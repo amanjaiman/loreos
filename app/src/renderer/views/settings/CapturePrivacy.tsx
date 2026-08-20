@@ -8,9 +8,6 @@ import {
   ATTENTIVENESS_STOPS,
   CERTAINTY_STOPS,
   DETAIL_STOPS,
-  attentivenessLine,
-  certaintyLine,
-  detailLine,
   diagnosticsLine,
   pickStop,
   resolvedCapture,
@@ -44,18 +41,21 @@ const INITIAL: CaptureForm = {
   keywords: [],
 };
 
-/** Shown in place of a consequence line when the agent isn't reporting resolved values. */
-const NO_RESOLVED = "Lore reports what these settings do while it's running.";
-
 /**
  * Capture & Privacy settings: the capture on/off toggle, the three tuning presets (v2-008
  * R1), the diagnostics switch (R4.2), and the blocklist (apps + keywords). Reads current
  * config to prefill; every toggle/stop/chip action writes immediately through api.ts.
  *
- * The stops and their consequence lines both come from `capture.resolved` — the read-only
- * block of values actually in force — so a raw override in config.json shows the truth and a
- * misspelled preset name shows the stop that is really running. `resolved` is never sent
- * back: the patch below is built from the writable keys only.
+ * The three presets carry NO explanatory text under them, deliberately. R1.4 originally
+ * required a derived "consequence line" per control ("reads your screen every 25 seconds —
+ * roughly 24 AI calls a day"); shown in the real pane it read as a spec sheet, so the labels
+ * and stop names now carry the whole meaning. `docs/privacy.md` explains what the controls
+ * do for anyone who wants the detail.
+ *
+ * The selected stop still comes from `capture.resolved` — the read-only block of values
+ * actually in force — so a misspelled preset name shows the stop that is really running
+ * rather than nothing. `resolved` is never sent back: the patch below is built from the
+ * writable keys only.
  */
 export function CapturePrivacy({
   config,
@@ -174,21 +174,18 @@ export function CapturePrivacy({
             options={ATTENTIVENESS_STOPS}
             value={form.attentiveness}
             onChange={(value) => change({ attentiveness: value })}
-            hint={attentivenessLine(resolved) ?? NO_RESOLVED}
           />
           <SegmentedControl
             label="How sure Lore has to be"
             options={CERTAINTY_STOPS}
             value={form.certainty}
             onChange={(value) => change({ certainty: value })}
-            hint={certaintyLine(resolved) ?? NO_RESOLVED}
           />
           <SegmentedControl
             label="How much detail"
             options={DETAIL_STOPS}
             value={form.detail}
             onChange={(value) => change({ detail: value })}
-            hint={detailLine(resolved) ?? NO_RESOLVED}
           />
         </div>
       </Card>
