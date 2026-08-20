@@ -106,15 +106,16 @@ jobs:
         shell: pwsh
         run: ./installer/stage-release.ps1 -Version "${{ steps.version.outputs.version }}"
 
-      # Always upload the artifacts (incl. dry runs) for inspection.
-      - uses: actions/upload-artifact@v4
-        with:
-          name: lore-release-${{ steps.version.outputs.version }}
-          path: release/*
-          if-no-files-found: error
-
       # Publish the GitHub Release only on a real tag push. softprops/action-gh-release
       # is idempotent: re-running the same tag updates the Release and re-uploads assets.
+      #
+      # This runs BEFORE the inspection upload below, and that order is deliberate. It used
+      # to run after, which meant a problem in the convenience step aborted the job before
+      # the Release was ever created — and that is exactly what happened on v0.1.6: the
+      # build succeeded with all three files staged, upload-artifact hit the account's
+      # artifact storage quota, `if-no-files-found: error` failed the job, and no Release
+      # was cut from a perfectly good build. The Release is the deliverable; nothing
+      # optional may stand in front of it.
       - name: Publish GitHub Release
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
         uses: softprops/action-gh-release@v2
@@ -129,6 +130,26 @@ jobs:
             release/LoreSetup.exe
             release/Lore-${{ steps.version.outputs.version }}-full.nupkg
             release/RELEASES
+
+      # Upload the same three files as a run artifact, for inspection.
+      #
+      # On a tag push this is redundant within seconds — the Release above holds the real,
+      # permanent copies, and those are what Squirrel/Hazel serve. Its actual purpose is the
+      # `workflow_dispatch` dry run, where no Release is published and this is the only way
+      # to look at what was built.
+      #
+      # Hence `retention-days: 7` and `continue-on-error`. Each of these is ~600 MB, and at
+      # the 90-day default one release build plus one installer build per version filled the
+      # account's artifact quota after six releases, silently breaking every release
+      # afterwards. A week is far longer than anyone inspects a dry run, and a failure here
+      # must never mark a successful release as failed.
+      - uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: lore-release-${{ steps.version.outputs.version }}
+          path: release/*
+          if-no-files-found: error
+          retention-days: 7
 
   # Per-release winget manifest automation (spec 012 T004). Regenerates the manifest
   # from the published Release asset and opens/updates the microsoft/winget-pkgs PR
