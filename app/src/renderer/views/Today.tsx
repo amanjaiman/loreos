@@ -16,6 +16,7 @@ import { PageHeader } from '../chrome/PageHeader';
 import { Button, Spinner } from '../design-system';
 import { formatRelative } from '../lib/format';
 import { Icon } from '../lib/Icon';
+import { usePolledData } from '../lib/hooks';
 import { useRouter } from '../lib/router';
 import { useAgentControl } from '../lib/useAgentControl';
 import './today.css';
@@ -44,6 +45,13 @@ function isKept(decision: Decision): boolean {
 /** Keep in step with the `land` / `collapse` keyframes in today.css. */
 const LAND_MS = 900;
 const COLLAPSE_MS = 340;
+
+/**
+ * How often Home re-reads. Short enough that a memory captured while you sit here
+ * arrives on its own — which is what the landing animation below was written for, and
+ * what a once-on-mount fetch never gave it a chance to do.
+ */
+const POLL_MS = 15000;
 
 /** Honour the OS setting for the two places we *wait* on an animation, not just style it. */
 function motionAllowed(): boolean {
@@ -117,18 +125,23 @@ export function Today(): JSX.Element {
       setOffline(false);
     } catch (e) {
       setOffline(e instanceof LoreOfflineError);
-      setData({
-        economy: { decisions_today: {}, promoted_today: 0, daily_budget: 0 },
-        decisions: [],
-        staged: [],
-        stats: EMPTY_STATS,
-      });
+      // Only the *first* read may leave the page empty. Now that this re-reads on a
+      // timer, blanking on every failure would let one dropped call wipe a good screen
+      // — and the agent restarting under you is an ordinary event, not an error state.
+      setData((current) =>
+        current === null
+          ? {
+              economy: { decisions_today: {}, promoted_today: 0, daily_budget: 0 },
+              decisions: [],
+              staged: [],
+              stats: EMPTY_STATS,
+            }
+          : current,
+      );
     }
   }, []);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const { refresh } = usePolledData(load, POLL_MS);
 
   if (data === null) {
     return (
@@ -203,7 +216,7 @@ export function Today(): JSX.Element {
               variant="ghost"
               size="sm"
               icon="refresh-cw"
-              onClick={() => void load()}
+              onClick={refresh}
             >
               Check again
             </Button>
@@ -276,7 +289,7 @@ export function Today(): JSX.Element {
                       <QueueItem
                         key={memory.id}
                         memory={memory}
-                        onActed={load}
+                        onActed={refresh}
                       />
                     ))}
                   </div>
@@ -406,7 +419,7 @@ function QueueItem({
   onActed,
 }: {
   memory: Memory;
-  onActed: () => Promise<void>;
+  onActed: () => void;
 }): JSX.Element {
   const [busy, setBusy] = useState(false);
   const [removing, setRemoving] = useState(false);
@@ -423,7 +436,7 @@ function QueueItem({
         setRemoving(true);
         await new Promise((resolve) => window.setTimeout(resolve, COLLAPSE_MS));
       }
-      await onActed();
+      onActed();
     } catch {
       setRemoving(false);
     } finally {
