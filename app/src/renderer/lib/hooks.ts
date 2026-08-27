@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   api,
@@ -120,6 +120,97 @@ export function useRailSummary(pollMs = 20000): RailSummary {
   }, [pollMs]);
 
   return summary;
+}
+
+/**
+ * Keeps a view's own read live, the way `useSystemStatus` and `useRailSummary` keep the
+ * chrome live.
+ *
+ * Every content view used to fetch exactly once on mount, so the only thing that
+ * refreshed a page was leaving it and coming back — `AppShell` keys the view on the
+ * route, so navigating remounts it and re-runs that one-shot effect. The rail's staged
+ * badge polled underneath a page that didn't, which is the inverse of what you want.
+ *
+ * `load` is called once immediately, then on every tick. Its identity is the effect's
+ * dependency: a view whose read depends on state (Memory's query) should wrap it in a
+ * `useCallback` over that state, and changing it re-reads at once rather than waiting
+ * for the next tick.
+ *
+ * Deliberately NOT listening for `MEMORY_CHANGED`: every view that mutates a memory
+ * already refreshes itself afterwards, on its own timing — Home waits out the row's
+ * collapse animation first, and an event-driven refetch would cut that short. The event
+ * exists for the rail, which is mounted alongside the page and has no other way to know.
+ */
+export function usePolledData(
+  load: () => Promise<void>,
+  pollMs: number,
+  /** Hold the interval — for a view with an editor open over the data it would replace. */
+  paused = false,
+): { refresh: () => void } {
+  const pausedRef = useRef(paused);
+  useEffect(() => {
+    pausedRef.current = paused;
+  }, [paused]);
+
+  // Lets `refresh` reach the live effect's guarded runner without re-subscribing.
+  const runRef = useRef<() => void>(() => undefined);
+
+  useEffect(() => {
+    let inFlight = false;
+    let queued = false;
+    let disposed = false;
+    /**
+     * Reads never overlap. The agent is one local process, and two in-flight reads
+     * finish in whichever order they finish — the page would render the loser.
+     *
+     * A tick that lands on a slow read is simply dropped; the next one is 15s away.
+     * A `refresh` is a user action ("I just kept this memory"), so it can't be dropped
+     * — it waits its turn and runs after, which also guarantees it reads state from
+     * after the mutation rather than racing the poll that preceded it.
+     */
+    const run = (force: boolean): void => {
+      if (inFlight) {
+        queued = queued || force;
+        return;
+      }
+      inFlight = true;
+      void load().finally(() => {
+        inFlight = false;
+        // Not after the view moved on: this closure's `load` is the superseded one.
+        if (queued && !disposed) {
+          queued = false;
+          run(false);
+        }
+      });
+    };
+    runRef.current = () => run(true);
+    run(false);
+
+    const visible = (): boolean => document.visibilityState === 'visible';
+    const id = window.setInterval(() => {
+      // Sitting in the tray is Lore's normal resting state, so an unpaused interval
+      // would spend the agent's CPU on a window nobody is looking at.
+      if (visible() && !pausedRef.current) {
+        run(false);
+      }
+    }, pollMs);
+
+    // Returning to the window is where staleness is most visible — don't make the user
+    // sit out the remainder of an interval that was suspended while they were away.
+    const onVisibility = (): void => {
+      if (visible()) {
+        run(false);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      disposed = true;
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [load, pollMs]);
+
+  return { refresh: useCallback(() => runRef.current(), []) };
 }
 
 export interface ConfigState {

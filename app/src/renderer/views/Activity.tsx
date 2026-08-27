@@ -1,11 +1,15 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { api, LoreOfflineError, type Decision, type Episode } from '../api';
 import { PageHeader } from '../chrome/PageHeader';
 import { Card, Spinner, Tabs, Tag } from '../design-system';
 import { formatRelative } from '../lib/format';
+import { usePolledData } from '../lib/hooks';
 import { Icon } from '../lib/Icon';
 import './activity.css';
+
+/** The trail is append-only, so a tick either adds rows to the top or changes nothing. */
+const POLL_MS = 15000;
 
 type Feed = 'decisions' | 'episodes';
 
@@ -75,14 +79,13 @@ export function Activity(): JSX.Element {
       setOffline(false);
     } catch (err) {
       setOffline(err instanceof LoreOfflineError);
-      setDecisions([]);
-      setEpisodes([]);
+      // Only the first read may leave the feed empty — see the same note on Home.
+      setDecisions((current) => current ?? []);
+      setEpisodes((current) => current ?? []);
     }
   }, []);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  usePolledData(load, POLL_MS);
 
   const loading = decisions === null || episodes === null;
   // The engine's own housekeeping ("episode closed · idle_timeout") is the bulk of the
