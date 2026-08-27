@@ -131,7 +131,11 @@ export function Today(): JSX.Element {
       setData((current) =>
         current === null
           ? {
-              economy: { decisions_today: {}, promoted_today: 0, daily_budget: 0 },
+              economy: {
+                decisions_today: {},
+                promoted_today: 0,
+                daily_budget: 0,
+              },
               decisions: [],
               staged: [],
               stats: EMPTY_STATS,
